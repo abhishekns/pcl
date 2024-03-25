@@ -38,33 +38,25 @@
  *
  */
 
-
-#ifndef PCL_APPS_IN_HAND_SCANNER_HELP_WINDOW_H
-#define PCL_APPS_IN_HAND_SCANNER_HELP_WINDOW_H
+#pragma once
 
 #include <QDialog>
 
-namespace Ui
-{
-  class HelpWindow;
+namespace Ui {
+class HelpWindow;
 }
 
-namespace pcl
-{
-  namespace ihs
-  {
-    class HelpWindow : public QDialog
-    {
-      Q_OBJECT
+namespace pcl {
+namespace ihs {
+class HelpWindow : public QDialog {
+  Q_OBJECT
 
-      public:
-        explicit HelpWindow (QWidget* parent = 0);
-        ~HelpWindow ();
+public:
+  explicit HelpWindow(QWidget* parent = nullptr);
+  ~HelpWindow() override;
 
-      private:
-        Ui::HelpWindow* ui;
-    };
-  } // End namespace ihs
+private:
+  Ui::HelpWindow* ui;
+};
+} // End namespace ihs
 } // End namespace pcl
-
-#endif // PCL_APPS_IN_HAND_SCANNER_HELP_WINDOW_H

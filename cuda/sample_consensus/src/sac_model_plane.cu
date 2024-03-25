@@ -161,8 +161,6 @@ namespace pcl
     SampleConsensusModelPlane<Storage>::generateModelHypotheses (
         Hypotheses &h, int max_iterations)
     {
-      using namespace thrust;
-
       // Create a vector of how many samples/coefficients do we want to get
       h.resize (max_iterations);
 
@@ -192,12 +190,12 @@ namespace pcl
     template <typename Tuple> bool
     CountPlanarInlier::operator () (const Tuple &t)
     {
-      if (!isfinite (thrust::get<0>(t).x))
+      if (!isfinite (thrust::raw_reference_cast(thrust::get<0>(t)).x))
         return (false);
 
-      return (fabs (thrust::get<0>(t).x * coefficients.x +
-                    thrust::get<0>(t).y * coefficients.y +
-                    thrust::get<0>(t).z * coefficients.z + coefficients.w) < threshold);
+      return (std::abs (thrust::raw_reference_cast(thrust::get<0>(t)).x * coefficients.x +
+                    thrust::raw_reference_cast(thrust::get<0>(t)).y * coefficients.y +
+                    thrust::raw_reference_cast(thrust::get<0>(t)).z * coefficients.z + coefficients.w) < threshold);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -213,7 +211,7 @@ namespace pcl
       pt.z = thrust::get<0>(t).z;
       pt.w = 1;
 
-      if (fabs (dot (pt, coefficients)) < threshold)
+      if (std::abs (dot (pt, coefficients)) < threshold)
         // If inlier, return its position in the vector
         return (thrust::get<1>(t));
       else
@@ -227,8 +225,6 @@ namespace pcl
     SampleConsensusModelPlane<Storage>::countWithinDistance (
         const Coefficients &model_coefficients, float threshold)
     {
-      using namespace thrust;
-
       // Needs a valid set of model coefficients
       if (model_coefficients.size () != 4)
       {
@@ -270,8 +266,6 @@ namespace pcl
     SampleConsensusModelPlane<Storage>::selectWithinDistance (
         const Coefficients &model_coefficients, float threshold, IndicesPtr &inliers, IndicesPtr &inliers_stencil)
     {
-      using namespace thrust;
-
       // Needs a valid set of model coefficients
       if (model_coefficients.size () != 4)
       {
@@ -316,8 +310,6 @@ namespace pcl
     SampleConsensusModelPlane<Storage>::selectWithinDistance (
         const Hypotheses &h, int idx, float threshold, IndicesPtr &inliers, IndicesPtr &inliers_stencil)
     {
-      using namespace thrust;
-
       // Needs a valid set of model coefficients
     /*  if (model_coefficients.size () != 4)
       {
@@ -361,8 +353,6 @@ namespace pcl
     SampleConsensusModelPlane<Storage>::selectWithinDistance (
         Hypotheses &h, int idx, float threshold, IndicesPtr &inliers_stencil, float3 & centroid)
     {
-      using namespace thrust;
-
       // Needs a valid set of model coefficients
     /*  if (model_coefficients.size () != 4)
       {

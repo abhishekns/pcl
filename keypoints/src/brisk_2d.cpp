@@ -41,28 +41,28 @@
 #include <pcl/pcl_macros.h>
 #include <pcl/keypoints/brisk_2d.h>
 #include <pcl/point_types.h>
+#include <pcl/common/utils.h> // pcl::utils::ignore
 #include <pcl/impl/instantiate.hpp>
 #if defined(__SSSE3__) && !defined(__i386__)
 #include <tmmintrin.h>
 #include <emmintrin.h>
 #endif
 
+const int pcl::keypoints::brisk::Layer::CommonParams::HALFSAMPLE = 0;
+const int pcl::keypoints::brisk::Layer::CommonParams::TWOTHIRDSAMPLE = 1;
+
 /////////////////////////////////////////////////////////////////////////////////////////
 // construct telling the octaves number:
 pcl::keypoints::brisk::ScaleSpace::ScaleSpace (int octaves)
-  : safety_factor_ (1.0)
-  , basic_size_ (12.0)
 {
   if (octaves == 0)
     layers_ = 1;
   else
-    layers_ = uint8_t (2 * octaves);
+    layers_ = static_cast<std::uint8_t>(2 * octaves);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-pcl::keypoints::brisk::ScaleSpace::~ScaleSpace ()
-{
-}
+pcl::keypoints::brisk::ScaleSpace::~ScaleSpace () = default;
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // construct the image pyramids
@@ -74,15 +74,15 @@ pcl::keypoints::brisk::ScaleSpace::constructPyramid (
   pyramid_.clear ();
 
   // fill the pyramid
-  pyramid_.push_back (pcl::keypoints::brisk::Layer (std::vector<unsigned char> (image), width, height));
+  pyramid_.emplace_back(std::vector<unsigned char> (image), width, height);
   if (layers_ > 1)
-    pyramid_.push_back (pcl::keypoints::brisk::Layer (pyramid_.back (), pcl::keypoints::brisk::Layer::CommonParams::TWOTHIRDSAMPLE));
+    pyramid_.emplace_back(pyramid_.back (), pcl::keypoints::brisk::Layer::CommonParams::TWOTHIRDSAMPLE);
   const int octaves2 = layers_;
 
   for (int i = 2; i < octaves2; i += 2)
   {
-    pyramid_.push_back (pcl::keypoints::brisk::Layer (pyramid_[i-2], pcl::keypoints::brisk::Layer::CommonParams::HALFSAMPLE));
-    pyramid_.push_back (pcl::keypoints::brisk::Layer (pyramid_[i-1], pcl::keypoints::brisk::Layer::CommonParams::HALFSAMPLE));
+    pyramid_.emplace_back(pyramid_[i-2], pcl::keypoints::brisk::Layer::CommonParams::HALFSAMPLE);
+    pyramid_.emplace_back(pyramid_[i-1], pcl::keypoints::brisk::Layer::CommonParams::HALFSAMPLE);
   }
 }
 
@@ -98,13 +98,13 @@ pcl::keypoints::brisk::ScaleSpace::getKeypoints (
   keypoints.reserve (2000);
 
   // assign thresholds
-  threshold_ = uint8_t (threshold);
-  safe_threshold_ = uint8_t (threshold_ * safety_factor_);
+  threshold_ = static_cast<std::uint8_t>(threshold);
+  safe_threshold_ = static_cast<std::uint8_t>(threshold_ * safety_factor_);
   std::vector<std::vector<pcl::PointUV, Eigen::aligned_allocator<pcl::PointUV> > > agast_points;
   agast_points.resize (layers_);
 
   // go through the octaves and intra layers and calculate fast corner scores:
-  for (uint8_t i = 0; i < layers_; i++)
+  for (std::uint8_t i = 0; i < layers_; i++)
   {
     // call OAST16_9 without nms
     pcl::keypoints::brisk::Layer& l = pyramid_[i];
@@ -114,12 +114,12 @@ pcl::keypoints::brisk::ScaleSpace::getKeypoints (
   if (layers_ == 1)
   {
     // just do a simple 2d subpixel refinement...
-    const int num = int (agast_points[0].size ());
+    const int num = static_cast<int>(agast_points[0].size ());
     for (int n = 0; n < num; n++)
     {
       const pcl::PointUV& point = agast_points.at (0)[n];
       // first check if it is a maximum:
-      if (!isMax2D (0, int (point.u), int (point.v)))
+      if (!isMax2D (0, static_cast<int>(point.u), static_cast<int>(point.v)))
         continue;
 
       // let's do the subpixel and float scale refinement:
@@ -140,16 +140,16 @@ pcl::keypoints::brisk::ScaleSpace::getKeypoints (
                               delta_x, delta_y);
 
       // store:
-      keypoints.push_back (pcl::PointWithScale (point.u + delta_x, point.v + delta_y, 0.0f, basic_size_, -1, max, 0));
+      keypoints.emplace_back(point.u + delta_x, point.v + delta_y, 0.0f, basic_size_, -1, max, 0);
     }
     return;
   }
 
   float x, y, scale, score;
-  for (uint8_t i = 0; i < layers_; i++)
+  for (std::uint8_t i = 0; i < layers_; i++)
   {
     pcl::keypoints::brisk::Layer& l = pyramid_[i];
-    const int num = int (agast_points[i].size ());
+    const int num = static_cast<int>(agast_points[i].size ());
     
     if (i == layers_ - 1)
     {
@@ -158,12 +158,12 @@ pcl::keypoints::brisk::ScaleSpace::getKeypoints (
         const pcl::PointUV& point = agast_points.at (i)[n];
 
         // consider only 2D maxima...
-        if (!isMax2D (i, int (point.u), int (point.v)))
+        if (!isMax2D (i, static_cast<int>(point.u), static_cast<int>(point.v)))
           continue;
 
         bool ismax;
         float dx, dy;
-        getScoreMaxBelow (i, int (point.u), int (point.v),
+        getScoreMaxBelow (i, static_cast<int>(point.u), static_cast<int>(point.v),
                           l.getAgastScore (point.u, point.v, safe_threshold_), ismax,
                           dx, dy);
         if (!ismax)
@@ -186,13 +186,13 @@ pcl::keypoints::brisk::ScaleSpace::getKeypoints (
                                 delta_x, delta_y);
 
         // store:
-        keypoints.push_back (pcl::PointWithScale ((point.u + delta_x) * l.getScale () + l.getOffset (),     // x
-                                                  (point.v + delta_y) * l.getScale () + l.getOffset (),     // y
-                                                  0.0f,                                           // z
-                                                  basic_size_ * l.getScale (),                         // size
-                                                  -1,                                             // angle
-                                                  max,                                            // response
-                                                  i));                                            // octave
+        keypoints.emplace_back((point.u + delta_x) * l.getScale () + l.getOffset (),  // x
+                               (point.v + delta_y) * l.getScale () + l.getOffset (),  // y
+                               0.0f,                                                  // z
+                               basic_size_ * l.getScale (),                           // size
+                               -1,                                                    // angle
+                               max,                                                   // response
+                               i);                                                    // octave
       }
     }
     else
@@ -203,22 +203,22 @@ pcl::keypoints::brisk::ScaleSpace::getKeypoints (
         const pcl::PointUV& point = agast_points.at (i)[n];
 
         // first check if it is a maximum:
-        if (!isMax2D (i, int (point.u), int (point.v)))
+        if (!isMax2D (i, static_cast<int>(point.u), static_cast<int>(point.v)))
         {
           continue;
         }
 
         // let's do the subpixel and float scale refinement:
         bool ismax;
-        score = refine3D (i, int (point.u), int (point.v), x, y, scale, ismax);
+        score = refine3D (i, static_cast<int>(point.u), static_cast<int>(point.v), x, y, scale, ismax);
 
         if (!ismax)
           continue;
 
         // finally store the detected keypoint:
-        if (score > float (threshold_))
+        if (score > static_cast<float>(threshold_))
         {
-          keypoints.push_back (pcl::PointWithScale (x, y, 0.0f, basic_size_ * scale, -1, score, i));
+          keypoints.emplace_back(x, y, 0.0f, basic_size_ * scale, -1, score, i);
         }
       }
     }
@@ -229,7 +229,7 @@ pcl::keypoints::brisk::ScaleSpace::getKeypoints (
 // interpolated score access with recalculation when needed:
 int 
 pcl::keypoints::brisk::ScaleSpace::getScoreAbove (
-    const uint8_t layer, const int x_layer, const int y_layer)
+    const std::uint8_t layer, const int x_layer, const int y_layer)
 {
   assert (layer < layers_ - 1);
   pcl::keypoints::brisk::Layer& l = pyramid_[layer+1];
@@ -243,7 +243,7 @@ pcl::keypoints::brisk::ScaleSpace::getScoreAbove (
     const int r_x_1 =6 - r_x;
     const int r_y = (sixths_y % 6);
     const int r_y_1 = 6 - r_y;
-    uint8_t score = static_cast<uint8_t> (
+    auto score = static_cast<std::uint8_t> (
                     0xFF & ((r_x_1 * r_y_1 * l.getAgastScore (x_above,     y_above,     1) +
                              r_x   * r_y_1 * l.getAgastScore (x_above + 1, y_above,     1) +
                              r_x_1 * r_y   * l.getAgastScore (x_above,     y_above + 1, 1) +
@@ -251,37 +251,32 @@ pcl::keypoints::brisk::ScaleSpace::getScoreAbove (
  
     return (score);
   }
-  else
-  { // intra
-    const int eighths_x = 6 * x_layer - 1;
-    const int x_above = eighths_x / 8;
-    const int eighths_y = 6 * y_layer - 1;
-    const int y_above = eighths_y / 8;
-    const int r_x = (eighths_x % 8);
-    const int r_x_1 = 8 - r_x;
-    const int r_y = (eighths_y % 8);
-    const int r_y_1 = 8 - r_y;
-    uint8_t score = static_cast<uint8_t> (
-                    0xFF & ((r_x_1 * r_y_1 * l.getAgastScore (x_above,     y_above,     1) +
-                             r_x   * r_y_1  * l.getAgastScore (x_above + 1, y_above,     1) +
-                             r_x_1 * r_y    * l.getAgastScore (x_above ,    y_above + 1, 1) +
-                             r_x   * r_y    * l.getAgastScore (x_above + 1, y_above + 1, 1) + 32) / 64));
-    return (score);
-  }
+
+  // intra
+  const int eighths_x = 6 * x_layer - 1;
+  const int x_above = eighths_x / 8;
+  const int eighths_y = 6 * y_layer - 1;
+  const int y_above = eighths_y / 8;
+  const int r_x = (eighths_x % 8);
+  const int r_x_1 = 8 - r_x;
+  const int r_y = (eighths_y % 8);
+  const int r_y_1 = 8 - r_y;
+  auto score = static_cast<std::uint8_t> (
+                  0xFF & ((r_x_1 * r_y_1 * l.getAgastScore (x_above,     y_above,     1) +
+                           r_x   * r_y_1  * l.getAgastScore (x_above + 1, y_above,     1) +
+                           r_x_1 * r_y    * l.getAgastScore (x_above ,    y_above + 1, 1) +
+                           r_x   * r_y    * l.getAgastScore (x_above + 1, y_above + 1, 1) + 32) / 64));
+  return (score);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 int 
 pcl::keypoints::brisk::ScaleSpace::getScoreBelow (
-    const uint8_t layer, const int x_layer, const int y_layer)
+    const std::uint8_t layer, const int x_layer, const int y_layer)
 {
   assert (layer);
   pcl::keypoints::brisk::Layer& l = pyramid_[layer-1];
-  int sixth_x;
-  int quarter_x;
   float xf;
-  int sixth_y;
-  int quarter_y;
   float yf;
 
   // scaling:
@@ -292,29 +287,29 @@ pcl::keypoints::brisk::ScaleSpace::getScoreBelow (
 
   if (layer % 2 == 0)
   { // octave
-    sixth_x = 8 * x_layer + 1;
-    xf = float (sixth_x) / 6.0f;
-    sixth_y = 8 * y_layer + 1;
-    yf = float (sixth_y) / 6.0f;
+    int sixth_x = 8 * x_layer + 1;
+    xf = static_cast<float>(sixth_x) / 6.0f;
+    int sixth_y = 8 * y_layer + 1;
+    yf = static_cast<float>(sixth_y) / 6.0f;
 
     // scaling:
     offs = 2.0f / 3.0f;
     area = 4.0f * offs * offs;
     scaling  = static_cast<int> (4194304.0f / area);
-    scaling2 = static_cast<int> (float (scaling) * area);
+    scaling2 = static_cast<int> (static_cast<float>(scaling) * area);
   }
   else
   {
-    quarter_x = 6 * x_layer + 1;
-    xf = float (quarter_x) / 4.0f;
-    quarter_y = 6 * y_layer + 1;
-    yf = float (quarter_y) / 4.0f;
+    int quarter_x = 6 * x_layer + 1;
+    xf = static_cast<float>(quarter_x) / 4.0f;
+    int quarter_y = 6 * y_layer + 1;
+    yf = static_cast<float>(quarter_y) / 4.0f;
 
     // scaling:
     offs = 3.0f / 4.0f;
     area = 4.0f * offs * offs;
     scaling  = static_cast<int> (4194304.0f / area);
-    scaling2 = static_cast<int> (float (scaling) * area);
+    scaling2 = static_cast<int> (static_cast<float>(scaling) * area);
   }
 
   // calculate borders
@@ -323,49 +318,49 @@ pcl::keypoints::brisk::ScaleSpace::getScoreBelow (
   const float y_1 = yf - offs;
   const float y1  = yf + offs;
 
-  const int x_left   = int (x_1 + 0.5);
-  const int y_top    = int (y_1 + 0.5);
-  const int x_right  = int (x1  + 0.5);
-  const int y_bottom = int (y1  + 0.5);
+  const int x_left   = static_cast<int>(x_1 + 0.5);
+  const int y_top    = static_cast<int>(y_1 + 0.5);
+  const int x_right  = static_cast<int>(x1  + 0.5);
+  const int y_bottom = static_cast<int>(y1  + 0.5);
 
   // overlap area - multiplication factors:
-  const float r_x_1 = float (x_left) - x_1 + 0.5f;
-  const float r_y_1 = float (y_top) - y_1  + 0.5f;
-  const float r_x1  = x1 - float (x_right) + 0.5f;
-  const float r_y1  = y1 - float (y_bottom) + 0.5f;
+  const float r_x_1 = static_cast<float>(x_left) - x_1 + 0.5f;
+  const float r_y_1 = static_cast<float>(y_top) - y_1  + 0.5f;
+  const float r_x1  = x1 - static_cast<float>(x_right) + 0.5f;
+  const float r_y1  = y1 - static_cast<float>(y_bottom) + 0.5f;
   const int dx  = x_right - x_left - 1;
   const int dy = y_bottom - y_top - 1;
-  const int A = static_cast<int> ((r_x_1 * r_y_1) * float (scaling));
-  const int B = static_cast<int> ((r_x1  * r_y_1) * float (scaling));
-  const int C = static_cast<int> ((r_x1  * r_y1)  * float (scaling));
-  const int D = static_cast<int> ((r_x_1 * r_y1)  * float (scaling));
-  const int r_x_1_i = static_cast<int> (r_x_1 * float (scaling));
-  const int r_y_1_i = static_cast<int> (r_y_1 * float (scaling));
-  const int r_x1_i  = static_cast<int> (r_x1  * float (scaling));
-  const int r_y1_i  = static_cast<int> (r_y1  * float (scaling));
+  const int A = static_cast<int> ((r_x_1 * r_y_1) * static_cast<float>(scaling));
+  const int B = static_cast<int> ((r_x1  * r_y_1) * static_cast<float>(scaling));
+  const int C = static_cast<int> ((r_x1  * r_y1)  * static_cast<float>(scaling));
+  const int D = static_cast<int> ((r_x_1 * r_y1)  * static_cast<float>(scaling));
+  const int r_x_1_i = static_cast<int> (r_x_1 * static_cast<float>(scaling));
+  const int r_y_1_i = static_cast<int> (r_y_1 * static_cast<float>(scaling));
+  const int r_x1_i  = static_cast<int> (r_x1  * static_cast<float>(scaling));
+  const int r_y1_i  = static_cast<int> (r_y1  * static_cast<float>(scaling));
 
   // first row:
-  int ret_val = A * int (l.getAgastScore (x_left, y_top, 1));
+  int ret_val = A * static_cast<int>(l.getAgastScore (x_left, y_top, 1));
   for (int X = 1; X <= dx; X++)
-    ret_val += r_y_1_i * int (l.getAgastScore (x_left + X, y_top, 1));
+    ret_val += r_y_1_i * static_cast<int>(l.getAgastScore (x_left + X, y_top, 1));
 
-  ret_val += B * int (l.getAgastScore (x_left + dx + 1, y_top, 1));
+  ret_val += B * static_cast<int>(l.getAgastScore (x_left + dx + 1, y_top, 1));
   // middle ones:
   for (int Y = 1; Y <= dy; Y++)
   {
-    ret_val += r_x_1_i * int (l.getAgastScore (x_left, y_top + Y, 1));
+    ret_val += r_x_1_i * static_cast<int>(l.getAgastScore (x_left, y_top + Y, 1));
 
     for (int X = 1; X <= dx; X++)
-      ret_val += int (l.getAgastScore (x_left + X, y_top + Y, 1)) * scaling;
+      ret_val += static_cast<int>(l.getAgastScore (x_left + X, y_top + Y, 1)) * scaling;
 
-    ret_val += r_x1_i * int (l.getAgastScore (x_left + dx + 1, y_top + Y, 1));
+    ret_val += r_x1_i * static_cast<int>(l.getAgastScore (x_left + dx + 1, y_top + Y, 1));
   }
   // last row:
-  ret_val += D * int (l.getAgastScore (x_left, y_top + dy + 1, 1));
+  ret_val += D * static_cast<int>(l.getAgastScore (x_left, y_top + dy + 1, 1));
   for (int X = 1; X <= dx; X++)
-    ret_val += r_y1_i * int (l.getAgastScore (x_left + X, y_top + dy + 1, 1));
+    ret_val += r_y1_i * static_cast<int>(l.getAgastScore (x_left + X, y_top + dy + 1, 1));
 
-  ret_val += C * int (l.getAgastScore (x_left + dx + 1, y_top + dy + 1, 1));
+  ret_val += C * static_cast<int>(l.getAgastScore (x_left + dx + 1, y_top + dy + 1, 1));
 
   return ((ret_val + scaling2 / 2) / scaling2);
 }
@@ -373,11 +368,11 @@ pcl::keypoints::brisk::ScaleSpace::getScoreBelow (
 /////////////////////////////////////////////////////////////////////////////////////////
 bool 
 pcl::keypoints::brisk::ScaleSpace::isMax2D (
-    const uint8_t layer, const int x_layer, const int y_layer)
+    const std::uint8_t layer, const int x_layer, const int y_layer)
 {
   const std::vector<unsigned char>& scores = pyramid_[layer].getScores ();
   const int scorescols = pyramid_[layer].getImageWidth ();
-  const unsigned char* data = &scores[0] + y_layer * scorescols + x_layer;
+  const unsigned char* data = scores.data() + y_layer * scorescols + x_layer;
 
   // decision tree:
   const unsigned char center = (*data);
@@ -450,17 +445,16 @@ pcl::keypoints::brisk::ScaleSpace::isMax2D (
     delta.push_back (1);
   }
   
-  unsigned int deltasize = static_cast<unsigned int> (delta.size ());
+  auto deltasize = static_cast<unsigned int> (delta.size ());
   if (deltasize != 0)
   {
     // in this case, we have to analyze the situation more carefully:
     // the values are gaussian blurred and then we really decide
-    data = &scores[0] + y_layer * scorescols + x_layer;
     int smoothedcenter = 4 * center + 2 * (s_10 + s10 + s0_1 + s01) + s_1_1 + s1_1 + s_11 + s11;
     
     for (unsigned int i = 0; i < deltasize; i+= 2)
     {
-      data = &scores[0] + (y_layer - 1 + delta[i+1]) * scorescols + x_layer + delta[i] - 1;
+      data = scores.data() + (y_layer - 1 + delta[i+1]) * scorescols + x_layer + delta[i] - 1;
 
       int othercenter = *data;
       data++;
@@ -489,7 +483,7 @@ pcl::keypoints::brisk::ScaleSpace::isMax2D (
 // 3D maximum refinement centered around (x_layer,y_layer)
 float 
 pcl::keypoints::brisk::ScaleSpace::refine3D (
-    const uint8_t layer, const int x_layer, const int y_layer,
+    const std::uint8_t layer, const int x_layer, const int y_layer,
     float& x, float& y, float& scale, bool& ismax)
 {
   ismax = true;
@@ -511,13 +505,12 @@ pcl::keypoints::brisk::ScaleSpace::refine3D (
     // treat the patch below:
     float delta_x_below, delta_y_below;
     float max_below_float;
-    unsigned char max_below_uchar = 0;
     if (layer == 0)
     {
       // guess the lower intra octave...
       pcl::keypoints::brisk::Layer& l = pyramid_[0];
       int s_0_0 = l.getAgastScore_5_8 (x_layer - 1, y_layer - 1, 1);
-      max_below_uchar = static_cast<unsigned char> (s_0_0);
+      auto max_below_uchar = static_cast<unsigned char> (s_0_0);
       int s_1_0 = l.getAgastScore_5_8 (x_layer, y_layer - 1, 1);
 
       if (s_1_0 > max_below_uchar) max_below_uchar = static_cast<unsigned char> (s_1_0);
@@ -536,10 +529,10 @@ pcl::keypoints::brisk::ScaleSpace::refine3D (
       int s_2_2 = l.getAgastScore_5_8 (x_layer + 1, y_layer +1 , 1);
       if (s_2_2 > max_below_uchar) max_below_uchar = static_cast<unsigned char> (s_2_2);
 
-      max_below_float = subpixel2D (s_0_0, s_0_1, s_0_2,
-                                    s_1_0, s_1_1, s_1_2,
-                                    s_2_0, s_2_1, s_2_2,
-                                    delta_x_below, delta_y_below);
+      subpixel2D (s_0_0, s_0_1, s_0_2,
+                  s_1_0, s_1_1, s_1_2,
+                  s_2_0, s_2_1, s_2_2,
+                  delta_x_below, delta_y_below);
       max_below_float = max_below_uchar;
     }
     else
@@ -568,18 +561,18 @@ pcl::keypoints::brisk::ScaleSpace::refine3D (
 
     // calculate the relative scale (1D maximum):
     if (layer == 0)
-      scale = refine1D_2 (max_below_float, std::max (float (center), max_layer), max_above,max);
+      scale = refine1D_2 (max_below_float, std::max (static_cast<float>(center), max_layer), max_above,max);
     else
-      scale = refine1D (max_below_float, std::max (float (center), max_layer), max_above,max);
+      scale = refine1D (max_below_float, std::max (static_cast<float>(center), max_layer), max_above,max);
 
     if (scale > 1.0)
     {
       // interpolate the position:
       const float r0 = (1.5f - scale) / .5f;
       const float r1 = 1.0f - r0;
-      x = (r0 * delta_x_layer + r1 * delta_x_above + float (x_layer))
+      x = (r0 * delta_x_layer + r1 * delta_x_above + static_cast<float>(x_layer))
           * this_layer.getScale () + this_layer.getOffset ();
-      y = (r0 * delta_y_layer + r1 * delta_y_above + float (y_layer))
+      y = (r0 * delta_y_layer + r1 * delta_y_above + static_cast<float>(y_layer))
           * this_layer.getScale () + this_layer.getOffset ();
     }
     else
@@ -589,17 +582,17 @@ pcl::keypoints::brisk::ScaleSpace::refine3D (
         // interpolate the position:
         const float r0 = (scale - 0.5f) / 0.5f;
         const float r_1 = 1.0f - r0;
-        x = r0 * delta_x_layer + r_1 * delta_x_below + float (x_layer);
-        y = r0 * delta_y_layer + r_1 * delta_y_below + float (y_layer);
+        x = r0 * delta_x_layer + r_1 * delta_x_below + static_cast<float>(x_layer);
+        y = r0 * delta_y_layer + r_1 * delta_y_below + static_cast<float>(y_layer);
       }
       else
       {
         // interpolate the position:
         const float r0 = (scale - 0.75f) / 0.25f;
         const float r_1 = 1.0f -r0;
-        x = (r0 * delta_x_layer + r_1 * delta_x_below + float (x_layer))
+        x = (r0 * delta_x_layer + r_1 * delta_x_below + static_cast<float>(x_layer))
             * this_layer.getScale () +this_layer.getOffset ();
-        y = (r0 * delta_y_layer + r_1 * delta_y_below + float (y_layer))
+        y = (r0 * delta_y_layer + r_1 * delta_y_below + static_cast<float>(y_layer))
             * this_layer.getScale () + this_layer.getOffset ();
       }
     }
@@ -631,15 +624,15 @@ pcl::keypoints::brisk::ScaleSpace::refine3D (
                                   delta_x_layer, delta_y_layer);
 
     // calculate the relative scale (1D maximum):
-    scale = refine1D_1 (max_below, std::max (float (center),max_layer), max_above,max);
+    scale = refine1D_1 (max_below, std::max (static_cast<float>(center),max_layer), max_above,max);
     if (scale > 1.0)
     {
       // interpolate the position:
       const float r0 = 4.0f - scale * 3.0f;
       const float r1 = 1.0f - r0;
-      x = (r0 * delta_x_layer + r1 * delta_x_above + float (x_layer))
+      x = (r0 * delta_x_layer + r1 * delta_x_above + static_cast<float>(x_layer))
            * this_layer.getScale () + this_layer.getOffset ();
-      y = (r0 * delta_y_layer + r1 * delta_y_above + float (y_layer))
+      y = (r0 * delta_y_layer + r1 * delta_y_above + static_cast<float>(y_layer))
           * this_layer.getScale () + this_layer.getOffset ();
     }
     else
@@ -647,9 +640,9 @@ pcl::keypoints::brisk::ScaleSpace::refine3D (
       // interpolate the position:
       const float r0 = scale * 3.0f - 2.0f;
       const float r_1 = 1.0f - r0;
-      x = (r0 * delta_x_layer + r_1 * delta_x_below + float (x_layer))
+      x = (r0 * delta_x_layer + r_1 * delta_x_below + static_cast<float>(x_layer))
            * this_layer.getScale () + this_layer.getOffset ();
-      y = (r0 * delta_y_layer + r_1 * delta_y_below + float (y_layer))
+      y = (r0 * delta_y_layer + r_1 * delta_y_below + static_cast<float>(y_layer))
            * this_layer.getScale () + this_layer.getOffset ();
     }
   }
@@ -665,7 +658,7 @@ pcl::keypoints::brisk::ScaleSpace::refine3D (
 // return the maximum of score patches above or below
 float 
 pcl::keypoints::brisk::ScaleSpace::getScoreMaxAbove (
-    const uint8_t layer, const int x_layer, const int y_layer,
+    const std::uint8_t layer, const int x_layer, const int y_layer,
     const int threshold, bool& ismax, float& dx, float& dy)
 {
   ismax = false;
@@ -682,33 +675,33 @@ pcl::keypoints::brisk::ScaleSpace::getScoreMaxAbove (
   if (layer % 2 == 0) 
   {
     // octave
-    x_1  = float (4 * (x_layer) - 1 - 2) / 6.0f;
-    x1   = float (4 * (x_layer) - 1 + 2) / 6.0f;
-    y_1  = float (4 * (y_layer) - 1 - 2) / 6.0f;
-    y1   = float (4 * (y_layer) - 1 + 2) / 6.0f;
+    x_1  = static_cast<float>(4 * (x_layer) - 1 - 2) / 6.0f;
+    x1   = static_cast<float>(4 * (x_layer) - 1 + 2) / 6.0f;
+    y_1  = static_cast<float>(4 * (y_layer) - 1 - 2) / 6.0f;
+    y1   = static_cast<float>(4 * (y_layer) - 1 + 2) / 6.0f;
   }
   else
   {
     // intra
-    x_1 = float (6 * (x_layer) - 1 - 3) / 8.0f;
-    x1  = float (6 * (x_layer) - 1 + 3) / 8.0f;
-    y_1 = float (6 * (y_layer) - 1 - 3) / 8.0f;
-    y1  = float (6 * (y_layer) - 1 + 3) / 8.0f;
+    x_1 = static_cast<float>(6 * (x_layer) - 1 - 3) / 8.0f;
+    x1  = static_cast<float>(6 * (x_layer) - 1 + 3) / 8.0f;
+    y_1 = static_cast<float>(6 * (y_layer) - 1 - 3) / 8.0f;
+    y1  = static_cast<float>(6 * (y_layer) - 1 + 3) / 8.0f;
   }
 
   // check the first row
   //int max_x = int (x_1) + 1;
   //int max_y = int (y_1) + 1;
-  int max_x = int (x_1 + 1.0f);
-  int max_y = int (y_1 + 1.0f);
+  int max_x = static_cast<int>(x_1 + 1.0f);
+  int max_y = static_cast<int>(y_1 + 1.0f);
   float tmp_max = 0;
   float max = layer_above.getAgastScore (x_1, y_1, 1,1.0f);
 
   if (max > threshold) return (0);
   //for (int x = int (x_1) + 1; x <= int (x1); x++)
-  for (int x = int (x_1 + 1.0f); x <= int (x1); x++)
+  for (int x = static_cast<int>(x_1 + 1.0f); x <= static_cast<int>(x1); x++)
   {
-    tmp_max = layer_above.getAgastScore (float (x), y_1, 1,1.0f);
+    tmp_max = layer_above.getAgastScore (static_cast<float>(x), y_1, 1,1.0f);
 
     if (tmp_max > threshold) return (0);
     if (tmp_max > max)
@@ -723,22 +716,22 @@ pcl::keypoints::brisk::ScaleSpace::getScoreMaxAbove (
   if (tmp_max > max)
   {
     max = tmp_max;
-    max_x = int (x1);
+    max_x = static_cast<int>(x1);
   }
 
   // middle rows
-  for (int y = int (y_1) + 1; y <= int (y1); y++)
+  for (int y = static_cast<int>(y_1) + 1; y <= static_cast<int>(y1); y++)
   {
-    tmp_max = layer_above.getAgastScore (x_1, float (y), 1);
+    tmp_max = layer_above.getAgastScore (x_1, static_cast<float>(y), 1);
     
     if (tmp_max > threshold) return (0);
     if (tmp_max > max)
     {
       max   = tmp_max;
-      max_x = int (x_1 + 1);
+      max_x = static_cast<int>(x_1 + 1);
       max_y = y;
     }
-    for (int x = int (x_1) + 1; x <= int (x1); x++)
+    for (int x = static_cast<int>(x_1) + 1; x <= static_cast<int>(x1); x++)
     {
       tmp_max = layer_above.getAgastScore (x, y, 1);
 
@@ -750,13 +743,13 @@ pcl::keypoints::brisk::ScaleSpace::getScoreMaxAbove (
         max_y = y;
       }
     }
-    tmp_max = layer_above.getAgastScore(x1,float(y),1);
+    tmp_max = layer_above.getAgastScore(x1,static_cast<float>(y),1);
 
     if (tmp_max > threshold) return 0;
     if (tmp_max > max)
     {
       max   = tmp_max;
-      max_x = int (x1);
+      max_x = static_cast<int>(x1);
       max_y = y;
     }
   }
@@ -767,18 +760,18 @@ pcl::keypoints::brisk::ScaleSpace::getScoreMaxAbove (
   if (tmp_max > max)
   {
     max   = tmp_max;
-    max_x = int (x_1 + 1);
-    max_y = int (y1);
+    max_x = static_cast<int>(x_1 + 1);
+    max_y = static_cast<int>(y1);
   }
-  for (int x = int (x_1) + 1; x <= int (x1); x++)
+  for (int x = static_cast<int>(x_1) + 1; x <= static_cast<int>(x1); x++)
   {
-    tmp_max = layer_above.getAgastScore (float (x), y1, 1);
+    tmp_max = layer_above.getAgastScore (static_cast<float>(x), y1, 1);
 
     if (tmp_max > max)
     {
       max   = tmp_max;
       max_x = x;
-      max_y = int (y1);
+      max_y = static_cast<int>(y1);
     }
   }
   tmp_max = layer_above.getAgastScore (x1, y1, 1);
@@ -786,8 +779,8 @@ pcl::keypoints::brisk::ScaleSpace::getScoreMaxAbove (
   if (tmp_max > max)
   {
     max   = tmp_max;
-    max_x = int (x1);
-    max_y = int (y1);
+    max_x = static_cast<int>(x1);
+    max_y = static_cast<int>(y1);
   }
 
   //find dx/dy:
@@ -807,18 +800,18 @@ pcl::keypoints::brisk::ScaleSpace::getScoreMaxAbove (
                                   dx_1, dy_1);
 
   // calculate dx/dy in above coordinates
-  float real_x = float (max_x) + dx_1;
-  float real_y = float (max_y) + dy_1;
+  float real_x = static_cast<float>(max_x) + dx_1;
+  float real_y = static_cast<float>(max_y) + dy_1;
   bool returnrefined = true;
   if (layer % 2 == 0)
   {
-    dx = (real_x * 6.0f + 1.0f) / 4.0f - float (x_layer);
-    dy = (real_y * 6.0f + 1.0f) / 4.0f - float (y_layer);
+    dx = (real_x * 6.0f + 1.0f) / 4.0f - static_cast<float>(x_layer);
+    dy = (real_y * 6.0f + 1.0f) / 4.0f - static_cast<float>(y_layer);
   }
   else
   {
-    dx = (real_x * 8.0f + 1.0f) / 6.0f - float (x_layer);
-    dy = (real_y * 8.0f + 1.0f) / 6.0f - float (y_layer);
+    dx = (real_x * 8.0f + 1.0f) / 6.0f - static_cast<float>(x_layer);
+    dy = (real_y * 8.0f + 1.0f) / 6.0f - static_cast<float>(y_layer);
   }
 
   // saturate
@@ -837,7 +830,7 @@ pcl::keypoints::brisk::ScaleSpace::getScoreMaxAbove (
 /////////////////////////////////////////////////////////////////////////////////////////
 float 
 pcl::keypoints::brisk::ScaleSpace::getScoreMaxBelow (
-    const uint8_t layer, const int x_layer, const int y_layer,
+    const std::uint8_t layer, const int x_layer, const int y_layer,
     const int threshold, bool& ismax, float& dx, float& dy)
 {
   ismax = false;
@@ -851,17 +844,17 @@ pcl::keypoints::brisk::ScaleSpace::getScoreMaxBelow (
   if (layer % 2 == 0)
   {
     // octave
-    x_1 = float (8 * (x_layer) + 1 - 4) / 6.0f;
-    x1  = float (8 * (x_layer) + 1 + 4) / 6.0f;
-    y_1 = float (8 * (y_layer) + 1 - 4) / 6.0f;
-    y1  = float (8 * (y_layer) + 1 + 4) / 6.0f;
+    x_1 = static_cast<float>(8 * (x_layer) + 1 - 4) / 6.0f;
+    x1  = static_cast<float>(8 * (x_layer) + 1 + 4) / 6.0f;
+    y_1 = static_cast<float>(8 * (y_layer) + 1 - 4) / 6.0f;
+    y1  = static_cast<float>(8 * (y_layer) + 1 + 4) / 6.0f;
   }
   else
   {
-    x_1 = float (6 * (x_layer) + 1 - 3) / 4.0f;
-    x1  = float (6 * (x_layer) + 1 + 3) / 4.0f;
-    y_1 = float (6 * (y_layer) + 1 - 3) / 4.0f;
-    y1  = float (6 * (y_layer) + 1 + 3) / 4.0f;
+    x_1 = static_cast<float>(6 * (x_layer) + 1 - 3) / 4.0f;
+    x1  = static_cast<float>(6 * (x_layer) + 1 + 3) / 4.0f;
+    y_1 = static_cast<float>(6 * (y_layer) + 1 - 3) / 4.0f;
+    y1  = static_cast<float>(6 * (y_layer) + 1 + 3) / 4.0f;
   }
 
   // the layer below
@@ -869,14 +862,14 @@ pcl::keypoints::brisk::ScaleSpace::getScoreMaxBelow (
   pcl::keypoints::brisk::Layer& layer_below = pyramid_[layer-1];
 
   // check the first row
-  int max_x = int (x_1) + 1;
-  int max_y = int (y_1) + 1;
+  int max_x = static_cast<int>(x_1) + 1;
+  int max_y = static_cast<int>(y_1) + 1;
   float tmp_max;
   float max = layer_below.getAgastScore (x_1, y_1, 1);
   if (max > threshold) return (0);
-  for (int x = int (x_1) + 1; x <= int (x1); x++)
+  for (int x = static_cast<int>(x_1) + 1; x <= static_cast<int>(x1); x++)
   {
-    tmp_max = layer_below.getAgastScore (float (x), y_1, 1);
+    tmp_max = layer_below.getAgastScore (static_cast<float>(x), y_1, 1);
     if (tmp_max > threshold) return (0);
     if (tmp_max > max)
     {
@@ -889,21 +882,21 @@ pcl::keypoints::brisk::ScaleSpace::getScoreMaxBelow (
   if (tmp_max > max)
   {
     max   = tmp_max;
-    max_x = int (x1);
+    max_x = static_cast<int>(x1);
   }
 
   // middle rows
-  for (int y = int (y_1) + 1; y <= int (y1); y++)
+  for (int y = static_cast<int>(y_1) + 1; y <= static_cast<int>(y1); y++)
   {
-    tmp_max = layer_below.getAgastScore (x_1, float (y), 1);
+    tmp_max = layer_below.getAgastScore (x_1, static_cast<float>(y), 1);
     if (tmp_max > threshold) return (0);
     if (tmp_max > max)
     {
       max   = tmp_max;
-      max_x = int (x_1 + 1);
+      max_x = static_cast<int>(x_1 + 1);
       max_y = y;
     }
-    for (int x = int (x_1) + 1; x <= int (x1); x++)
+    for (int x = static_cast<int>(x_1) + 1; x <= static_cast<int>(x1); x++)
     {
       tmp_max = layer_below.getAgastScore (x, y, 1);
       if (tmp_max > threshold) return (0);
@@ -940,12 +933,12 @@ pcl::keypoints::brisk::ScaleSpace::getScoreMaxBelow (
         max_y = y;
       }
     }
-    tmp_max = layer_below.getAgastScore (x1, float (y), 1);
+    tmp_max = layer_below.getAgastScore (x1, static_cast<float>(y), 1);
     if (tmp_max > threshold) return (0);
     if (tmp_max > max)
     {
       max   = tmp_max;
-      max_x = int (x1);
+      max_x = static_cast<int>(x1);
       max_y = y;
     }
   }
@@ -955,25 +948,25 @@ pcl::keypoints::brisk::ScaleSpace::getScoreMaxBelow (
   if (tmp_max > max)
   {
     max   = tmp_max;
-    max_x = int (x_1 + 1);
-    max_y = int (y1);
+    max_x = static_cast<int>(x_1 + 1);
+    max_y = static_cast<int>(y1);
   }
-  for (int x = int (x_1) + 1; x <= int (x1); x++)
+  for (int x = static_cast<int>(x_1) + 1; x <= static_cast<int>(x1); x++)
   {
-    tmp_max = layer_below.getAgastScore (float (x), y1, 1);
+    tmp_max = layer_below.getAgastScore (static_cast<float>(x), y1, 1);
     if (tmp_max>max)
     {
       max   = tmp_max;
       max_x = x;
-      max_y = int (y1);
+      max_y = static_cast<int>(y1);
     }
   }
   tmp_max = layer_below.getAgastScore (x1, y1, 1);
   if (tmp_max > max)
   {
     max   = tmp_max;
-    max_x = int (x1);
-    max_y = int (y1);
+    max_x = static_cast<int>(x1);
+    max_y = static_cast<int>(y1);
   }
 
   //find dx/dy:
@@ -993,18 +986,18 @@ pcl::keypoints::brisk::ScaleSpace::getScoreMaxBelow (
                                   dx_1, dy_1);
 
   // calculate dx/dy in above coordinates
-  float real_x = float (max_x) + dx_1;
-  float real_y = float (max_y) + dy_1;
+  float real_x = static_cast<float>(max_x) + dx_1;
+  float real_y = static_cast<float>(max_y) + dy_1;
   bool returnrefined = true;
   if (layer % 2 == 0)
   {
-    dx = (real_x * 6.0f + 1.0f) / 8.0f - float (x_layer);
-    dy = (real_y * 6.0f + 1.0f) / 8.0f - float (y_layer);
+    dx = (real_x * 6.0f + 1.0f) / 8.0f - static_cast<float>(x_layer);
+    dy = (real_y * 6.0f + 1.0f) / 8.0f - static_cast<float>(y_layer);
   }
   else
   {
-    dx = (real_x * 4.0f - 1.0f) / 6.0f - float (x_layer);
-    dy = (real_y * 4.0f - 1.0f) / 6.0f - float (y_layer);
+    dx = (real_x * 4.0f - 1.0f) / 6.0f - static_cast<float>(x_layer);
+    dy = (real_y * 4.0f - 1.0f) / 6.0f - static_cast<float>(y_layer);
   }
 
   // saturate
@@ -1026,9 +1019,9 @@ float
 pcl::keypoints::brisk::ScaleSpace::refine1D ( 
     const float s_05, const float s0, const float s05, float& max)
 {
-  int i_05 = int (1024.0 * s_05 + 0.5);
-  int i0   = int (1024.0 * s0   + 0.5);
-  int i05  = int (1024.0 * s05  + 0.5);
+  int i_05 = static_cast<int>(1024.0 * s_05 + 0.5);
+  int i0   = static_cast<int>(1024.0 * s0   + 0.5);
+  int i05  = static_cast<int>(1024.0 * s05  + 0.5);
 
   //   16.0000  -24.0000    8.0000
   //  -40.0000   54.0000  -14.0000
@@ -1057,7 +1050,7 @@ pcl::keypoints::brisk::ScaleSpace::refine1D (
 
   int three_b = -40 * i_05 + 54 * i0 - 14 * i05;
   // calculate max location:
-  float ret_val = -float (three_b) / float (2 * three_a);
+  float ret_val = -static_cast<float>(three_b) / static_cast<float>(2 * three_a);
   // saturate and return
   if (ret_val < 0.75f)
     ret_val= 0.75f;
@@ -1065,7 +1058,7 @@ pcl::keypoints::brisk::ScaleSpace::refine1D (
     if (ret_val > 1.5f) 
       ret_val= 1.5f; // allow to be slightly off bounds ...?
   int three_c = +24 * i_05  -27 * i0    +6 * i05;
-  max = float (three_c) + float (three_a) * ret_val * ret_val + float (three_b) * ret_val;
+  max = static_cast<float>(three_c) + static_cast<float>(three_a) * ret_val * ret_val + static_cast<float>(three_b) * ret_val;
   max /= 3072.0f;
   return (ret_val);
 }
@@ -1075,9 +1068,9 @@ float
 pcl::keypoints::brisk::ScaleSpace::refine1D_1 (
     const float s_05, const float s0, const float s05, float& max)
 {
-  int i_05 = int (1024.0 *s_05 + 0.5);
-  int i0   = int (1024.0 *s0   + 0.5);
-  int i05  = int (1024.0 *s05  + 0.5);
+  int i_05 = static_cast<int>(1024.0 *s_05 + 0.5);
+  int i0   = static_cast<int>(1024.0 *s0   + 0.5);
+  int i05  = static_cast<int>(1024.0 *s05  + 0.5);
 
     //  4.5000   -9.0000    4.5000
     //-10.5000   18.0000   -7.5000
@@ -1106,7 +1099,7 @@ pcl::keypoints::brisk::ScaleSpace::refine1D_1 (
 
   int two_b = -21 * i_05 + 36 * i0 - 15 * i05;
   // calculate max location:
-  float ret_val = -float (two_b) / float (2 * two_a);
+  float ret_val = -static_cast<float>(two_b) / static_cast<float>(2 * two_a);
   // saturate and return
   if (ret_val < 0.6666666666666666666666666667f)
     ret_val = 0.666666666666666666666666667f;
@@ -1114,7 +1107,7 @@ pcl::keypoints::brisk::ScaleSpace::refine1D_1 (
     if (ret_val > 1.33333333333333333333333333f) 
       ret_val = 1.333333333333333333333333333f;
   int two_c = +12 * i_05  -16 * i0    +6 * i05;
-  max = float (two_c) + float (two_a) * ret_val * ret_val + float (two_b) * ret_val;
+  max = static_cast<float>(two_c) + static_cast<float>(two_a) * ret_val * ret_val + static_cast<float>(two_b) * ret_val;
   max /= 2048.0f;
   return (ret_val);
 }
@@ -1124,9 +1117,9 @@ float
 pcl::keypoints::brisk::ScaleSpace::refine1D_2 (
     const float s_05, const float s0, const float s05, float& max)
 {
-  int i_05 = int (1024.0 * s_05 + 0.5);
-  int i0   = int (1024.0 * s0   + 0.5);
-  int i05  = int (1024.0 * s05  + 0.5);
+  int i_05 = static_cast<int>(1024.0 * s_05 + 0.5);
+  int i0   = static_cast<int>(1024.0 * s0   + 0.5);
+  int i05  = static_cast<int>(1024.0 * s05  + 0.5);
 
   //   18.0000  -30.0000   12.0000
   //  -45.0000   65.0000  -20.0000
@@ -1155,7 +1148,7 @@ pcl::keypoints::brisk::ScaleSpace::refine1D_2 (
 
   int b = -5 * i_05 + 8 * i0 - 3 * i05;
   // calculate max location:
-  float ret_val = -float (b) / float (2 * a);
+  float ret_val = -static_cast<float>(b) / static_cast<float>(2 * a);
   // saturate and return
   if (ret_val < 0.7f) 
     ret_val = 0.7f;
@@ -1163,7 +1156,7 @@ pcl::keypoints::brisk::ScaleSpace::refine1D_2 (
     if (ret_val > 1.5f) 
       ret_val = 1.5f; // allow to be slightly off bounds ...?
   int c = +3 * i_05  -3 * i0    +1 * i05;
-  max = float (c) + float(a) * ret_val * ret_val + float (b) * ret_val;
+  max = static_cast<float>(c) + static_cast<float>(a) * ret_val * ret_val + static_cast<float>(b) * ret_val;
   max /= 1024.0f;
   return (ret_val);
 }
@@ -1196,7 +1189,7 @@ pcl::keypoints::brisk::ScaleSpace::subpixel2D (
   {
     delta_x = 0.0f;
     delta_y = 0.0f;
-    return (float (coeff6) / 18.0f);
+    return (static_cast<float>(coeff6) / 18.0f);
   }
 
   if (!(H_det > 0 && coeff1 < 0))
@@ -1223,12 +1216,12 @@ pcl::keypoints::brisk::ScaleSpace::subpixel2D (
       tmp_max = tmp;
       delta_x = -1.0f; delta_y = -1.0f;
     }
-    return (float (tmp_max + coeff1 + coeff2 + coeff6) / 18.0f);
+    return (static_cast<float>(tmp_max + coeff1 + coeff2 + coeff6) / 18.0f);
   }
 
   // this is hopefully the normal outcome of the Hessian test
-  delta_x = float (2 * coeff2 * coeff3 - coeff4 * coeff5) / float (-H_det);
-  delta_y = float (2 * coeff1 * coeff4 - coeff3 * coeff5) / float (-H_det);
+  delta_x = static_cast<float>(2 * coeff2 * coeff3 - coeff4 * coeff5) / static_cast<float>(-H_det);
+  delta_y = static_cast<float>(2 * coeff1 * coeff4 - coeff3 * coeff5) / static_cast<float>(-H_det);
   // TODO: this is not correct, but easy, so perform a real boundary maximum search:
   bool tx = false; bool tx_ = false; bool ty = false; bool ty_ = false;
   if (delta_x > 1.0f) tx = true;
@@ -1243,55 +1236,52 @@ pcl::keypoints::brisk::ScaleSpace::subpixel2D (
     if (tx) 
     {
       delta_x1 = 1.0f;
-      delta_y1 = -float (coeff4 + coeff5) / float (2.0 * coeff2);
+      delta_y1 = -static_cast<float>(coeff4 + coeff5) / static_cast<float>(2.0 * coeff2);
       if (delta_y1 > 1.0f) delta_y1 = 1.0f; else if (delta_y1 < -1.0f) delta_y1 = -1.0f;
     }
     else if (tx_) 
     {
       delta_x1 = -1.0f;
-      delta_y1 = -float (coeff4 - coeff5) / float (2.0 * coeff2);
+      delta_y1 = -static_cast<float>(coeff4 - coeff5) / static_cast<float>(2.0 * coeff2);
       if (delta_y1 > 1.0f) delta_y1 = 1.0f; else if (delta_y1 < -1.0f) delta_y1 = -1.0f;
     }
     if (ty) 
     {
       delta_y2 = 1.0f;
-      delta_x2 = -float (coeff3 + coeff5) / float (2.0 * coeff1);
+      delta_x2 = -static_cast<float>(coeff3 + coeff5) / static_cast<float>(2.0 * coeff1);
       if (delta_x2 > 1.0f) delta_x2 = 1.0f; else if (delta_x2 < -1.0f) delta_x2 = -1.0f;
     }
     else if (ty_) 
     {
       delta_y2 = -1.0f;
-      delta_x2 = -float (coeff3 - coeff5) / float (2.0 * coeff1);
+      delta_x2 = -static_cast<float>(coeff3 - coeff5) / static_cast<float>(2.0 * coeff1);
       if (delta_x2 > 1.0f) delta_x2 = 1.0f; else if (delta_x2 < -1.0f) delta_x2 = -1.0f;
     }
     // insert both options for evaluation which to pick
-    float max1 = (float (coeff1) * delta_x1 * delta_x1 + float (coeff2) * delta_y1 * delta_y1
-                 +float (coeff3) * delta_x1 + float (coeff4) * delta_y1
-                 +float (coeff5) * delta_x1 * delta_y1
-                 +float (coeff6)) / 18.0f;
-    float max2 = (float (coeff1) * delta_x2 * delta_x2 + float (coeff2) * delta_y2 * delta_y2
-                 +float (coeff3) * delta_x2 + float (coeff4) * delta_y2
-                 +float (coeff5) * delta_x2 * delta_y2
-                 +float (coeff6)) / 18.0f;
+    float max1 = (static_cast<float>(coeff1) * delta_x1 * delta_x1 + static_cast<float>(coeff2) * delta_y1 * delta_y1
+                 +static_cast<float>(coeff3) * delta_x1 + static_cast<float>(coeff4) * delta_y1
+                 +static_cast<float>(coeff5) * delta_x1 * delta_y1
+                 +static_cast<float>(coeff6)) / 18.0f;
+    float max2 = (static_cast<float>(coeff1) * delta_x2 * delta_x2 + static_cast<float>(coeff2) * delta_y2 * delta_y2
+                 +static_cast<float>(coeff3) * delta_x2 + static_cast<float>(coeff4) * delta_y2
+                 +static_cast<float>(coeff5) * delta_x2 * delta_y2
+                 +static_cast<float>(coeff6)) / 18.0f;
     if (max1 > max2) 
     {
       delta_x = delta_x1;
       delta_y = delta_x1;
       return (max1);
     }
-    else
-    {
-      delta_x = delta_x2;
-      delta_y = delta_x2;
-      return (max2);
-    }
+    delta_x = delta_x2;
+    delta_y = delta_x2;
+    return (max2);
   }
 
   // this is the case of the maximum inside the boundaries:
-  return ((float (coeff1) * delta_x * delta_x + float (coeff2) * delta_y * delta_y
-          +float (coeff3) * delta_x + float (coeff4) * delta_y
-          +float (coeff5) * delta_x * delta_y
-          +float (coeff6)) / 18.0f);
+  return ((static_cast<float>(coeff1) * delta_x * delta_x + static_cast<float>(coeff2) * delta_y * delta_y
+          +static_cast<float>(coeff3) * delta_x + static_cast<float>(coeff4) * delta_y
+          +static_cast<float>(coeff5) * delta_x * delta_y
+          +static_cast<float>(coeff6)) / 18.0f);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -1352,25 +1342,25 @@ pcl::keypoints::brisk::Layer::Layer (const pcl::keypoints::brisk::Layer& layer, 
 // wraps the agast class
 void 
 pcl::keypoints::brisk::Layer::getAgastPoints (
-    uint8_t threshold, std::vector<pcl::PointUV, Eigen::aligned_allocator<pcl::PointUV> > &keypoints)
+    std::uint8_t threshold, std::vector<pcl::PointUV, Eigen::aligned_allocator<pcl::PointUV> > &keypoints)
 {
   oast_detector_->setThreshold (threshold);
-  oast_detector_->detect (&img_[0], keypoints);
+  oast_detector_->detect (img_.data(), keypoints);
 
   // also write scores
-  const int num = int (keypoints.size ());
+  const int num = static_cast<int>(keypoints.size ());
   const int imcols = img_width_;
 
   for (int i = 0; i < num; i++)
   {
-    const int offs = int (keypoints[i].u + keypoints[i].v * float (imcols));
-    *(&scores_[0] + offs) = static_cast<unsigned char> (oast_detector_->computeCornerScore (&img_[0] + offs));
+    const int offs = static_cast<int>(keypoints[i].u + keypoints[i].v * static_cast<float>(imcols));
+    *((scores_).data() + offs) = static_cast<unsigned char> (oast_detector_->computeCornerScore (img_.data() + offs));
   }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-pcl::uint8_t 
-pcl::keypoints::brisk::Layer::getAgastScore (int x, int y, uint8_t threshold)
+std::uint8_t 
+pcl::keypoints::brisk::Layer::getAgastScore (int x, int y, std::uint8_t threshold)
 {
   if (x < 3 || y < 3) 
   {
@@ -1380,20 +1370,20 @@ pcl::keypoints::brisk::Layer::getAgastScore (int x, int y, uint8_t threshold)
   {
     return (0);
   }
-  uint8_t& score = *(&scores_[0] + x + y * img_width_);
+  std::uint8_t& score = *(scores_.data() + x + y * img_width_);
   if (score > 2) 
   {
     return (score);
   }
   oast_detector_->setThreshold (threshold - 1);
-  score = uint8_t (oast_detector_->computeCornerScore (&img_[0] + x + y * img_width_));
+  score = static_cast<std::uint8_t>(oast_detector_->computeCornerScore (img_.data() + x + y * img_width_));
   if (score < threshold) score = 0;
   return (score);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-pcl::uint8_t 
-pcl::keypoints::brisk::Layer::getAgastScore_5_8 (int x, int y, uint8_t threshold)
+std::uint8_t 
+pcl::keypoints::brisk::Layer::getAgastScore_5_8 (int x, int y, std::uint8_t threshold)
 {
   if (x < 2 || y < 2)
   {
@@ -1406,23 +1396,23 @@ pcl::keypoints::brisk::Layer::getAgastScore_5_8 (int x, int y, uint8_t threshold
   }
 
   agast_detector_5_8_->setThreshold (threshold - 1);
-  uint8_t score = uint8_t (agast_detector_5_8_->computeCornerScore (&img_[0] + x + y * img_width_));
+  auto score = static_cast<std::uint8_t>(agast_detector_5_8_->computeCornerScore (img_.data() + x + y * img_width_));
   if (score < threshold) score = 0;
   return (score);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-pcl::uint8_t 
-pcl::keypoints::brisk::Layer::getAgastScore (float xf, float yf, uint8_t threshold, float scale)
+std::uint8_t 
+pcl::keypoints::brisk::Layer::getAgastScore (float xf, float yf, std::uint8_t threshold, float scale)
 {
   if (scale <= 1.0f)
   {
     // just do an interpolation inside the layer
-    const int x = int (xf);
-    const float rx1 = xf - float (x);
+    const int x = static_cast<int>(xf);
+    const float rx1 = xf - static_cast<float>(x);
     const float rx = 1.0f - rx1;
-    const int y = int (yf);
-    const float ry1 = yf -float (y);
+    const int y = static_cast<int>(yf);
+    const float ry1 = yf -static_cast<float>(y);
     const float ry  = 1.0f -ry1;
 
     const float value = rx  * ry  * getAgastScore (x,     y,     threshold)+
@@ -1431,34 +1421,32 @@ pcl::keypoints::brisk::Layer::getAgastScore (float xf, float yf, uint8_t thresho
             rx1 * ry1 * getAgastScore (x + 1, y + 1, threshold);
 
 
-    return (static_cast<uint8_t> (value));
+    return (static_cast<std::uint8_t> (value));
   }
-  else
-  {
-    // this means we overlap area smoothing
-    const float halfscale = scale / 2.0f;
-    // get the scores first:
-    for (int x = int (xf - halfscale); x <= int (xf + halfscale + 1.0f); x++)
-      for (int y = int (yf - halfscale); y <= int (yf + halfscale + 1.0f); y++)
-        getAgastScore (x, y, threshold);
-    // get the smoothed value
-    return (getValue (scores_, img_width_, img_height_, xf, yf, scale));
-  }
+
+  // this means we overlap area smoothing
+  const float halfscale = scale / 2.0f;
+  // get the scores first:
+  for (int x = static_cast<int>(xf - halfscale); x <= static_cast<int>(xf + halfscale + 1.0f); x++)
+    for (int y = static_cast<int>(yf - halfscale); y <= static_cast<int>(yf + halfscale + 1.0f); y++)
+      getAgastScore (x, y, threshold);
+  // get the smoothed value
+  return (getValue (scores_, img_width_, img_height_, xf, yf, scale));
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
 // access gray values (smoothed/interpolated)
-pcl::uint8_t 
+std::uint8_t 
 pcl::keypoints::brisk::Layer::getValue (
     const std::vector<unsigned char>& mat, 
     int width, int height,
     float xf, float yf, float scale)
 {
-  (void)height;
+  pcl::utils::ignore(height);
   assert (!mat.empty ());
   // get the position
-  const int x = int (floor (xf));
-  const int y = int (floor (yf));
+  const int x = static_cast<int>(std::floor (xf));
+  const int y = static_cast<int>(std::floor (yf));
   const std::vector<unsigned char>& image = mat;
   const int& imagecols = width;
 
@@ -1471,28 +1459,28 @@ pcl::keypoints::brisk::Layer::getValue (
   if (sigma_half < 0.5)
   {
     // interpolation multipliers:
-		const int r_x   = static_cast<int> ((xf - float (x)) * 1024);
-		const int r_y   = static_cast<int> ((yf - float (y)) * 1024);
+		const int r_x   = static_cast<int> ((xf - static_cast<float>(x)) * 1024);
+		const int r_y   = static_cast<int> ((yf - static_cast<float>(y)) * 1024);
     const int r_x_1 = (1024 - r_x);
     const int r_y_1 = (1024 - r_y);
-    const unsigned char* ptr = &image[0] + x + y * imagecols;
+    const unsigned char* ptr = image.data() + x + y * imagecols;
 
     // just interpolate:
-    ret_val = (r_x_1 * r_y_1 * int (*ptr));
+    ret_val = (r_x_1 * r_y_1 * static_cast<int>(*ptr));
     ptr++;
-    ret_val += (r_x * r_y_1 * int (*ptr));
+    ret_val += (r_x * r_y_1 * static_cast<int>(*ptr));
     ptr += imagecols;
-    ret_val += (r_x * r_y * int (*ptr));
+    ret_val += (r_x * r_y * static_cast<int>(*ptr));
     ptr--;
-    ret_val += (r_x_1 * r_y * int (*ptr));
-    return (static_cast<uint8_t> (0xFF & ((ret_val + 512) / 1024 / 1024)));
+    ret_val += (r_x_1 * r_y * static_cast<int>(*ptr));
+    return (static_cast<std::uint8_t> (0xFF & ((ret_val + 512) / 1024 / 1024)));
   }
 
   // this is the standard case (simple, not speed optimized yet):
 
   // scaling:
   const int scaling  = static_cast<int> (4194304.0f / area);
-  const int scaling2 = static_cast<int> (float (scaling) * area / 1024.0f);
+  const int scaling2 = static_cast<int> (static_cast<float>(scaling) * area / 1024.0f);
 
   // calculate borders
   const float x_1 = xf - sigma_half;
@@ -1500,37 +1488,37 @@ pcl::keypoints::brisk::Layer::getValue (
   const float y_1 = yf - sigma_half;
   const float y1  = yf + sigma_half;
 
-  const int x_left   = int (x_1 + 0.5f);
-  const int y_top    = int (y_1 + 0.5f);
-  const int x_right  = int (x1 + 0.5f);
-  const int y_bottom = int (y1 + 0.5f);
+  const int x_left   = static_cast<int>(x_1 + 0.5f);
+  const int y_top    = static_cast<int>(y_1 + 0.5f);
+  const int x_right  = static_cast<int>(x1 + 0.5f);
+  const int y_bottom = static_cast<int>(y1 + 0.5f);
 
   // overlap area - multiplication factors:
-  const float r_x_1 = float (x_left) - x_1 + 0.5f;
-  const float r_y_1 = float (y_top)  - y_1 + 0.5f;
-  const float r_x1  = x1 - float (x_right) + 0.5f;
-  const float r_y1  = y1 - float (y_bottom) + 0.5f;
+  const float r_x_1 = static_cast<float>(x_left) - x_1 + 0.5f;
+  const float r_y_1 = static_cast<float>(y_top)  - y_1 + 0.5f;
+  const float r_x1  = x1 - static_cast<float>(x_right) + 0.5f;
+  const float r_y1  = y1 - static_cast<float>(y_bottom) + 0.5f;
   const int dx = x_right  - x_left - 1;
   const int dy = y_bottom - y_top  - 1;
-  const int A = static_cast<int> ((r_x_1 * r_y_1) * float (scaling));
-  const int B = static_cast<int> ((r_x1  * r_y_1) * float (scaling));
-  const int C = static_cast<int> ((r_x1  * r_y1)  * float (scaling));
-  const int D = static_cast<int> ((r_x_1 * r_y1)  * float (scaling));
-  const int r_x_1_i = static_cast<int> (r_x_1 * float (scaling));
-  const int r_y_1_i = static_cast<int> (r_y_1 * float (scaling));
-  const int r_x1_i  = static_cast<int> (r_x1  * float (scaling));
-  const int r_y1_i  = static_cast<int> (r_y1  * float (scaling));
+  const int A = static_cast<int> ((r_x_1 * r_y_1) * static_cast<float>(scaling));
+  const int B = static_cast<int> ((r_x1  * r_y_1) * static_cast<float>(scaling));
+  const int C = static_cast<int> ((r_x1  * r_y1)  * static_cast<float>(scaling));
+  const int D = static_cast<int> ((r_x_1 * r_y1)  * static_cast<float>(scaling));
+  const int r_x_1_i = static_cast<int> (r_x_1 * static_cast<float>(scaling));
+  const int r_y_1_i = static_cast<int> (r_y_1 * static_cast<float>(scaling));
+  const int r_x1_i  = static_cast<int> (r_x1  * static_cast<float>(scaling));
+  const int r_y1_i  = static_cast<int> (r_y1  * static_cast<float>(scaling));
 
   // now the calculation:
-  const unsigned char* ptr = &image[0] + x_left + imagecols * y_top;
+  const unsigned char* ptr = image.data() + x_left + imagecols * y_top;
   // first row:
-  ret_val = A * int (*ptr);
+  ret_val = A * static_cast<int>(*ptr);
   ptr++;
   const unsigned char* end1 = ptr + dx;
   for (; ptr < end1; ptr++)
-    ret_val += r_y_1_i * int (*ptr);
+    ret_val += r_y_1_i * static_cast<int>(*ptr);
 
-  ret_val += B * int (*ptr);
+  ret_val += B * static_cast<int>(*ptr);
 
   // middle ones:
   ptr += imagecols - dx - 1;
@@ -1538,25 +1526,25 @@ pcl::keypoints::brisk::Layer::getValue (
 
   for (; ptr < end_j; ptr += imagecols - dx - 1)
   {
-    ret_val += r_x_1_i * int (*ptr);
+    ret_val += r_x_1_i * static_cast<int>(*ptr);
     ptr++;
     const unsigned char* end2 = ptr + dx;
     for (; ptr < end2; ptr++)
-      ret_val += int (*ptr) * scaling;
+      ret_val += static_cast<int>(*ptr) * scaling;
 
-    ret_val += r_x1_i * int (*ptr);
+    ret_val += r_x1_i * static_cast<int>(*ptr);
   }
 
   // last row:
-  ret_val += D * int (*ptr);
+  ret_val += D * static_cast<int>(*ptr);
   ptr++;
   const unsigned char* end3 = ptr + dx;
   for (; ptr < end3; ptr++)
-    ret_val += r_y1_i * int (*ptr);
+    ret_val += r_y1_i * static_cast<int>(*ptr);
 
-  ret_val += C * int (*ptr);
+  ret_val += C * static_cast<int>(*ptr);
 
-  return (static_cast<uint8_t> (0xFF & ((ret_val + scaling2 / 2) / scaling2 / 1024)));
+  return (static_cast<std::uint8_t> (0xFF & ((ret_val + scaling2 / 2) / scaling2 / 1024)));
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -1568,24 +1556,22 @@ pcl::keypoints::brisk::Layer::halfsample (
     std::vector<unsigned char>& dstimg,
     int dstwidth, int dstheight)
 {
-  (void)dstheight;
+  pcl::utils::ignore(dstheight);
 #if defined(__SSSE3__) && !defined(__i386__)
-  const unsigned short leftoverCols = static_cast<unsigned short> ((srcwidth % 16) / 2); // take care with border...
+  const auto leftoverCols = static_cast<unsigned short> ((srcwidth % 16) / 2); // take care with border...
   const bool noleftover = (srcwidth % 16) == 0; // note: leftoverCols can be zero but this still false...
 
   // make sure the destination image is of the right size:
-  assert (floor (double (srcwidth) / 2.0) == dstwidth);
-  assert (floor (double (srcheight) / 2.0) == dstheight);
+  assert (std::floor (double (srcwidth) / 2.0) == dstwidth);
+  assert (std::floor (double (srcheight) / 2.0) == dstheight);
 
   // mask needed later:
-  register __m128i mask = _mm_set_epi32 (0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF);
-  // to be added in order to make successive averaging correct:
-  register __m128i ones = _mm_set_epi32 (0x11111111, 0x11111111, 0x11111111, 0x11111111);
+  __m128i mask = _mm_set_epi32 (0x00FF00FF, 0x00FF00FF, 0x00FF00FF, 0x00FF00FF);
 
   // data pointers:
-  const __m128i* p1 = reinterpret_cast<const __m128i*> (&srcimg[0]);
-  const __m128i* p2 = reinterpret_cast<const __m128i*> (&srcimg[0] + srcwidth);
-  __m128i* p_dest = reinterpret_cast<__m128i*> (&dstimg[0]);
+  const auto* p1 = reinterpret_cast<const __m128i*> (srcimg.data());
+  const auto* p2 = reinterpret_cast<const __m128i*> (srcimg.data() + srcwidth);
+  auto* p_dest = reinterpret_cast<__m128i*> (dstimg.data());
   unsigned char* p_dest_char;//=(unsigned char*)p_dest;
 
   // size:
@@ -1595,10 +1581,7 @@ pcl::keypoints::brisk::Layer::halfsample (
   unsigned int row = 0;
   const unsigned int end = hsize / 2;
   bool half_end;
-  if (hsize % 2 == 0)
-    half_end = false;
-  else
-    half_end = true;
+  half_end = hsize % 2 != 0;
   while (p2 < p_end)
   {
     for (unsigned int i = 0; i < end; i++)
@@ -1617,8 +1600,7 @@ pcl::keypoints::brisk::Layer::halfsample (
         lower = _mm_loadu_si128 (p2);
       }
 
-      __m128i result1 = _mm_adds_epu8 (upper, ones);
-      result1 = _mm_avg_epu8 (upper, lower);
+      __m128i result1 = _mm_avg_epu8 (upper, lower);
 
       // increment the pointers:
       p1++;
@@ -1627,8 +1609,7 @@ pcl::keypoints::brisk::Layer::halfsample (
       // load the two blocks of memory:
       upper = _mm_loadu_si128 (p1);
       lower = _mm_loadu_si128 (p2);
-      __m128i result2 = _mm_adds_epu8 (upper, ones);
-      result2 = _mm_avg_epu8 (upper, lower);
+      __m128i result2 = _mm_avg_epu8 (upper, lower);
       // calculate the shifted versions:
       __m128i result1_shifted = _mm_srli_si128 (result1, 1);
       __m128i result2_shifted = _mm_srli_si128 (result2, 1);
@@ -1664,8 +1645,7 @@ pcl::keypoints::brisk::Layer::halfsample (
         lower = _mm_loadu_si128 (p2);
       }
 
-      __m128i result1 = _mm_adds_epu8 (upper, ones);
-      result1 = _mm_avg_epu8 (upper, lower);
+	  __m128i result1 = _mm_avg_epu8 (upper, lower);
 
       // increment the pointers:
       p1++;
@@ -1674,13 +1654,13 @@ pcl::keypoints::brisk::Layer::halfsample (
       // compute horizontal pairwise average and store
       p_dest_char = reinterpret_cast<unsigned char*> (p_dest);
 #ifdef __GNUC__
-      typedef unsigned char __attribute__ ((__may_alias__)) UCHAR_ALIAS;
+      using UCHAR_ALIAS __attribute__ ((__may_alias__)) = unsigned char;
 #endif
 #ifdef _MSC_VER
       // Todo: find the equivalent to may_alias
       #define UCHAR_ALIAS unsigned char //__declspec(noalias)
 #endif
-      const UCHAR_ALIAS* result = reinterpret_cast<const UCHAR_ALIAS*> (&result1);
+      const auto* result = reinterpret_cast<const UCHAR_ALIAS*> (&result1);
       for (unsigned int j = 0; j < 8; j++)
       {
         *(p_dest_char++) = static_cast<unsigned char> ((*(result + 2 * j) + *(result + 2 * j + 1)) / 2);
@@ -1693,35 +1673,31 @@ pcl::keypoints::brisk::Layer::halfsample (
     if (noleftover)
     {
       row++;
-      p_dest = reinterpret_cast<__m128i*> (&dstimg[0] + row * dstwidth);
-      p1 = reinterpret_cast<const __m128i*> (&srcimg[0] + 2 * row * srcwidth);
+      p_dest = reinterpret_cast<__m128i*> (dstimg.data() + row * dstwidth);
+      p1 = reinterpret_cast<const __m128i*> (srcimg.data() + 2 * row * srcwidth);
       //p2=(__m128i*)(srcimg.data+(2*row+1)*srcwidth);
       //p1+=hsize;
       p2 = p1 + hsize;
     }
     else
     {
-      const unsigned char* p1_src_char = reinterpret_cast<const unsigned char*> (p1);
-      const unsigned char* p2_src_char = reinterpret_cast<const unsigned char*> (p2);
+      const auto* p1_src_char = reinterpret_cast<const unsigned char*> (p1);
+      const auto* p2_src_char = reinterpret_cast<const unsigned char*> (p2);
       for (unsigned int k = 0; k < leftoverCols; k++)
       {
-        unsigned short tmp = static_cast<unsigned short> (p1_src_char[k] + p1_src_char[k+1]+ p2_src_char[k] + p2_src_char[k+1]);
+        auto tmp = static_cast<unsigned short> (p1_src_char[k] + p1_src_char[k+1]+ p2_src_char[k] + p2_src_char[k+1]);
         *(p_dest_char++) = static_cast<unsigned char>(tmp / 4);
       }
       // done with the two rows:
       row++;
-      p_dest = reinterpret_cast<__m128i*> (&dstimg[0] + row * dstwidth);
-      p1 = reinterpret_cast<const __m128i*> (&srcimg[0] + 2 * row * srcwidth);
-      p2 = reinterpret_cast<const __m128i*> (&srcimg[0] + (2 * row + 1) * srcwidth);
+      p_dest = reinterpret_cast<__m128i*> (dstimg.data() + row * dstwidth);
+      p1 = reinterpret_cast<const __m128i*> (srcimg.data() + 2 * row * srcwidth);
+      p2 = reinterpret_cast<const __m128i*> (srcimg.data() + (2 * row + 1) * srcwidth);
     }
   }
 #else
-  (void) (srcimg);
-  (void) (srcwidth);
-  (void) (srcheight);
-  (void) (dstimg); 
-  (void) (dstwidth);
-  PCL_ERROR("brisk without SSSE3 support not implemented");
+  pcl::utils::ignore(srcimg, srcwidth, srcheight, dstimg, dstwidth);
+  PCL_ERROR("brisk without SSSE3 support not implemented\n");
 #endif
 }
 
@@ -1733,25 +1709,25 @@ pcl::keypoints::brisk::Layer::twothirdsample (
     std::vector<unsigned char>& dstimg,
     int dstwidth, int dstheight)
 {
-  (void)dstheight;
+  pcl::utils::ignore(dstheight);
 #if defined(__SSSE3__) && !defined(__i386__)
-  const unsigned short leftoverCols = static_cast<unsigned short> (((srcwidth / 3) * 3) % 15);// take care with border...
+  const auto leftoverCols = static_cast<unsigned short> (((srcwidth / 3) * 3) % 15);// take care with border...
 
   // make sure the destination image is of the right size:
-  assert (floor (double (srcwidth) / 3.0 * 2.0) == dstwidth);
-  assert (floor (double (srcheight) / 3.0 * 2.0) == dstheight);
+  assert (std::floor (double (srcwidth) / 3.0 * 2.0) == dstwidth);
+  assert (std::floor (double (srcheight) / 3.0 * 2.0) == dstheight);
 
   // masks:
-  register __m128i mask1 = _mm_set_epi8 (char(0x80),char(0x80),char(0x80),char(0x80),char(0x80),char(0x80),char(0x80),12,char(0x80),10,char(0x80),7,char(0x80),4,char(0x80),1);
-  register __m128i mask2 = _mm_set_epi8 (char(0x80),char(0x80),char(0x80),char(0x80),char(0x80),char(0x80),12,char(0x80),10,char(0x80),7,char(0x80),4,char(0x80),1,char(0x80));
-  register __m128i mask = _mm_set_epi8 (char(0x80),char(0x80),char(0x80),char(0x80),char(0x80),char(0x80),14,12,11,9,8,6,5,3,2,0);
-  register __m128i store_mask = _mm_set_epi8 (0x0,0x0,0x0,0x0,0x0,0x0,char(0x80),char(0x80),char(0x80),char(0x80),char(0x80),char(0x80),char(0x80),char(0x80),char(0x80),char(0x80));
+  __m128i mask1 = _mm_set_epi8 (static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),12,static_cast<char>(0x80),10,static_cast<char>(0x80),7,static_cast<char>(0x80),4,static_cast<char>(0x80),1);
+  __m128i mask2 = _mm_set_epi8 (static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),12,static_cast<char>(0x80),10,static_cast<char>(0x80),7,static_cast<char>(0x80),4,static_cast<char>(0x80),1,static_cast<char>(0x80));
+  __m128i mask = _mm_set_epi8 (static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),14,12,11,9,8,6,5,3,2,0);
+  __m128i store_mask = _mm_set_epi8 (0x0,0x0,0x0,0x0,0x0,0x0,static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80),static_cast<char>(0x80));
 
   // data pointers:
-  const unsigned char* p1 = &srcimg[0];
+  const unsigned char* p1 = srcimg.data();
   const unsigned char* p2 = p1 + srcwidth;
   const unsigned char* p3 = p2 + srcwidth;
-  unsigned char* p_dest1 = &dstimg[0];
+  unsigned char* p_dest1 = dstimg.data();
   unsigned char* p_dest2 = p_dest1 + dstwidth;
   const unsigned char* p_end = p1 + (srcwidth * srcheight);
 
@@ -1823,19 +1799,15 @@ pcl::keypoints::brisk::Layer::twothirdsample (
     row_dest += 2;
 
     // reset pointers
-    p1 = &srcimg[0] + row * srcwidth;
+    p1 = srcimg.data() + row * srcwidth;
     p2 = p1 + srcwidth;
     p3 = p2 + srcwidth;
-    p_dest1 = &dstimg[0] + row_dest * dstwidth;
+    p_dest1 = dstimg.data() + row_dest * dstwidth;
     p_dest2 = p_dest1 + dstwidth;
   }
 #else
-  (void) (srcimg);
-  (void) (srcwidth);
-  (void) (srcheight);
-  (void) (dstimg); 
-  (void) (dstwidth);
-  PCL_ERROR("brisk without SSSE3 support not implemented");
+  pcl::utils::ignore(srcimg, srcwidth, srcheight, dstimg, dstwidth);
+  PCL_ERROR("brisk without SSSE3 support not implemented\n");
 #endif
 }
 

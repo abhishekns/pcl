@@ -58,7 +58,7 @@ The programmer can decide to loop over any or all of the steps.
 .. image:: images/registration/block_diagram_single_iteration.jpg
     :align: center
 
-The computational steps for two datasets are straighforward:
+The computational steps for two datasets are straightforward:
 
   * from a set of points, identify **interest points** (i.e., **keypoints**) that best represent the scene in both datasets;
   * at each keypoint, compute a **feature descriptor**;
@@ -84,7 +84,7 @@ keypoints as well. The problem with "feeding two kinect datasets into a correspo
 Feature descriptors
 ===================
 
-Based on the keypoints found we have to extract [features](http://www.pointclouds.org/documentation/tutorials/how_features_work.php), where we assemble the information and generate vectors to compare them with each other. Again there
+Based on the keypoints found we have to extract `features <https://pcl.readthedocs.io/projects/tutorials/en/master/how_features_work.html>`_, where we assemble the information and generate vectors to compare them with each other. Again there
 is a number of feature options to choose from, for example NARF, FPFH, BRIEF or
 SIFT.
 

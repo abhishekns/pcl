@@ -37,11 +37,12 @@
  *
  */
 
-#ifndef PCL_SHOT_H_
-#define PCL_SHOT_H_
+#pragma once
 
 #include <pcl/point_types.h>
 #include <pcl/features/feature.h>
+
+#include <array>  // for sRGB_LUT, sXYZ_LUT
 
 namespace pcl
 {
@@ -69,8 +70,8 @@ namespace pcl
                              public FeatureWithLocalReferenceFrames<PointInT, PointRFT>
   {
     public:
-      typedef boost::shared_ptr<SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT> > Ptr;
-      typedef boost::shared_ptr<const SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT> > ConstPtr;
+      using Ptr = shared_ptr<SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT> >;
+      using ConstPtr = shared_ptr<const SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT> >;
       using Feature<PointInT, PointOutT>::feature_name_;
       using Feature<PointInT, PointOutT>::getClassName;
       using Feature<PointInT, PointOutT>::input_;
@@ -83,28 +84,22 @@ namespace pcl
       using FeatureFromNormals<PointInT, PointNT, PointOutT>::normals_;
       using FeatureWithLocalReferenceFrames<PointInT, PointRFT>::frames_;
 
-      typedef typename Feature<PointInT, PointOutT>::PointCloudIn PointCloudIn;
+      using PointCloudIn = typename Feature<PointInT, PointOutT>::PointCloudIn;
 
     protected:
       /** \brief Empty constructor.
         * \param[in] nr_shape_bins the number of bins in the shape histogram
         */
       SHOTEstimationBase (int nr_shape_bins = 10) :
-        nr_shape_bins_ (nr_shape_bins),
-        shot_ (), lrf_radius_ (0),
-        sqradius_ (0), radius3_4_ (0), radius1_4_ (0), radius1_2_ (0),
-        nr_grid_sector_ (32),
-        maxAngularSectors_ (28),
-        descLength_ (0)
+        nr_shape_bins_ (nr_shape_bins)
       {
         feature_name_ = "SHOTEstimation";
-      };
-      
+      }
 
     public:
 
       /** \brief Empty destructor */
-      virtual ~SHOTEstimationBase () {}
+      ~SHOTEstimationBase () override = default;
 
        /** \brief Estimate the SHOT descriptor for a given point based on its spatial neighborhood of 3D points with normals
          * \param[in] index the index of the point in indices_
@@ -114,7 +109,7 @@ namespace pcl
          */
       virtual void
       computePointSHOT (const int index,
-                        const std::vector<int> &indices,
+                        const pcl::Indices &indices,
                         const std::vector<float> &sqr_dists,
                         Eigen::VectorXf &shot) = 0;
 
@@ -129,8 +124,8 @@ namespace pcl
     protected:
 
       /** \brief This method should get called before starting the actual computation. */
-      virtual bool
-      initCompute ();
+      bool
+      initCompute () override;
 
       /** \brief Quadrilinear interpolation used when color and shape descriptions are NOT activated simultaneously
         *
@@ -142,7 +137,7 @@ namespace pcl
         * \param[out] shot the resultant SHOT histogram
         */
       void
-      interpolateSingleChannel (const std::vector<int> &indices,
+      interpolateSingleChannel (const pcl::Indices &indices,
                                 const std::vector<float> &sqr_dists,
                                 const int index,
                                 std::vector<double> &binDistance,
@@ -163,38 +158,35 @@ namespace pcl
         * \param[out] bin_distance_shape the resultant histogram
         */
       void
-      createBinDistanceShape (int index, const std::vector<int> &indices,
+      createBinDistanceShape (int index, const pcl::Indices &indices,
                               std::vector<double> &bin_distance_shape);
 
       /** \brief The number of bins in each shape histogram. */
       int nr_shape_bins_;
 
-      /** \brief Placeholder for a point's SHOT. */
-      Eigen::VectorXf shot_;
-
       /** \brief The radius used for the LRF computation */
-      float lrf_radius_;
+      float lrf_radius_{0.0f};
 
       /** \brief The squared search radius. */
-      double sqradius_;
+      double sqradius_{0.0};
 
       /** \brief 3/4 of the search radius. */
-      double radius3_4_;
+      double radius3_4_{0.0};
 
       /** \brief 1/4 of the search radius. */
-      double radius1_4_;
+      double radius1_4_{0.0};
 
       /** \brief 1/2 of the search radius. */
-      double radius1_2_;
+      double radius1_2_{0.0};
 
       /** \brief Number of azimuthal sectors. */
-      const int nr_grid_sector_;
+      const int nr_grid_sector_{32};
 
       /** \brief ... */
-      const int maxAngularSectors_;
+      const int maxAngularSectors_{32};
 
       /** \brief One SHOT length. */
-      int descLength_;
+      int descLength_{0};
   };
 
   /** \brief SHOTEstimation estimates the Signature of Histograms of OrienTations (SHOT) descriptor for
@@ -220,8 +212,8 @@ namespace pcl
   class SHOTEstimation : public SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>
   {
     public:
-      typedef boost::shared_ptr<SHOTEstimation<PointInT, PointNT, PointOutT, PointRFT> > Ptr;
-      typedef boost::shared_ptr<const SHOTEstimation<PointInT, PointNT, PointOutT, PointRFT> > ConstPtr;
+      using Ptr = shared_ptr<SHOTEstimation<PointInT, PointNT, PointOutT, PointRFT> >;
+      using ConstPtr = shared_ptr<const SHOTEstimation<PointInT, PointNT, PointOutT, PointRFT> >;
       using SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::feature_name_;
       using SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::getClassName;
       using SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::indices_;
@@ -240,10 +232,9 @@ namespace pcl
       using SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::radius1_2_;
       using SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::maxAngularSectors_;
       using SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::interpolateSingleChannel;
-      using SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::shot_;
       using FeatureWithLocalReferenceFrames<PointInT, PointRFT>::frames_;
 
-      typedef typename Feature<PointInT, PointOutT>::PointCloudIn PointCloudIn;
+      using PointCloudIn = typename Feature<PointInT, PointOutT>::PointCloudIn;
 
       /** \brief Empty constructor. */
       SHOTEstimation () : SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT> (10)
@@ -252,7 +243,7 @@ namespace pcl
       };
       
       /** \brief Empty destructor */
-      virtual ~SHOTEstimation () {}
+      ~SHOTEstimation () override = default;
 
       /** \brief Estimate the SHOT descriptor for a given point based on its spatial neighborhood of 3D points with normals
         * \param[in] index the index of the point in indices_
@@ -260,11 +251,11 @@ namespace pcl
         * \param[in] sqr_dists the k-neighborhood point distances in surface_
         * \param[out] shot the resultant SHOT descriptor representing the feature at the query point
         */
-      virtual void
+      void
       computePointSHOT (const int index,
-                        const std::vector<int> &indices,
+                        const pcl::Indices &indices,
                         const std::vector<float> &sqr_dists,
-                        Eigen::VectorXf &shot);
+                        Eigen::VectorXf &shot) override;
     protected:
       /** \brief Estimate the Signatures of Histograms of OrienTations (SHOT) descriptors at a set of points given by
         * <setInputCloud (), setIndices ()> using the surface in setSearchSurface () and the spatial locator in
@@ -272,7 +263,7 @@ namespace pcl
         * \param output the resultant point cloud model dataset that contains the SHOT feature estimates
         */
       void
-      computeFeature (pcl::PointCloud<PointOutT> &output);
+      computeFeature (pcl::PointCloud<PointOutT> &output) override;
   };
 
   /** \brief SHOTColorEstimation estimates the Signature of Histograms of OrienTations (SHOT) descriptor for a given point cloud dataset
@@ -298,8 +289,8 @@ namespace pcl
   class SHOTColorEstimation : public SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>
   {
     public:
-      typedef boost::shared_ptr<SHOTColorEstimation<PointInT, PointNT, PointOutT, PointRFT> > Ptr;
-      typedef boost::shared_ptr<const SHOTColorEstimation<PointInT, PointNT, PointOutT, PointRFT> > ConstPtr;
+      using Ptr = shared_ptr<SHOTColorEstimation<PointInT, PointNT, PointOutT, PointRFT> >;
+      using ConstPtr = shared_ptr<const SHOTColorEstimation<PointInT, PointNT, PointOutT, PointRFT> >;
       using SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::feature_name_;
       using SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::getClassName;
       using SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::indices_;
@@ -318,10 +309,9 @@ namespace pcl
       using SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::radius1_2_;
       using SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::maxAngularSectors_;
       using SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::interpolateSingleChannel;
-      using SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT>::shot_;
       using FeatureWithLocalReferenceFrames<PointInT, PointRFT>::frames_;
 
-      typedef typename Feature<PointInT, PointOutT>::PointCloudIn PointCloudIn;
+      using PointCloudIn = typename Feature<PointInT, PointOutT>::PointCloudIn;
 
       /** \brief Empty constructor.
         * \param[in] describe_shape
@@ -331,14 +321,13 @@ namespace pcl
                            bool describe_color = true)
         : SHOTEstimationBase<PointInT, PointNT, PointOutT, PointRFT> (10),
           b_describe_shape_ (describe_shape),
-          b_describe_color_ (describe_color),
-          nr_color_bins_ (30)
+          b_describe_color_ (describe_color)
       {
         feature_name_ = "SHOTColorEstimation";
-      };
+      }
       
       /** \brief Empty destructor */
-      virtual ~SHOTColorEstimation () {}
+      ~SHOTColorEstimation () override = default;
 
       /** \brief Estimate the SHOT descriptor for a given point based on its spatial neighborhood of 3D points with normals
         * \param[in] index the index of the point in indices_
@@ -346,11 +335,11 @@ namespace pcl
         * \param[in] sqr_dists the k-neighborhood point distances in surface_
         * \param[out] shot the resultant SHOT descriptor representing the feature at the query point
         */
-      virtual void
+      void
       computePointSHOT (const int index,
-                        const std::vector<int> &indices,
+                        const pcl::Indices &indices,
                         const std::vector<float> &sqr_dists,
-                        Eigen::VectorXf &shot);
+                        Eigen::VectorXf &shot) override;
     protected:
       /** \brief Estimate the Signatures of Histograms of OrienTations (SHOT) descriptors at a set of points given by
         * <setInputCloud (), setIndices ()> using the surface in setSearchSurface () and the spatial locator in
@@ -358,7 +347,7 @@ namespace pcl
         * \param output the resultant point cloud model dataset that contains the SHOT feature estimates
         */
       void
-      computeFeature (pcl::PointCloud<PointOutT> &output);
+      computeFeature (pcl::PointCloud<PointOutT> &output) override;
 
       /** \brief Quadrilinear interpolation; used when color and shape descriptions are both activated
         * \param[in] indices the neighborhood point indices
@@ -371,7 +360,7 @@ namespace pcl
         * \param[out] shot the resultant SHOT histogram
         */
       void
-      interpolateDoubleChannel (const std::vector<int> &indices,
+      interpolateDoubleChannel (const pcl::Indices &indices,
                                 const std::vector<float> &sqr_dists,
                                 const int index,
                                 std::vector<double> &binDistanceShape,
@@ -387,7 +376,7 @@ namespace pcl
       bool b_describe_color_;
 
       /** \brief The number of bins in each color histogram. */
-      int nr_color_bins_;
+      int nr_color_bins_{30};
 
     public:
       /** \brief Converts RGB triplets to CIELab space.
@@ -401,13 +390,11 @@ namespace pcl
       static void
       RGB2CIELAB (unsigned char R, unsigned char G, unsigned char B, float &L, float &A, float &B2);
 
-      static float sRGB_LUT[256];
-      static float sXYZ_LUT[4000];
+      static std::array<float, 256> sRGB_LUT;
+      static std::array<float, 4000> sXYZ_LUT;
   };
 }
 
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/features/impl/shot.hpp>
 #endif
-
-#endif  //#ifndef PCL_SHOT_H_

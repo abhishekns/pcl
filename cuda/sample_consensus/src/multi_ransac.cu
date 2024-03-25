@@ -41,11 +41,12 @@
 # include <windows.h>
 #endif
 
-#include <pcl/pcl_exports.h>
-
-#include "pcl/cuda/sample_consensus/multi_ransac.h"
-#include "pcl/cuda/time_gpu.h"
 #include <stdio.h>
+#include <limits>
+
+#include <pcl/pcl_exports.h>
+#include <pcl/cuda/sample_consensus/multi_ransac.h>
+#include <pcl/cuda/time_gpu.h>
 #include <pcl/cuda/time_cpu.h>
 //CUPRINTF #include "cuPrintf.cu"
 
@@ -63,7 +64,7 @@ namespace pcl
       double starttime = pcl::cuda::getTime ();
       int counter = 0;
       // Warn and exit if no threshold was set
-      if (threshold_ == DBL_MAX)
+      if (threshold_ == std::numeric_limits<double>::max())
       {
         std::cerr << "[pcl::cuda::MultiRandomSampleConsensus::computeModel] No threshold set!" << std::endl;
         return (false);
@@ -178,15 +179,15 @@ namespace pcl
             n_best_inliers_count = n_inliers_count;
             good_coeff = cur_iteration;
 
-            // Compute the k parameter (k=log(z)/log(1-w^n))
+            // Compute the k parameter (k=std::log(z)/std::log(1-w^n))
             float w = (float)((float)n_best_inliers_count / (float)nr_remaining_points);
             float p_no_outliers = 1.0f - pow (w, 1.0f);
-            p_no_outliers = (std::max) (std::numeric_limits<float>::epsilon (), p_no_outliers);       // Avoid division by -Inf
-            p_no_outliers = (std::min) (1.0f - std::numeric_limits<float>::epsilon (), p_no_outliers);   // Avoid division by 0.
+            p_no_outliers = max(std::numeric_limits<float>::epsilon (), p_no_outliers);       // Avoid division by -Inf
+            p_no_outliers = min(1.0f - std::numeric_limits<float>::epsilon (), p_no_outliers);   // Avoid division by 0.
             if (p_no_outliers == 1.0f)
               k++;
             else
-              k = log (1.0f - probability_) / log (p_no_outliers);
+              k = std::log (1.0f - probability_) / std::log (p_no_outliers);
           }
 
           //fprintf (stderr, "[pcl::cuda::MultiRandomSampleConsensus::computeModel] Trial %d out of %f: %d inliers (best is: %d so far).\n",
@@ -205,18 +206,18 @@ namespace pcl
             //if (nr_remaining_points != nr_remaining_points_before_delete)
             {
 
-              // Compute the k parameter (k=log(z)/log(1-w^n))
+              // Compute the k parameter (k=std::log(z)/std::log(1-w^n))
               float w = (float)((float)min_nr_in_shape / (float)nr_remaining_points);
               float p_no_outliers = 1.0f - pow (w, 1.0f);
-              p_no_outliers = (std::max) (std::numeric_limits<float>::epsilon (), p_no_outliers);       // Avoid division by -Inf
-              p_no_outliers = (std::min) (1.0f - std::numeric_limits<float>::epsilon (), p_no_outliers);   // Avoid division by 0.
+              p_no_outliers = max(std::numeric_limits<float>::epsilon (), p_no_outliers);       // Avoid division by -Inf
+              p_no_outliers = min(1.0f - std::numeric_limits<float>::epsilon (), p_no_outliers);   // Avoid division by 0.
               if (p_no_outliers != 1.0f)
               {
-                if (log (1.0f - probability_) / log (p_no_outliers) < valid_iterations) // we won't find a model with min_nr_in_shape points anymore...
+                if (std::log (1.0f - probability_) / std::log (p_no_outliers) < valid_iterations) // we won't find a model with min_nr_in_shape points anymore...
                   find_no_better = true;
                 else
                   if (debug_verbosity_level > 1)
-                    std::cerr << "------->" << log (1.0f - probability_) / log (p_no_outliers) << "  -vs-  " << valid_iterations << std::endl;
+                    std::cerr << "------->" << std::log (1.0f - probability_) / std::log (p_no_outliers) << "  -vs-  " << valid_iterations << std::endl;
               }
             }
 
@@ -297,15 +298,15 @@ namespace pcl
                   n_best_inliers_count = n_inliers_count;
                   good_coeff = b * iterations_per_batch_ + j;
 
-                  // Compute the k parameter (k=log(z)/log(1-w^n))
+                  // Compute the k parameter (k=std::log(z)/std::log(1-w^n))
                   float w = (float)((float)n_best_inliers_count / (float)nr_remaining_points);
                   float p_no_outliers = 1.0f - pow (w, 1.0f);
-                  p_no_outliers = (std::max) (std::numeric_limits<float>::epsilon (), p_no_outliers);       // Avoid division by -Inf
-                  p_no_outliers = (std::min) (1.0f - std::numeric_limits<float>::epsilon (), p_no_outliers);   // Avoid division by 0.
+                  p_no_outliers = max(std::numeric_limits<float>::epsilon (), p_no_outliers);       // Avoid division by -Inf
+                  p_no_outliers = min(1.0f - std::numeric_limits<float>::epsilon (), p_no_outliers);   // Avoid division by 0.
                   if (p_no_outliers == 1.0f)
                     k++;
                   else
-                    k = log (1.0f - probability_) / log (p_no_outliers);
+                    k = std::log (1.0f - probability_) / std::log (p_no_outliers);
                 }
                 
               }

@@ -32,22 +32,18 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
+#pragma once
+
 #include <pcl/pcl_config.h>
-
-#ifndef PCL_VISUALIZATION_FLOAT_IMAGE_UTILS_H_
-#define PCL_VISUALIZATION_FLOAT_IMAGE_UTILS_H_
-
 #include <pcl/pcl_macros.h>
 
-#include <iostream>
-#include <cmath>
 #include <limits>
 
 namespace pcl
 {
   namespace visualization
   {
-    /** @b Provide some gerneral functionalities regarding 2d float arrays, e.g., for visualization purposes
+    /** @b Provide some general functionalities regarding 2d float arrays, e.g., for visualization purposes
       * \author Bastian Steder
       * \ingroup visualization
       */
@@ -98,6 +94,3 @@ namespace pcl
 
   }  // namespace end
 }
-
-#endif  //#ifndef PCL_VISUALIZATION_FLOAT_IMAGE_UTILS_H_
-

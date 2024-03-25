@@ -26,7 +26,6 @@ ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF S
 DAMAGE.
 */
 
-#include <float.h>
 #ifdef _WIN32
 # ifndef WIN32_LEAN_AND_MEAN
 #  define WIN32_LEAN_AND_MEAN
@@ -208,7 +207,10 @@ namespace pcl
     {
       if( _contiguous )
       {
-        if( count>_maxEntriesPerRow ) fprintf( stderr , "[ERROR] Cannot set row size on contiguous matrix: %d<=%d\n" , count , _maxEntriesPerRow ) , exit( 0 );
+        if (count > _maxEntriesPerRow)
+        {
+          POISSON_THROW_EXCEPTION (pcl::poisson::PoissonBadArgumentException, "Attempted to set row size on contiguous matrix larger than max row size: (requested)"<< count << " > (maximum)" << _maxEntriesPerRow );
+        }
         rowSizes[row] = count;
       }
       else if( row>=0 && row<rows )
@@ -248,9 +250,9 @@ namespace pcl
     template<class T>
     SparseMatrix<T>& SparseMatrix<T>::operator *= (const T& V)
     {
-      for (int i=0; i<this->Rows(); i++)
+      for (int i=0; i<rows; i++)
       {
-        for(int ii=0;ii<m_ppElements[i].size();i++){m_ppElements[i][ii].Value*=V;}
+        for(int ii=0;ii<rowSizes[i];ii++){m_ppElements[i][ii].Value*=V;}
       }
       return *this;
     }
@@ -258,12 +260,12 @@ namespace pcl
     template<class T>
     SparseMatrix<T> SparseMatrix<T>::Multiply( const SparseMatrix<T>& M ) const
     {
-      SparseMatrix<T> R( this->Rows(), M.Columns() );
-      for(int i=0; i<R.Rows(); i++){
-        for(int ii=0;ii<m_ppElements[i].size();ii++){
+      SparseMatrix<T> R( rows, M._maxEntriesPerRow );
+      for(int i=0; i<R.rows; i++){
+        for(int ii=0;ii<rowSizes[i];ii++){
           int N=m_ppElements[i][ii].N;
           T Value=m_ppElements[i][ii].Value;
-          for(int jj=0;jj<M.m_ppElements[N].size();jj++){
+          for(int jj=0;jj<M.rowSizes[N];jj++){
             R(i,M.m_ppElements[N][jj].N) += Value * M.m_ppElements[N][jj].Value;
           }
         }
@@ -317,11 +319,11 @@ namespace pcl
     template<class T>
     SparseMatrix<T> SparseMatrix<T>::Transpose() const
     {
-      SparseMatrix<T> M( this->Columns(), this->Rows() );
+      SparseMatrix<T> M( _maxEntriesPerRow, rows );
 
-      for (int i=0; i<this->Rows(); i++)
+      for (int i=0; i<rows; i++)
       {
-        for(int ii=0;ii<m_ppElements[i].size();ii++){
+        for(int ii=0;ii<rowSizes[i];ii++){
           M(m_ppElements[i][ii].N,i) = m_ppElements[i][ii].Value;
         }
       }
@@ -739,7 +741,7 @@ namespace pcl
         for( int i=0 ; i<dim ; i++ ) _d[i] = _r[i] = _b[i] - _r[i];
       }
       double delta_new = 0 , delta_0;
-      for( size_t i=0 ; i<dim ; i++ ) delta_new += _r[i] * _r[i];
+      for( std::size_t i=0 ; i<dim ; i++ ) delta_new += _r[i] * _r[i];
       delta_0 = delta_new;
       if( delta_new<eps )
       {
@@ -770,7 +772,7 @@ namespace pcl
 
         double delta_old = delta_new;
         delta_new = 0;
-        for( size_t i=0 ; i<dim ; i++ ) delta_new += _r[i] * _r[i];
+        for( std::size_t i=0 ; i<dim ; i++ ) delta_new += _r[i] * _r[i];
         T2 beta = T2( delta_new / delta_old );
 #pragma omp parallel for num_threads( threads ) schedule( static )
         for( int i=0 ; i<dim ; i++ ) _d[i] = _r[i] + _d[i] * beta;

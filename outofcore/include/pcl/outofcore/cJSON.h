@@ -20,8 +20,7 @@
   THE SOFTWARE.
 */
 
-#ifndef cJSON__h
-#define cJSON__h
+#pragma once
 
 #include <pcl/pcl_macros.h>
 
@@ -45,7 +44,7 @@ extern "C"
 #define cJSON_IsReference 256
 
 /* The cJSON structure: */
-typedef struct cJSON {
+typedef struct cJSON {	// NOLINT
 	struct cJSON *next,*prev;	/* next/prev allow you to walk array/object chains. Alternatively, use GetArraySize/GetArrayItem/GetObjectItem */
 	struct cJSON *child;		/* An array or object item will have a child pointer pointing to a chain of the items in the array/object. */
 
@@ -58,8 +57,8 @@ typedef struct cJSON {
 	char *string;				/* The item's name string, if this item is the child of, or is in the list of subitems of an object. */
 } cJSON;
 
-typedef struct cJSON_Hooks {
-      void *(*malloc_fn)(size_t sz);
+typedef struct cJSON_Hooks {	// NOLINT
+      void *(*malloc_fn)(std::size_t sz);
       void (*free_fn)(void *ptr);
 } cJSON_Hooks;
 
@@ -113,7 +112,7 @@ PCLAPI(void) cJSON_AddItemToObject(cJSON *object,const char *string,cJSON *item)
 PCLAPI(void) cJSON_AddItemReferenceToArray(cJSON *array, cJSON *item);
 PCLAPI(void) cJSON_AddItemReferenceToObject(cJSON *object,const char *string,cJSON *item);
 
-/* Remove/Detatch items from Arrays/Objects. */
+/* Remove/Detach items from Arrays/Objects. */
 PCLAPI(cJSON *) cJSON_DetachItemFromArray(cJSON *array,int which);
 PCLAPI(void)    cJSON_DeleteItemFromArray(cJSON *array,int which);
 PCLAPI(cJSON *) cJSON_DetachItemFromObject(cJSON *object,const char *string);
@@ -131,6 +130,4 @@ PCLAPI(void) cJSON_ReplaceItemInObject(cJSON *object,const char *string,cJSON *n
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

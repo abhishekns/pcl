@@ -40,19 +40,19 @@
 #include <pcl/console/parse.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
+#include <pcl/filters/filter.h> // for removeNaNFromPointCloud
 #include <pcl/registration/icp.h>
 #include <pcl/registration/icp_nl.h>
 #include <pcl/registration/incremental_registration.h>
 
 #include <string>
 #include <iostream>
-#include <fstream>
 #include <vector>
 
-typedef pcl::PointXYZ PointType;
-typedef pcl::PointCloud<PointType> Cloud;
-typedef Cloud::ConstPtr CloudConstPtr;
-typedef Cloud::Ptr CloudPtr;
+using PointType = pcl::PointXYZ;
+using Cloud = pcl::PointCloud<PointType>;
+using CloudConstPtr = Cloud::ConstPtr;
+using CloudPtr = Cloud::Ptr;
 
 int
 main (int argc, char **argv)
@@ -90,14 +90,16 @@ main (int argc, char **argv)
   pcl::registration::IncrementalRegistration<PointType> iicp;
   iicp.setRegistration (icp);
 
-  for (size_t i = 0; i < pcd_indices.size (); i++)
+  for (const int &pcd_index : pcd_indices)
   {
     CloudPtr data (new Cloud);
-    if (pcl::io::loadPCDFile (argv[pcd_indices[i]], *data) == -1)
+    if (pcl::io::loadPCDFile (argv[pcd_index], *data) == -1)
     {
       std::cout << "Could not read file" << std::endl;
       return -1;
     }
+    pcl::Indices dummy_indices;
+    pcl::removeNaNFromPointCloud(*data, *data, dummy_indices);
 
     if (!iicp.registerCloud (data))
     {
@@ -111,9 +113,9 @@ main (int argc, char **argv)
 
     std::cout << iicp.getAbsoluteTransform () << std::endl;
 
-    std::string result_filename (argv[pcd_indices[i]]);
-    result_filename = result_filename.substr (result_filename.rfind ("/") + 1);
-    pcl::io::savePCDFileBinary (result_filename.c_str (), *tmp);
+    std::string result_filename (argv[pcd_index]);
+    result_filename = result_filename.substr (result_filename.rfind ('/') + 1);
+    pcl::io::savePCDFileBinary (result_filename, *tmp);
     std::cout << "saving result to " << result_filename << std::endl;
   }
 

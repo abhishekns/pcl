@@ -37,14 +37,12 @@
  *
  */
 
-#include <gtest/gtest.h>
+#include <pcl/test/gtest.h>
 #include <pcl/point_cloud.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/features/intensity_gradient.h>
 
 using namespace pcl;
-using namespace pcl::io;
-using namespace std;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 TEST (PCL, IntensityGradientEstimation)
@@ -63,10 +61,10 @@ TEST (PCL, IntensityGradientEstimation)
       p.z = 0.1f * powf (x, 2.0f) + 0.5f * y + 1.0f;
       p.intensity = 0.1f * powf (x, 3.0f) + 0.2f * powf (y, 2.0f) + 1.0f * p.z + 20000.0f;
 
-      cloud_xyzi.points.push_back (p);
+      cloud_xyzi.push_back (p);
     }
   }
-  cloud_xyzi.width = static_cast<uint32_t> (cloud_xyzi.points.size ());
+  cloud_xyzi.width = cloud_xyzi.size ();
   PointCloud<PointXYZI>::ConstPtr cloud_ptr = cloud_xyzi.makeShared ();
 
   // Estimate surface normals
@@ -89,18 +87,18 @@ TEST (PCL, IntensityGradientEstimation)
   grad_est.compute (gradient);
 
   // Compare to gradient estimates to actual values
-  for (size_t i = 0; i < cloud_ptr->points.size (); ++i)
+  for (std::size_t i = 0; i < cloud_ptr->size (); ++i)
   {
-    const PointXYZI &p = cloud_ptr->points[i];
+    const PointXYZI &p = (*cloud_ptr)[i];
 
     // A pointer to the estimated gradient values
-    const float * g_est = gradient.points[i].gradient;
+    const float * g_est = gradient[i].gradient;
 
     // Compute the surface normal analytically.
     float nx = -0.2f * p.x;
     float ny = -0.5f;
     float nz = 1.0f;
-    float magnitude = sqrtf (nx * nx + ny * ny + nz * nz);
+    float magnitude = std::sqrt (nx * nx + ny * ny + nz * nz);
     nx /= magnitude;
     ny /= magnitude;
     nz /= magnitude;
@@ -115,7 +113,7 @@ TEST (PCL, IntensityGradientEstimation)
     float gz = (-nz * nx) * tmpx + (-nz * ny) * tmpy + (1 - nz * nz) * tmpz;
 
     // Compare the estimates to the derived values.
-    const float tolerance = 0.11f;
+    constexpr float tolerance = 0.11f;
     EXPECT_NEAR (g_est[0], gx, tolerance);
     EXPECT_NEAR (g_est[1], gy, tolerance);
     EXPECT_NEAR (g_est[2], gz, tolerance);

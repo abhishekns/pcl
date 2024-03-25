@@ -1,16 +1,18 @@
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <pcl/common/common.h>
-#include <pcl/common/transforms.h>
+#include <pcl/common/centroid.h> // for compute3DCentroid
 #include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/common/pcl_filesystem.h>
 #include <pcl/console/parse.h>
 #include <pcl/console/print.h>
 #include <pcl/io/pcd_io.h>
 #include <iostream>
+#include <limits>
 #include <flann/flann.h>
 #include <flann/io/hdf5.h>
-#include <boost/filesystem.hpp>
 
+#include <boost/algorithm/string/replace.hpp> // for replace_last
 typedef std::pair<std::string, std::vector<float> > vfh_model;
 
 /** \brief Loads an n-D histogram file as a VFH signature
@@ -18,7 +20,7 @@ typedef std::pair<std::string, std::vector<float> > vfh_model;
   * \param vfh the resultant VFH model
   */
 bool
-loadHist (const boost::filesystem::path &path, vfh_model &vfh)
+loadHist (const pcl_fs::path &path, vfh_model &vfh)
 {
   int vfh_idx;
   // Load the file as a PCD
@@ -49,11 +51,11 @@ loadHist (const boost::filesystem::path &path, vfh_model &vfh)
   vfh.second.resize (308);
 
   std::vector <pcl::PCLPointField> fields;
-  getFieldIndex (point, "vfh", fields);
+  pcl::getFieldIndex<pcl::VFHSignature308> ("vfh", fields);
 
-  for (size_t i = 0; i < fields[vfh_idx].count; ++i)
+  for (std::size_t i = 0; i < fields[vfh_idx].count; ++i)
   {
-    vfh.second[i] = point.points[0].histogram[i];
+    vfh.second[i] = point[0].histogram[i];
   }
   vfh.first = path.string ();
   return (true);
@@ -88,7 +90,7 @@ nearestKSearch (flann::Index<flann::ChiSquareDistance<float> > &index, const vfh
 bool
 loadFileList (std::vector<vfh_model> &models, const std::string &filename)
 {
-  ifstream fs;
+  std::ifstream fs;
   fs.open (filename.c_str ());
   if (!fs.is_open () || fs.fail ())
     return (false);
@@ -96,7 +98,7 @@ loadFileList (std::vector<vfh_model> &models, const std::string &filename)
   std::string line;
   while (!fs.eof ())
   {
-    getline (fs, line);
+    std::getline (fs, line);
     if (line.empty ())
       continue;
     vfh_model m;
@@ -112,7 +114,7 @@ main (int argc, char** argv)
 {
   int k = 6;
 
-  double thresh = DBL_MAX;     // No threshold, disabled by default
+  double thresh = std::numeric_limits<double>::max();     // No threshold, disabled by default
 
   if (argc < 2)
   {
@@ -151,7 +153,7 @@ main (int argc, char** argv)
   flann::Matrix<float> k_distances;
   flann::Matrix<float> data;
   // Check if the data has already been saved to disk
-  if (!boost::filesystem::exists ("training_data.h5") || !boost::filesystem::exists ("training_data.list"))
+  if (!pcl_fs::exists ("training_data.h5") || !pcl_fs::exists ("training_data.list"))
   {
     pcl::console::print_error ("Could not find training data models files %s and %s!\n", 
         training_data_h5_file_name.c_str (), training_data_list_file_name.c_str ());
@@ -166,7 +168,7 @@ main (int argc, char** argv)
   }
 
   // Check if the tree index has already been saved to disk
-  if (!boost::filesystem::exists (kdtree_idx_file_name))
+  if (!pcl_fs::exists (kdtree_idx_file_name))
   {
     pcl::console::print_error ("Could not find kd-tree index in file %s!", kdtree_idx_file_name.c_str ());
     return (-1);
@@ -186,8 +188,8 @@ main (int argc, char** argv)
 
   // Load the results
   pcl::visualization::PCLVisualizer p (argc, argv, "VFH Cluster Classifier");
-  int y_s = (int)floor (sqrt ((double)k));
-  int x_s = y_s + (int)ceil ((k / (double)y_s) - y_s);
+  int y_s = (int)std::floor (sqrt ((double)k));
+  int x_s = y_s + (int)std::ceil ((k / (double)y_s) - y_s);
   double x_step = (double)(1 / (double)x_s);
   double y_step = (double)(1 / (double)y_s);
   pcl::console::print_highlight ("Preparing to load "); 
@@ -225,11 +227,11 @@ main (int argc, char** argv)
     pcl::PointCloud<pcl::PointXYZ> cloud_xyz;
     pcl::fromPCLPointCloud2 (cloud, cloud_xyz);
 
-    if (cloud_xyz.points.size () == 0)
+    if (cloud_xyz.size () == 0)
       break;
 
     pcl::console::print_info ("[done, "); 
-    pcl::console::print_value ("%d", (int)cloud_xyz.points.size ()); 
+    pcl::console::print_value ("%zu", static_cast<std::size_t>(cloud_xyz.size ()));
     pcl::console::print_info (" points]\n");
     pcl::console::print_info ("Available dimensions: "); 
     pcl::console::print_value ("%s\n", pcl::getFieldsList (cloud).c_str ());
@@ -266,7 +268,7 @@ main (int argc, char** argv)
     // Add the cluster name
     p.addText (cloud_name, 20, 10, cloud_name, viewport);
   }
-  // Add coordianate systems to all viewports
+  // Add coordinate systems to all viewports
   p.addCoordinateSystem (0.1, "global", 0);
 
   p.spin ();

@@ -44,6 +44,7 @@
 #include "pcl/cuda/sample_consensus/ransac.h"
 #include "pcl/cuda/time_gpu.h"
 #include <stdio.h>
+#include <limits>
 
 namespace pcl
 {
@@ -54,14 +55,14 @@ namespace pcl
     RandomSampleConsensus<Storage>::computeModel (int debug_verbosity_level)
     {
       // Warn and exit if no threshold was set
-      if (threshold_ == DBL_MAX)
+      if (threshold_ == std::numeric_limits<double>::max())
       {
         std::cerr << "[pcl::cuda::RandomSampleConsensus::computeModel] No threshold set!" << std::endl;
         return (false);
       }
 
       iterations_ = 0;
-      int n_best_inliers_count = -INT_MAX;
+      int n_best_inliers_count = std::numeric_limits<int>::lowest();
       float k = 1.0;
 
       Indices inliers;
@@ -127,16 +128,16 @@ namespace pcl
           good_coeff = iterations_;
 #endif
 
-          // Compute the k parameter (k=log(z)/log(1-w^n))
+          // Compute the k parameter (k=std::log(z)/std::log(1-w^n))
           float w = (float)((float)n_best_inliers_count / (float)sac_model_->getIndices ()->size ());
     //      float p_no_outliers = 1.0 - pow (w, (float)selection.size ());
           float p_no_outliers = 1.0f - pow (w, (float)1);
-          p_no_outliers = (std::max) (std::numeric_limits<float>::epsilon (), p_no_outliers);       // Avoid division by -Inf
-          p_no_outliers = (std::min) (1.0f - std::numeric_limits<float>::epsilon (), p_no_outliers);   // Avoid division by 0.
+          p_no_outliers = max(std::numeric_limits<float>::epsilon (), p_no_outliers);       // Avoid division by -Inf
+          p_no_outliers = min(1.0f - std::numeric_limits<float>::epsilon (), p_no_outliers);   // Avoid division by 0.
           if (p_no_outliers == 1.0f)
             k++;
           else
-            k = log (1.0f - probability_) / log (p_no_outliers);
+            k = std::log (1.0f - probability_) / std::log (p_no_outliers);
         }
 
         ++iterations_;

@@ -36,16 +36,10 @@
  * $Id$
  */
 
-#ifndef PCL_ORGANIZED_POINT_COMPRESSION_H_
-#define PCL_ORGANIZED_POINT_COMPRESSION_H_
+#pragma once
 
 #include <pcl/pcl_macros.h>
 #include <pcl/point_cloud.h>
-
-#include <pcl/common/boost.h>
-#include <pcl/common/eigen.h>
-#include <pcl/common/common.h>
-#include <pcl/common/io.h>
 
 #include <pcl/io/openni_camera/openni_shift_to_depth_conversion.h>
 
@@ -61,19 +55,15 @@ namespace pcl
     class OrganizedPointCloudCompression
     {
       public:
-        typedef pcl::PointCloud<PointT> PointCloud;
-        typedef boost::shared_ptr<PointCloud> PointCloudPtr;
-        typedef boost::shared_ptr<const PointCloud> PointCloudConstPtr;
+        using PointCloud = pcl::PointCloud<PointT>;
+        using PointCloudPtr = typename PointCloud::Ptr;
+        using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
         /** \brief Empty Constructor. */
-        OrganizedPointCloudCompression ()
-        {
-        }
+        OrganizedPointCloudCompression () = default;
 
         /** \brief Empty deconstructor. */
-        virtual ~OrganizedPointCloudCompression ()
-        {
-        }
+        virtual ~OrganizedPointCloudCompression () = default;
 
         /** \brief Encode point cloud to output stream
          * \param[in] cloud_arg:  point cloud to be compressed
@@ -105,10 +95,10 @@ namespace pcl
          * \param[in] disparityShift_arg disparity shift
          * \param[in] disparityScale_arg disparity scaling
          */
-        void encodeRawDisparityMapWithColorImage ( std::vector<uint16_t>& disparityMap_arg,
-                                                   std::vector<uint8_t>& colorImage_arg,
-                                                   uint32_t width_arg,
-                                                   uint32_t height_arg,
+        void encodeRawDisparityMapWithColorImage ( std::vector<std::uint16_t>& disparityMap_arg,
+                                                   std::vector<std::uint8_t>& colorImage_arg,
+                                                   std::uint32_t width_arg,
+                                                   std::uint32_t height_arg,
                                                    std::ostream& compressedDataOut_arg,
                                                    bool doColorEncoding = false,
                                                    bool convertToMono = false,
@@ -122,7 +112,7 @@ namespace pcl
          * \param[in] compressedDataIn_arg: binary input stream containing compressed data
          * \param[out] cloud_arg: reference to decoded point cloud
          * \param[in] bShowStatistics_arg: show compression statistics during decoding
-         * \return false if an I/O error occured.
+         * \return false if an I/O error occurred.
          */
         bool decodePointCloud (std::istream& compressedDataIn_arg,
                                PointCloudPtr &cloud_arg,
@@ -151,5 +141,3 @@ namespace pcl
     const char* OrganizedPointCloudCompression<PointT>::frameHeaderIdentifier_ = "<PCL-ORG-COMPRESSED>";
   }
 }
-
-#endif

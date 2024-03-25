@@ -1,5 +1,4 @@
-#ifndef PCLVIEWER_H
-#define PCLVIEWER_H
+#pragma once
 
 #include <iostream>
 
@@ -10,9 +9,6 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/visualization/pcl_visualizer.h>
-
-// Visualization Toolkit (VTK)
-#include <vtkRenderWindow.h>
 
 typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
@@ -30,7 +26,7 @@ public:
   explicit PCLViewer (QWidget *parent = 0);
   ~PCLViewer ();
 
-public slots:
+public Q_SLOTS:
   void
   randomButtonPressed ();
 
@@ -50,7 +46,10 @@ public slots:
   blueSliderValueChanged (int value);
 
 protected:
-  boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer;
+  void
+  refreshView();
+
+  pcl::visualization::PCLVisualizer::Ptr viewer;
   PointCloudT::Ptr cloud;
 
   unsigned int red;
@@ -59,7 +58,4 @@ protected:
 
 private:
   Ui::PCLViewer *ui;
-
 };
-
-#endif // PCLVIEWER_H

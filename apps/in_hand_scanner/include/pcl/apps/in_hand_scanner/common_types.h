@@ -38,60 +38,54 @@
  *
  */
 
-#ifndef PCL_APPS_IN_HAND_SCANNER_COMMON_TYPES_H
-#define PCL_APPS_IN_HAND_SCANNER_COMMON_TYPES_H
+#pragma once
 
-#include <stdint.h>
-
+#include <pcl/geometry/triangle_mesh.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <pcl/geometry/triangle_mesh.h>
 
-namespace pcl
-{
-  namespace ihs
-  {
-    struct PointIHS;
-    typedef pcl::PointCloud <PointIHS> CloudIHS;
-    typedef CloudIHS::Ptr              CloudIHSPtr;
-    typedef CloudIHS::ConstPtr         CloudIHSConstPtr;
-  } // End namespace ihs
+#include <cstdint>
+
+namespace pcl {
+namespace ihs {
+struct PointIHS;
+using CloudIHS = pcl::PointCloud<PointIHS>;
+using CloudIHSPtr = CloudIHS::Ptr;
+using CloudIHSConstPtr = CloudIHS::ConstPtr;
+} // End namespace ihs
 } // End namespace pcl
 
 #include <pcl/apps/in_hand_scanner/impl/common_types.hpp>
 
-POINT_CLOUD_REGISTER_POINT_STRUCT (pcl::ihs::_PointIHS,
-                                   (float, x, x)
-                                   (float, y, y)
-                                   (float, z, z)
-                                   (float, normal_x, normal_x)
-                                   (float, normal_y, normal_y)
-                                   (float, normal_z, normal_z)
-                                   (float, rgb, rgb)
-                                   (float, weight, weight)
-                                   (unsigned int, age, age)
-                                   (uint32_t, directions, directions)
-                                  )
-POINT_CLOUD_REGISTER_POINT_WRAPPER (pcl::ihs::PointIHS, pcl::ihs::_PointIHS)
+// clang-format off
+POINT_CLOUD_REGISTER_POINT_STRUCT(pcl::ihs::_PointIHS,
+                                  (float, x, x)
+                                  (float, y, y)
+                                  (float, z, z)
+                                  (float, normal_x, normal_x)
+                                  (float, normal_y, normal_y)
+                                  (float, normal_z, normal_z)
+                                  (float, rgb, rgb)
+                                  (float, weight, weight)
+                                  (unsigned int, age, age)
+                                  (std::uint32_t, directions, directions)
+                                 )
+POINT_CLOUD_REGISTER_POINT_WRAPPER(pcl::ihs::PointIHS, pcl::ihs::_PointIHS)
+// clang-format on
 
-namespace pcl
-{
-  namespace ihs
-  {
-    struct MeshTraits
-    {
-      typedef PointIHS              VertexData;
-      typedef pcl::geometry::NoData HalfEdgeData;
-      typedef pcl::geometry::NoData EdgeData;
-      typedef pcl::geometry::NoData FaceData;
-      typedef boost::true_type      IsManifold;
-    };
+namespace pcl {
+namespace ihs {
+struct MeshTraits {
+  using VertexData = PointIHS;
+  using HalfEdgeData = pcl::geometry::NoData;
+  using EdgeData = pcl::geometry::NoData;
+  using FaceData = pcl::geometry::NoData;
+  using IsManifold = std::true_type;
+};
 
-    // NOTE: The drawMesh method in pcl::ihs::InHandScanner only supports triangles!
-    typedef pcl::geometry::TriangleMesh <MeshTraits> Mesh;
-    typedef Mesh::Ptr                                MeshPtr;
-    typedef Mesh::ConstPtr                           MeshConstPtr;
-  } // End namespace ihs
+// NOTE: The drawMesh method in pcl::ihs::InHandScanner only supports triangles!
+using Mesh = pcl::geometry::TriangleMesh<MeshTraits>;
+using MeshPtr = Mesh::Ptr;
+using MeshConstPtr = Mesh::ConstPtr;
+} // End namespace ihs
 } // End namespace pcl
-
-#endif // PCL_APPS_IN_HAND_SCANNER_COMMON_TYPES_H

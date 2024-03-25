@@ -37,14 +37,9 @@
  *
  */
 
-#ifndef PCL_FILTERS_CONVOLUTION_H_
-#define PCL_FILTERS_CONVOLUTION_H_
+#pragma once
 
-#include <pcl/common/eigen.h>
-#include <pcl/common/point_operators.h>
 #include <pcl/point_cloud.h>
-#include <pcl/exceptions.h>
-#include <pcl/pcl_base.h>
 
 namespace pcl
 {
@@ -53,7 +48,7 @@ namespace pcl
     /** Convolution is a mathematical operation on two functions f and g,
       * producing a third function that is typically viewed as a modified
       * version of one of the original functions.
-      * see http://en.wikipedia.org/wiki/Convolution.
+      * see https://en.wikipedia.org/wiki/Convolution.
       *
       * The class provides rows, column and separate convolving operations
       * of a point cloud.
@@ -65,8 +60,8 @@ namespace pcl
       * policies:
       * - Ignoring: elements at special locations are filled with zero
       * (default behaviour)
-      * - Mirroring: the missing rows or columns are obtained throug mirroring
-      * - Duplicating: the missing rows or columns are obtained throug
+      * - Mirroring: the missing rows or columns are obtained through mirroring
+      * - Duplicating: the missing rows or columns are obtained through
       * duplicating
       *
       * \author Nizar Sallem
@@ -77,12 +72,12 @@ namespace pcl
     class Convolution
     {
       public:
-        typedef typename pcl::PointCloud<PointIn> PointCloudIn;
-        typedef typename PointCloudIn::Ptr PointCloudInPtr;
-        typedef typename PointCloudIn::ConstPtr PointCloudInConstPtr;
-        typedef typename pcl::PointCloud<PointOut> PointCloudOut;
-        typedef boost::shared_ptr< Convolution<PointIn, PointOut> > Ptr;
-        typedef boost::shared_ptr< const Convolution<PointIn, PointOut> > ConstPtr;
+        using PointCloudIn = pcl::PointCloud<PointIn>;
+        using PointCloudInPtr = typename PointCloudIn::Ptr;
+        using PointCloudInConstPtr = typename PointCloudIn::ConstPtr;
+        using PointCloudOut = pcl::PointCloud<PointOut>;
+        using Ptr = shared_ptr< Convolution<PointIn, PointOut> >;
+        using ConstPtr = shared_ptr< const Convolution<PointIn, PointOut> >;
 
 
         /// The borders policy available
@@ -95,7 +90,7 @@ namespace pcl
         /// Constructor
         Convolution ();
         /// Empty destructor
-        ~Convolution () {}
+        ~Convolution () = default;
         /** \brief Provide a pointer to the input dataset
           * \param cloud the const boost shared pointer to a PointCloud message
           * \remark Will perform a deep copy
@@ -218,12 +213,12 @@ namespace pcl
         /// convolution kernel
         Eigen::ArrayXf kernel_;
         /// half kernel size
-        int half_width_;
+        int half_width_{};
         /// kernel size - 1
-        int kernel_width_;
+        int kernel_width_{};
       protected:
         /** \brief The number of threads the scheduler should use. */
-        unsigned int threads_;
+        unsigned int threads_{1};
 
         void
         makeInfinite (PointOut& p)
@@ -235,5 +230,3 @@ namespace pcl
 }
 
 #include <pcl/filters/impl/convolution.hpp>
-
-#endif

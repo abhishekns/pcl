@@ -26,7 +26,7 @@ The clusters classified as too small or too large can still be retrieved afterwa
 The Code
 --------
 
-First, download the dataset `Statues_4.pcd <https://raw.github.com/PointCloudLibrary/data/master/Trimble/Outdoor1/Statues_4.pcd>`_ and save it somewhere to disk.
+First, download the dataset `Statues_4.pcd <https://sourceforge.net/projects/pointclouds/files/PCD datasets/Trimble/Outdoor1/Statues_4.pcd.zip>`_ and extract the PCD file from the archive.
 This is a very large data set of an outdoor environment where we aim to cluster the separate objects and also want to separate the building from the ground plane even though it is attached in a Euclidean sense.
 
 Now create a file, let's say, ``conditional_euclidean_clustering.cpp`` in your favorite editor, and place the following inside it:
@@ -44,7 +44,7 @@ Since the Conditional Euclidean Clustering class is for more advanced users, I w
  - ``pcl::console::TicToc`` is used for easy output of timing results.
  - :ref:`voxelgrid` is being used (lines 66-73) to downsample the cloud and give a more equalized point density.
  - :ref:`normal_estimation` is being used (lines 75-83)  to estimate normals which will be appended to the point information;
-   The Conditional Euclidean Clustering class will be templated with ``pcl::PoitnXYZINormal``, containing x, y, z, intensity, normal and curvature information to use in the condition function.
+   The Conditional Euclidean Clustering class will be templated with ``pcl::PointXYZINormal``, containing x, y, z, intensity, normal and curvature information to use in the condition function.
 
 Lines 85-95 set up the Conditional Euclidean Clustering class for use:
 
@@ -64,7 +64,7 @@ A more elaborate description of the different lines of code:
  - Clusters that make up less than 0.1% of the cloud's total points are considered too small.
  - Clusters that make up more than 20% of the cloud's total points are considered too large.
  - The resulting clusters are stored in the ``pcl::IndicesClusters`` format, which is an array of indices-arrays, indexing points of the input point cloud.
- - Too small clusters or too large clusters are not passed to the main output but can instead be retrieved in separate ``pcl::IndicesClusters`` data containers, but only is the class was initialized with TRUE.
+ - Too small clusters or too large clusters are not passed to the main output but can instead be retrieved in separate ``pcl::IndicesClusters`` data containers, but only if the class was initialized with TRUE.
 
 Lines 12-49 show some examples of condition functions:
 
@@ -95,7 +95,7 @@ Lines 97-109 contain a piece of code that is a quick and dirty fix to visualize 
    :language: cpp
    :lines: 97-109
 
-When the output point cloud is opened with PCL's standard PCD viewer, pressing '5' will switch to the intenisty channel visualization.
+When the output point cloud is opened with PCL's standard PCD viewer, pressing '5' will switch to the intensity channel visualization.
 The too-small clusters will be colored red, the too-large clusters will be colored blue, and the actual clusters/objects of interest will be colored randomly in between yellow and cyan hues.
 
 Compiling and running the program

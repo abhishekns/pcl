@@ -48,6 +48,9 @@
 #include <pcl/io/openni_camera/openni_device_primesense.h>
 #include <pcl/io/openni_camera/openni_device_xtion.h>
 #include <pcl/io/openni_camera/openni_device_oni.h>
+
+#include <boost/tokenizer.hpp>
+
 #include <sstream>
 #include <iostream>
 #include <algorithm>
@@ -57,17 +60,10 @@
 
 #ifndef _WIN32
 #include <libusb-1.0/libusb.h>
-#else
-#include <pcl/io/boost.h>
 #endif
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 openni_wrapper::OpenNIDriver::OpenNIDriver ()
-  : device_context_ ()
-  , context_ ()
-  , bus_map_ ()
-  , serial_map_ ()
-  , connection_string_map_ ()
 {
   // Initialize the Engine
   XnStatus status = context_.Init ();
@@ -90,7 +86,7 @@ openni_wrapper::OpenNIDriver::updateDeviceList ()
 
   // enumerate all devices
   static xn::NodeInfoList node_info_list;
-  XnStatus status = context_.EnumerateProductionTrees (XN_NODE_TYPE_DEVICE, NULL, node_info_list);
+  XnStatus status = context_.EnumerateProductionTrees (XN_NODE_TYPE_DEVICE, nullptr, node_info_list);
   if (status != XN_STATUS_OK && node_info_list.Begin () != node_info_list.End ())
     THROW_OPENNI_EXCEPTION ("enumerating devices failed. Reason: %s", xnGetStatusString (status));
   else if (node_info_list.Begin () == node_info_list.End ())
@@ -99,12 +95,12 @@ openni_wrapper::OpenNIDriver::updateDeviceList ()
   for (xn::NodeInfoList::Iterator nodeIt = node_info_list.Begin (); nodeIt != node_info_list.End (); ++nodeIt)
   {
     connection_string_map_[(*nodeIt).GetCreationInfo ()] = static_cast<unsigned int> (device_context_.size ());
-    device_context_.push_back (DeviceContext (*nodeIt));
+    device_context_.emplace_back(*nodeIt);
   }
 
   // enumerate depth nodes
   static xn::NodeInfoList depth_nodes;
-  status = context_.EnumerateProductionTrees (XN_NODE_TYPE_DEPTH, NULL, depth_nodes, NULL);
+  status = context_.EnumerateProductionTrees (XN_NODE_TYPE_DEPTH, nullptr, depth_nodes, nullptr);
   if (status != XN_STATUS_OK)
     THROW_OPENNI_EXCEPTION ("enumerating depth generators failed. Reason: %s", xnGetStatusString (status));
 
@@ -123,7 +119,7 @@ openni_wrapper::OpenNIDriver::updateDeviceList ()
 
   // enumerate image nodes
   static xn::NodeInfoList image_nodes;
-  status = context_.EnumerateProductionTrees (XN_NODE_TYPE_IMAGE, NULL, image_nodes, NULL);
+  status = context_.EnumerateProductionTrees (XN_NODE_TYPE_IMAGE, nullptr, image_nodes, nullptr);
 
 
   // Suat: This is an ugly ASUS Xtion workaround.
@@ -147,7 +143,7 @@ openni_wrapper::OpenNIDriver::updateDeviceList ()
 
   // enumerate IR nodes
   static xn::NodeInfoList ir_nodes;
-  status = context_.EnumerateProductionTrees (XN_NODE_TYPE_IR, NULL, ir_nodes, NULL);
+  status = context_.EnumerateProductionTrees (XN_NODE_TYPE_IR, nullptr, ir_nodes, nullptr);
   if (status != XN_STATUS_OK)
     THROW_OPENNI_EXCEPTION ("enumerating IR generators failed. Reason: %s", xnGetStatusString (status));
 
@@ -166,7 +162,7 @@ openni_wrapper::OpenNIDriver::updateDeviceList ()
 
 #ifndef _WIN32
   // add context object for each found device
-  for (unsigned deviceIdx = 0; deviceIdx < device_context_.size (); ++deviceIdx)
+  for (std::size_t deviceIdx = 0; deviceIdx < device_context_.size (); ++deviceIdx)
   {
     // register bus@address to the corresponding context object
     unsigned short vendor_id;
@@ -181,7 +177,7 @@ openni_wrapper::OpenNIDriver::updateDeviceList ()
   getDeviceInfos ();
 #endif
   // build serial number -> device index map
-  for (unsigned deviceIdx = 0; deviceIdx < device_context_.size (); ++deviceIdx)
+  for (std::size_t deviceIdx = 0; deviceIdx < device_context_.size (); ++deviceIdx)
   {
     std::string serial_number = getSerialNumber (deviceIdx);
     if (!serial_number.empty ())
@@ -190,25 +186,25 @@ openni_wrapper::OpenNIDriver::updateDeviceList ()
 
 
   // redundant, but needed for Windows right now and also for Xtion
-  for (unsigned deviceIdx = 0; deviceIdx < device_context_.size (); ++deviceIdx)
+  for (const auto &device : device_context_)
   {
     unsigned short product_id;
     unsigned short vendor_id;
 
-    getDeviceType(device_context_[deviceIdx].device_node.GetCreationInfo (), vendor_id, product_id );
+    getDeviceType(device.device_node.GetCreationInfo (), vendor_id, product_id );
 
-#if _WIN32
+#ifdef _WIN32
     if (vendor_id == 0x45e)
     {
-      strcpy (const_cast<char*> (device_context_[deviceIdx].device_node.GetDescription ().strVendor), "Microsoft");
-      strcpy (const_cast<char*> (device_context_[deviceIdx].device_node.GetDescription ().strName), "Xbox NUI Camera");
+      strcpy (const_cast<char*> (device.device_node.GetDescription ().strVendor), "Microsoft");
+      strcpy (const_cast<char*> (device.device_node.GetDescription ().strName), "Xbox NUI Camera");
     }
     else
 #endif
-    if (vendor_id == 0x1d27 && device_context_[deviceIdx].image_node.get () == 0)
+    if (vendor_id == 0x1d27 && device.image_node == nullptr)
     {
-      strcpy (const_cast<char*> (device_context_[deviceIdx].device_node.GetDescription ().strVendor), "ASUS");
-      strcpy (const_cast<char*> (device_context_[deviceIdx].device_node.GetDescription ().strName), "Xtion Pro");
+      strcpy (const_cast<char*> (device.device_node.GetDescription ().strVendor), "ASUS");
+      strcpy (const_cast<char*> (device.device_node.GetDescription ().strName), "Xtion Pro");
     }
   }
   return (static_cast<unsigned int> (device_context_.size ()));
@@ -223,9 +219,9 @@ openni_wrapper::OpenNIDriver::stopAll ()
     THROW_OPENNI_EXCEPTION ("stopping all streams failed. Reason: %s", xnGetStatusString (status));
 }
 
-openni_wrapper::OpenNIDriver::~OpenNIDriver () throw ()
+openni_wrapper::OpenNIDriver::~OpenNIDriver () noexcept
 {
-  // no exception during destuctor
+  // no exception during destructor
   try
   {
     stopAll ();
@@ -242,21 +238,19 @@ openni_wrapper::OpenNIDriver::~OpenNIDriver () throw ()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-boost::shared_ptr<openni_wrapper::OpenNIDevice> 
+openni_wrapper::OpenNIDevice::Ptr
 openni_wrapper::OpenNIDriver::createVirtualDevice (const std::string& path, bool repeat, bool stream) const
 {
-  return (boost::shared_ptr<OpenNIDevice> (new DeviceONI (context_, path, repeat, stream)));
+  return (OpenNIDevice::Ptr (new DeviceONI (context_, path, repeat, stream)));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-boost::shared_ptr<openni_wrapper::OpenNIDevice> 
+openni_wrapper::OpenNIDevice::Ptr
 openni_wrapper::OpenNIDriver::getDeviceByIndex (unsigned index) const
 {
-  using namespace std;
-
   if (index >= device_context_.size ())
     THROW_OPENNI_EXCEPTION ("Device index out of range. Only %d devices connected but device %d requested.", device_context_.size (), index);
-  boost::shared_ptr<openni_wrapper::OpenNIDevice> device = device_context_[index].device.lock ();
+  auto device = device_context_[index].device.lock ();
   if (!device)
   {
     unsigned short vendor_id;
@@ -297,10 +291,10 @@ openni_wrapper::OpenNIDriver::getDeviceByIndex (unsigned index) const
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-boost::shared_ptr<openni_wrapper::OpenNIDevice>
+openni_wrapper::OpenNIDevice::Ptr
 openni_wrapper::OpenNIDriver::getDeviceBySerialNumber (const std::string& serial_number) const
 {
-  std::map<std::string, unsigned>::const_iterator it = serial_map_.find (serial_number);
+  auto it = serial_map_.find (serial_number);
 
   if (it != serial_map_.end ())
   {
@@ -310,18 +304,18 @@ openni_wrapper::OpenNIDriver::getDeviceBySerialNumber (const std::string& serial
   THROW_OPENNI_EXCEPTION ("No device with serial number \'%s\' found", serial_number.c_str ());
 
   // because of warnings!!!
-  return (boost::shared_ptr<openni_wrapper::OpenNIDevice> (static_cast<OpenNIDevice*> (NULL)));
+  return (openni_wrapper::OpenNIDevice::Ptr (static_cast<OpenNIDevice*> (nullptr)));
 }
 
 #ifndef _WIN32
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-boost::shared_ptr<openni_wrapper::OpenNIDevice>
+openni_wrapper::OpenNIDevice::Ptr
 openni_wrapper::OpenNIDriver::getDeviceByAddress (unsigned char bus, unsigned char address) const
 {
-  std::map<unsigned char, std::map<unsigned char, unsigned> >::const_iterator busIt = bus_map_.find (bus);
+  auto busIt = bus_map_.find (bus);
   if (busIt != bus_map_.end ())
   {
-    std::map<unsigned char, unsigned>::const_iterator devIt = busIt->second.find (address);
+    auto devIt = busIt->second.find (address);
     if (devIt != busIt->second.end ())
     {
       return getDeviceByIndex (devIt->second);
@@ -331,14 +325,14 @@ openni_wrapper::OpenNIDriver::getDeviceByAddress (unsigned char bus, unsigned ch
   THROW_OPENNI_EXCEPTION ("No device on bus: %d @ %d found", bus, address);
 
   // because of warnings!!!
-  return (boost::shared_ptr<OpenNIDevice > (static_cast<OpenNIDevice*> (NULL)));
+  return (OpenNIDevice::Ptr (static_cast<OpenNIDevice*> (nullptr)));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void
-openni_wrapper::OpenNIDriver::getDeviceInfos () throw ()
+openni_wrapper::OpenNIDriver::getDeviceInfos () noexcept
 {
-  libusb_context *context = NULL;
+  libusb_context *context = nullptr;
   int result;
   result = libusb_init (&context); //initialize a library session
 
@@ -353,19 +347,19 @@ openni_wrapper::OpenNIDriver::getDeviceInfos () throw ()
   for (int devIdx = 0; devIdx < count; ++devIdx)
   {
     libusb_device* device = devices[devIdx];
-    uint8_t busId = libusb_get_bus_number (device);
+    std::uint8_t busId = libusb_get_bus_number (device);
     std::map<unsigned char, std::map<unsigned char, unsigned> >::const_iterator busIt = bus_map_.find (busId);
     if (busIt == bus_map_.end ())
       continue;
 
-    uint8_t address = libusb_get_device_address (device);
-    std::map<unsigned char, unsigned>::const_iterator addressIt = busIt->second.find (address);
+    std::uint8_t address = libusb_get_device_address (device);
+    auto addressIt = busIt->second.find (address);
     if (addressIt == busIt->second.end ())
       continue;
 
     unsigned nodeIdx = addressIt->second;
     xn::NodeInfo& current_node = device_context_[nodeIdx].device_node;
-    XnProductionNodeDescription& description = const_cast<XnProductionNodeDescription&>(current_node.GetDescription ());
+    auto& description = const_cast<XnProductionNodeDescription&>(current_node.GetDescription ());
 
     libusb_device_descriptor descriptor;
     result = libusb_get_device_descriptor (devices[devIdx], &descriptor);
@@ -412,7 +406,7 @@ openni_wrapper::OpenNIDriver::getDeviceInfos () throw ()
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const char* 
-openni_wrapper::OpenNIDriver::getSerialNumber (unsigned index) const throw ()
+openni_wrapper::OpenNIDriver::getSerialNumber (unsigned index) const noexcept
 {
 #ifndef _WIN32
   return (device_context_[index].device_node.GetInstanceName ());
@@ -433,9 +427,9 @@ openni_wrapper::OpenNIDriver::getSerialNumber (unsigned index) const throw ()
 void 
 openni_wrapper::OpenNIDriver::getDeviceType (const std::string& connectionString, unsigned short& vendorId, unsigned short& productId)
 {
-#if _WIN32
+#ifdef _WIN32
     // expected format: "\\?\usb#vid_[ID]&pid_[ID]#[SERIAL]#{GUID}"
-    typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
+    using tokenizer = boost::tokenizer<boost::char_separator<char> >;
     boost::char_separator<char> separators("#&_");
     tokenizer tokens (connectionString, separators);
 
@@ -463,28 +457,28 @@ openni_wrapper::OpenNIDriver::getDeviceType (const std::string& connectionString
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const char* 
-openni_wrapper::OpenNIDriver::getConnectionString (unsigned index) const throw ()
+openni_wrapper::OpenNIDriver::getConnectionString (unsigned index) const noexcept
 {
   return (device_context_[index].device_node.GetCreationInfo ());
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const char* 
-openni_wrapper::OpenNIDriver::getVendorName (unsigned index) const throw ()
+openni_wrapper::OpenNIDriver::getVendorName (unsigned index) const noexcept
 {
   return (device_context_[index].device_node.GetDescription ().strVendor);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const char* 
-openni_wrapper::OpenNIDriver::getProductName (unsigned index) const throw ()
+openni_wrapper::OpenNIDriver::getProductName (unsigned index) const noexcept
 {
   return (device_context_[index].device_node.GetDescription ().strName);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 unsigned short 
-openni_wrapper::OpenNIDriver::getVendorID (unsigned index) const throw ()
+openni_wrapper::OpenNIDriver::getVendorID (unsigned index) const noexcept
 {
   unsigned short vendor_id;
   unsigned short product_id;
@@ -501,7 +495,7 @@ openni_wrapper::OpenNIDriver::getVendorID (unsigned index) const throw ()
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 unsigned short 
-openni_wrapper::OpenNIDriver::getProductID (unsigned index) const throw ()
+openni_wrapper::OpenNIDriver::getProductID (unsigned index) const noexcept
 {
   unsigned short vendor_id;
   unsigned short product_id;
@@ -518,7 +512,7 @@ openni_wrapper::OpenNIDriver::getProductID (unsigned index) const throw ()
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 unsigned char 
-openni_wrapper::OpenNIDriver::getBus (unsigned index) const throw ()
+openni_wrapper::OpenNIDriver::getBus (unsigned index) const noexcept
 {
   unsigned char bus = 0;
 #ifndef _WIN32
@@ -532,7 +526,7 @@ openni_wrapper::OpenNIDriver::getBus (unsigned index) const throw ()
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 unsigned char 
-openni_wrapper::OpenNIDriver::getAddress (unsigned index) const throw ()
+openni_wrapper::OpenNIDriver::getAddress (unsigned index) const noexcept
 {
   unsigned char address = 0;
 #ifndef _WIN32
@@ -550,28 +544,19 @@ openni_wrapper::OpenNIDriver::DeviceContext::DeviceContext (const xn::NodeInfo& 
 , image_node (image)
 , depth_node (depth)
 , ir_node (ir)
-, device ()
 {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 openni_wrapper::OpenNIDriver::DeviceContext::DeviceContext (const xn::NodeInfo& device)
 : device_node (device)
-, image_node (static_cast<xn::NodeInfo*> (0))
-, depth_node (static_cast<xn::NodeInfo*> (0))
-, ir_node (static_cast<xn::NodeInfo*> (0))
-, device ()
+, image_node (static_cast<xn::NodeInfo*> (nullptr))
+, depth_node (static_cast<xn::NodeInfo*> (nullptr))
+, ir_node (static_cast<xn::NodeInfo*> (nullptr))
 {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-openni_wrapper::OpenNIDriver::DeviceContext::DeviceContext (const DeviceContext& other)
-: device_node (other.device_node)
-, image_node (other.image_node)
-, depth_node (other.depth_node)
-, ir_node (other.ir_node)
-, device (other.device)
-{
-}
+openni_wrapper::OpenNIDriver::DeviceContext::DeviceContext (const DeviceContext& other) = default;
 
 #endif

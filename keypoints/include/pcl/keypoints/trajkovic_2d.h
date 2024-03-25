@@ -35,8 +35,7 @@
  *
  */
 
-#ifndef PCL_TRAJKOVIC_KEYPOINT_2D_H_
-#define PCL_TRAJKOVIC_KEYPOINT_2D_H_
+#pragma once
 
 #include <pcl/keypoints/keypoint.h>
 #include <pcl/common/intensity.h>
@@ -44,7 +43,7 @@
 namespace pcl
 {
   /** \brief TrajkovicKeypoint2D implements Trajkovic and Hedley corner detector on
-    * organized pooint cloud using intensity information.
+    * organized point cloud using intensity information.
     * It uses first order statistics to find variation of intensities in horizontal
     * or vertical directions.
     *
@@ -55,18 +54,18 @@ namespace pcl
   class TrajkovicKeypoint2D : public Keypoint<PointInT, PointOutT>
   {
     public:
-      typedef boost::shared_ptr<TrajkovicKeypoint2D<PointInT, PointOutT, IntensityT> > Ptr;
-      typedef boost::shared_ptr<const TrajkovicKeypoint2D<PointInT, PointOutT, IntensityT> > ConstPtr;
-      typedef typename Keypoint<PointInT, PointOutT>::PointCloudIn PointCloudIn;
-      typedef typename Keypoint<PointInT, PointOutT>::PointCloudOut PointCloudOut;
-      typedef typename PointCloudIn::ConstPtr PointCloudInConstPtr;
+      using Ptr = shared_ptr<TrajkovicKeypoint2D<PointInT, PointOutT, IntensityT> >;
+      using ConstPtr = shared_ptr<const TrajkovicKeypoint2D<PointInT, PointOutT, IntensityT> >;
+      using PointCloudIn = typename Keypoint<PointInT, PointOutT>::PointCloudIn;
+      using PointCloudOut = typename Keypoint<PointInT, PointOutT>::PointCloudOut;
+      using PointCloudInConstPtr = typename PointCloudIn::ConstPtr;
 
       using Keypoint<PointInT, PointOutT>::name_;
       using Keypoint<PointInT, PointOutT>::input_;
       using Keypoint<PointInT, PointOutT>::indices_;
       using Keypoint<PointInT, PointOutT>::keypoints_indices_;
 
-      typedef enum { FOUR_CORNERS, EIGHT_CORNERS } ComputationMethod;
+      enum ComputationMethod { FOUR_CORNERS, EIGHT_CORNERS };
 
       /** \brief Constructor
         * \param[in] method the method to be used to determine the corner responses
@@ -82,7 +81,6 @@ namespace pcl
         , window_size_ (window_size)
         , first_threshold_ (first_threshold)
         , second_threshold_ (second_threshold)
-        , threads_ (1)
       {
         name_ = "TrajkovicKeypoint2D";
       }
@@ -139,10 +137,10 @@ namespace pcl
 
     protected:
       bool
-      initCompute ();
+      initCompute () override;
 
       void
-      detectKeypoints (PointCloudOut &output);
+      detectKeypoints (PointCloudOut &output) override;
 
     private:
       /// comparator for responses intensity
@@ -165,12 +163,10 @@ namespace pcl
       /// second threshold for corner evaluation
       float second_threshold_;
       /// number of threads to be used
-      unsigned int threads_;
+      unsigned int threads_{1};
       /// point cloud response
       pcl::PointCloud<float>::Ptr response_;
   };
 }
 
 #include <pcl/keypoints/impl/trajkovic_2d.hpp>
-
-#endif // #ifndef PCL_TRAJKOVIC_KEYPOINT_2D_H_

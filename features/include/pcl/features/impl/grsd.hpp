@@ -40,6 +40,7 @@
 #define PCL_FEATURES_IMPL_GRSD_H_
 
 #include <pcl/features/grsd.h>
+#include <pcl/features/rsd.h> // for RSDEstimation
 ///////// STATIC /////////
 template <typename PointInT, typename PointNT, typename PointOutT> int
 pcl::GRSDEstimation<PointInT, PointNT, PointOutT>::getSimpleType (float min_radius, float max_radius,
@@ -50,14 +51,13 @@ pcl::GRSDEstimation<PointInT, PointNT, PointOutT>::getSimpleType (float min_radi
 {
   if (min_radius > min_radius_plane)
     return (1); // plane
-  else if (max_radius > min_radius_cylinder)
+  if (max_radius > min_radius_cylinder)
     return (2); // cylinder (rim)
-  else if (min_radius < max_radius_noise)
+  if (min_radius < max_radius_noise)
     return (0); // noise/corner
-  else if (max_radius - min_radius < max_min_radius_diff)
+  if (max_radius - min_radius < max_min_radius_diff)
     return (3); // sphere/corner
-  else
-    return (4); // edge
+  return (4);   // edge
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,11 +65,11 @@ template <typename PointInT, typename PointNT, typename PointOutT> void
 pcl::GRSDEstimation<PointInT, PointNT, PointOutT>::computeFeature (PointCloudOut &output)
 {
   // Check if search_radius_ was set
-  if (width_ < 0)
+  if (width_ <= 0.0)
   {
     PCL_ERROR ("[pcl::%s::computeFeature] A voxel cell width needs to be set!\n", getClassName ().c_str ());
     output.width = output.height = 0;
-    output.points.clear ();
+    output.clear ();
     return;
   }
 
@@ -87,39 +87,43 @@ pcl::GRSDEstimation<PointInT, PointNT, PointOutT>::computeFeature (PointCloudOut
   rsd.setInputCloud (cloud_downsampled);
   rsd.setSearchSurface (input_);
   rsd.setInputNormals (normals_);
-  rsd.setRadiusSearch (std::max (search_radius_, std::sqrt (3.0) * width_ / 2));
+  rsd.setRadiusSearch (search_radius_);
+  if (rsd_nr_subdiv_ != 0) // if not set, use default from RSDEstimation
+    rsd.setNrSubdivisions (rsd_nr_subdiv_);
+  if (rsd_plane_radius_ != 0.0)
+    rsd.setPlaneRadius (rsd_plane_radius_);
   rsd.compute (*radii);
-  
+
   // Save the type of each point
   int NR_CLASS = 5; // TODO make this nicer
-  std::vector<int> types (radii->points.size ());
-  for (size_t idx = 0; idx < radii->points.size (); ++idx)
-    types[idx] = getSimpleType (radii->points[idx].r_min, radii->points[idx].r_max);
+  std::vector<int> types (radii->size ());
+  std::transform(radii->points.cbegin (), radii->points.cend (), types.begin (),
+    [](const auto& point) {
+      // GCC 5.4 can't find unqualified getSimpleType
+      return GRSDEstimation<PointInT, PointNT, PointOutT>::getSimpleType(point.r_min, point.r_max); });
 
   // Get the transitions between surface types between neighbors of occupied cells
   Eigen::MatrixXi transition_matrix = Eigen::MatrixXi::Zero (NR_CLASS + 1, NR_CLASS + 1);
-  for (size_t idx = 0; idx < cloud_downsampled->points.size (); ++idx)
+  for (std::size_t idx = 0; idx < cloud_downsampled->size (); ++idx)
   {
-    int source_type = types[idx];
-    std::vector<int> neighbors = grid.getNeighborCentroidIndices (cloud_downsampled->points[idx], relative_coordinates_all_);
-    for (unsigned id_n = 0; id_n < neighbors.size (); id_n++)
+    const int source_type = types[idx];
+    std::vector<int> neighbors = grid.getNeighborCentroidIndices ((*cloud_downsampled)[idx], relative_coordinates_all_);
+    for (const int &neighbor : neighbors)
     {
-      int neighbor_type;
-      if (neighbors[id_n] == -1) // empty
-        neighbor_type = NR_CLASS;
-      else
-        neighbor_type = types[neighbors[id_n]];
+      int neighbor_type = NR_CLASS;
+      if (neighbor != -1) // not empty
+        neighbor_type = types[neighbor];
       transition_matrix (source_type, neighbor_type)++;
     }
   }
 
   // Save feature values
-  output.points.resize (1);
+  output.resize (1);
   output.height = output.width = 1;
   int nrf = 0;
   for (int i = 0; i < NR_CLASS + 1; i++)
     for (int j = i; j < NR_CLASS + 1; j++)
-      output.points[0].histogram[nrf++] = transition_matrix (i, j) + transition_matrix (j, i);
+      output[0].histogram[nrf++] = transition_matrix (i, j) + transition_matrix (j, i);
 }
 
 #define PCL_INSTANTIATE_GRSDEstimation(T,NT,OutT) template class PCL_EXPORTS pcl::GRSDEstimation<T,NT,OutT>;

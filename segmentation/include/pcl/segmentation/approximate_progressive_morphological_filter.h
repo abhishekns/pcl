@@ -36,8 +36,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PCL_APPROXIMATE_PROGRESSIVE_MORPHOLOGICAL_FILTER_H_
-#define PCL_APPROXIMATE_PROGRESSIVE_MORPHOLOGICAL_FILTER_H_
+#pragma once
 
 #include <pcl/pcl_base.h>
 #include <pcl/search/search.h>
@@ -58,7 +57,7 @@ namespace pcl
   {
     public:
 
-      typedef pcl::PointCloud <PointT> PointCloud;
+      using PointCloud = pcl::PointCloud<PointT>;
 
       using PCLBase <PointT>::input_;
       using PCLBase <PointT>::indices_;
@@ -70,8 +69,8 @@ namespace pcl
       /** \brief Constructor that sets default values for member variables. */
       ApproximateProgressiveMorphologicalFilter ();
 
-      virtual
-      ~ApproximateProgressiveMorphologicalFilter ();
+      
+      ~ApproximateProgressiveMorphologicalFilter () override;
 
       /** \brief Get the maximum window size to be used in filtering ground returns. */
       inline int
@@ -140,39 +139,36 @@ namespace pcl
         * \param[out] ground indices of points determined to be ground returns.
         */
       virtual void
-      extract (std::vector<int>& ground);
+      extract (Indices& ground);
 
     protected:
 
       /** \brief Maximum window size to be used in filtering ground returns. */
-      int max_window_size_;
+      int max_window_size_{33};
 
       /** \brief Slope value to be used in computing the height threshold. */
-      float slope_;
+      float slope_{0.7f};
 
       /** \brief Maximum height above the parameterized ground surface to be considered a ground return. */
-      float max_distance_;
+      float max_distance_{10.0f};
 
       /** \brief Initial height above the parameterized ground surface to be considered a ground return. */
-      float initial_distance_;
+      float initial_distance_{0.15f};
 
       /** \brief Cell size. */
-      float cell_size_;
+      float cell_size_{1.0f};
 
       /** \brief Base to be used in computing progressive window sizes. */
-      float base_;
+      float base_{2.0f};
 
       /** \brief Exponentially grow window sizes? */
-      bool exponential_;
+      bool exponential_{true};
 
       /** \brief Number of threads to be used. */
-      unsigned int threads_;      
+      unsigned int threads_{0};      
   };
 }
 
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/segmentation/impl/approximate_progressive_morphological_filter.hpp>
 #endif
-
-#endif
-

@@ -36,6 +36,7 @@
  *
  */
 #include <pcl/pcl_config.h>
+#include <pcl/memory.h>
 #ifdef HAVE_OPENNI
 
 #ifdef __GNUC__
@@ -45,12 +46,14 @@
 #include <pcl/io/openni_camera/openni_device_kinect.h>
 #include <pcl/io/openni_camera/openni_image_bayer_grbg.h>
 
+#include <mutex>
+
 namespace openni_wrapper
 {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool 
-openni_wrapper::DeviceKinect::isSynchronizationSupported () const throw ()
+openni_wrapper::DeviceKinect::isSynchronizationSupported () const noexcept
 {
   return (false);
 }
@@ -58,7 +61,6 @@ openni_wrapper::DeviceKinect::isSynchronizationSupported () const throw ()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 openni_wrapper::DeviceKinect::DeviceKinect (xn::Context& context, const xn::NodeInfo& device_node, const xn::NodeInfo& image_node, const xn::NodeInfo& depth_node, const xn::NodeInfo& ir_node)
 : OpenNIDevice (context, device_node, image_node, depth_node, ir_node)
-, debayering_method_ (ImageBayerGRBG::EdgeAwareWeighted)
 {
   // setup stream modes
   enumAvailableModes ();
@@ -69,7 +71,7 @@ openni_wrapper::DeviceKinect::DeviceKinect (xn::Context& context, const xn::Node
   // device specific initialization
   XnStatus status;
 
-  boost::unique_lock<boost::mutex> image_lock (image_mutex_);
+  std::unique_lock<std::mutex> image_lock (image_mutex_);
   // set kinect specific format. Thus input = uncompressed Bayer, output = grayscale = bypass = bayer
   status = image_generator_.SetIntProperty ("InputFormat", 6);
   if (status != XN_STATUS_OK)
@@ -81,7 +83,7 @@ openni_wrapper::DeviceKinect::DeviceKinect (xn::Context& context, const xn::Node
     THROW_OPENNI_EXCEPTION ("Failed to set image pixel format to 8bit-grayscale. Reason: %s", xnGetStatusString (status));
   image_lock.unlock ();
 
-  boost::lock_guard<boost::mutex> depth_lock (depth_mutex_);
+  std::lock_guard<std::mutex> depth_lock (depth_mutex_);
   // RegistrationType should be 2 (software) for Kinect, 1 (hardware) for PS
   status = depth_generator_.SetIntProperty ("RegistrationType", 2);
   if (status != XN_STATUS_OK)
@@ -89,7 +91,7 @@ openni_wrapper::DeviceKinect::DeviceKinect (xn::Context& context, const xn::Node
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-openni_wrapper::DeviceKinect::~DeviceKinect () throw ()
+openni_wrapper::DeviceKinect::~DeviceKinect () noexcept
 {
   depth_mutex_.lock ();
   depth_generator_.UnregisterFromNewDataAvailable (depth_callback_handle_);
@@ -102,14 +104,14 @@ openni_wrapper::DeviceKinect::~DeviceKinect () throw ()
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool 
-openni_wrapper::DeviceKinect::isImageResizeSupported (unsigned input_width, unsigned input_height, unsigned output_width, unsigned output_height) const throw ()
+openni_wrapper::DeviceKinect::isImageResizeSupported (unsigned input_width, unsigned input_height, unsigned output_width, unsigned output_height) const noexcept
 {
   return (ImageBayerGRBG::resizingSupported (input_width, input_height, output_width, output_height));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void 
-openni_wrapper::DeviceKinect::enumAvailableModes () throw ()
+openni_wrapper::DeviceKinect::enumAvailableModes () noexcept
 {
   XnMapOutputMode output_mode;
   available_image_modes_.clear();
@@ -128,10 +130,10 @@ openni_wrapper::DeviceKinect::enumAvailableModes () throw ()
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-boost::shared_ptr<openni_wrapper::Image> 
-openni_wrapper::DeviceKinect::getCurrentImage (boost::shared_ptr<xn::ImageMetaData> image_data) const throw ()
+openni_wrapper::Image::Ptr 
+openni_wrapper::DeviceKinect::getCurrentImage (pcl::shared_ptr<xn::ImageMetaData> image_data) const noexcept
 {
-  return (boost::shared_ptr<Image> (new ImageBayerGRBG (image_data, debayering_method_)));
+  return (Image::Ptr (new ImageBayerGRBG (image_data, debayering_method_)));
 }
 
 }//namespace

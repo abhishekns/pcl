@@ -1,5 +1,4 @@
-#ifndef PCLVIEWER_H
-#define PCLVIEWER_H
+#pragma once
 
 // Qt
 #include <QMainWindow>
@@ -15,9 +14,6 @@
 
 // Boost
 #include <boost/math/special_functions/round.hpp>
-
-// Visualization Toolkit (VTK)
-#include <vtkRenderWindow.h>
 
 typedef pcl::PointXYZRGBA PointT;
 typedef pcl::PointCloud<PointT> PointCloudT;
@@ -39,7 +35,7 @@ class PCLViewer : public QMainWindow
     /** @brief Destructor */
     ~PCLViewer ();
 
-  public slots:
+  public Q_SLOTS:
     /** @brief Triggered whenever the "Save file" button is clicked */
     void
     saveFileButtonPressed ();
@@ -57,8 +53,12 @@ class PCLViewer : public QMainWindow
     lookUpTableChosen ();
 
   protected:
+    /** @brief Rerender the view */
+    void
+    refreshView();
+    
     /** @brief The PCL visualizer object */
-    boost::shared_ptr<pcl::visualization::PCLVisualizer> viewer_;
+    pcl::visualization::PCLVisualizer::Ptr viewer_;
 
     /** @brief The point cloud displayed */
     PointCloudT::Ptr cloud_;
@@ -89,5 +89,3 @@ class PCLViewer : public QMainWindow
     /** @brief ui pointer */
     Ui::PCLViewer *ui;
 };
-
-#endif // PCLVIEWER_H

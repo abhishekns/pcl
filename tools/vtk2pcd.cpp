@@ -43,6 +43,9 @@
 #include <pcl/console/parse.h>
 #include <pcl/console/time.h>
 
+#include <vtkPolyDataNormals.h> // for vtkPolyDataNormals
+#include <vtkPolyDataReader.h> // for vtkPolyDataReader
+
 using namespace pcl;
 using namespace pcl::io;
 using namespace pcl::console;
@@ -107,11 +110,7 @@ main (int argc, char** argv)
   if (copy_normals)
   {
     vtkSmartPointer<vtkPolyDataNormals> ng = vtkSmartPointer<vtkPolyDataNormals>::New ();
-#if VTK_MAJOR_VERSION < 6
-    ng->SetInput (polydata);
-#else
     ng->SetInputData (polydata);
-#endif
     ng->ComputePointNormalsOn ();
     ng->ComputeCellNormalsOff ();
     ng->Update ();

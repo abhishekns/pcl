@@ -34,15 +34,22 @@ the OpenNI Grabber.
 
 .. raw:: html
   
-  <iframe title="PCL OpenNI Viewer example" width="480" height="390" src="http://www.youtube.com/embed/x3SaWQkPsPI?rel=0" frameborder="0" allowfullscreen></iframe>
+  <iframe title="PCL OpenNI Viewer example" width="480" height="390" src="https://www.youtube.com/embed/x3SaWQkPsPI?rel=0" frameborder="0" allowfullscreen></iframe>
 
-So let's look at the code. From *visualization/tools/openni_viewer_simple.cpp*
+So let's look at the code. From *tools/openni_viewer_simple.cpp*
 
 .. code-block:: cpp
    :linenos:
 
     #include <pcl/io/openni_grabber.h>
     #include <pcl/visualization/cloud_viewer.h>
+
+
+    #include <chrono>
+    #include <thread>
+
+    using namespace std::chrono_literals;
+
     
     class SimpleOpenNIViewer
     {
@@ -59,8 +66,8 @@ So let's look at the code. From *visualization/tools/openni_viewer_simple.cpp*
         {   
           pcl::Grabber* interface = new pcl::OpenNIGrabber();
 
-          boost::function<void (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr&)> f = 
-            boost::bind (&SimpleOpenNIViewer::cloud_cb_, this, _1);
+          std::function<void (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr&)> f =
+            [this] (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& cloud) { cloud_cb_ (cloud); };
 
           interface->registerCallback (f);
               
@@ -68,7 +75,7 @@ So let's look at the code. From *visualization/tools/openni_viewer_simple.cpp*
               
           while (!viewer.wasStopped())
           {   
-            boost::this_thread::sleep (boost::posix_time::seconds (1));
+            std::this_thread::sleep_for(1s);
           }   
 
           interface->stop (); 
@@ -87,11 +94,12 @@ So let's look at the code. From *visualization/tools/openni_viewer_simple.cpp*
 
 As you can see, the *run ()* function of *SimpleOpenNIViewer* first creates a
 new *OpenNIGrabber* interface. The next line might seem a bit intimidating at
-first, but it's not that bad. We create a *boost::bind* object with the address
-of the callback *cloud_cb_*, we pass a reference to our *SimpleOpenNIViewer*
-and the argument palce holder *_1*.
+first, but it's not that bad. We create a lambda object which invokes *cloud_cb_*,
+we capture a copy of *this* to get an pointer to our *SimpleOpenNIViewer*, so
+that *cloud_cb_* can be invoked.
 
-The *bind* then gets casted to a *boost::function* object which is templated on
+
+The lambda then gets casted to a *std::function* object which is templated on
 the callback function type, in this case *void (const
 pcl::PointCloud<pcl::PointXYZ>::ConstPtr&)*. The resulting function object can
 the be registered with the *OpenNIGrabber* and subsequently started.  Note that
@@ -103,22 +111,22 @@ Additional Details
 
 The *OpenNIGrabber* offers more than one datatype, which is the reason we made
 the *Grabber* interface so generic, leading to the relatively complicated
-*boost::bind* line. In fact, we can register the following callback types as of
+lambda line. In fact, we can register the following callback types as of
 this writing:
 
-* `void (const boost::shared_ptr<const pcl::PointCloud<pcl::PointXYZRGB> >&)`
+* `void (const pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr&)`
 
-* `void (const boost::shared_ptr<const pcl::PointCloud<pcl::PointXYZ> >&)`
+* `void (const pcl::PointCloud<pcl::PointXYZ>::ConstPtr&)`
 
-* `void (const boost::shared_ptr<openni_wrapper::Image>&)`
+* `void (const openni_wrapper::Image::Ptr&)`
 
   This provides just the RGB image from the built-in camera.
 
-* `void (const boost::shared_ptr<openni_wrapper::DepthImage>&)`
+* `void (const openni_wrapper::DepthImage::Ptr&)`
 
   This provides the depth image, without any color or intensity information
 
-* `void (const boost::shared_ptr<openni_wrapper::Image>&, const boost::shared_ptr<openni_wrapper::DepthImage>&, float constant)`
+* `void (const openni_wrapper::Image::Ptr&, const openni_wrapper::DepthImage::Ptr&, float constant)`
     
   When a callback of this type is registered, the grabber sends both RGB
   image and depth image and the constant (*1 / focal length*), which you need
@@ -171,7 +179,7 @@ Add the following lines to your CMakeLists.txt file:
 Troubleshooting
 ---------------
 
-Q: I get an error that theres now device connected:
+Q: I get an error that there's no device connected:
 
 .. note::
 

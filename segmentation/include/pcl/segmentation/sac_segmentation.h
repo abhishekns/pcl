@@ -37,8 +37,7 @@
  *
  */
 
-#ifndef PCL_SEGMENTATION_SAC_SEGMENTATION_H_
-#define PCL_SEGMENTATION_SAC_SEGMENTATION_H_
+#pragma once
 
 #include <pcl/pcl_base.h>
 #include <pcl/PointIndices.h>
@@ -71,38 +70,23 @@ namespace pcl
       using PCLBase<PointT>::input_;
       using PCLBase<PointT>::indices_;
 
-      typedef pcl::PointCloud<PointT> PointCloud;
-      typedef typename PointCloud::Ptr PointCloudPtr;
-      typedef typename PointCloud::ConstPtr PointCloudConstPtr;
-      typedef typename pcl::search::Search<PointT>::Ptr SearchPtr;
+      using PointCloud = pcl::PointCloud<PointT>;
+      using PointCloudPtr = typename PointCloud::Ptr;
+      using PointCloudConstPtr = typename PointCloud::ConstPtr;
+      using SearchPtr = typename pcl::search::Search<PointT>::Ptr;
 
-      typedef typename SampleConsensus<PointT>::Ptr SampleConsensusPtr;
-      typedef typename SampleConsensusModel<PointT>::Ptr SampleConsensusModelPtr;
+      using SampleConsensusPtr = typename SampleConsensus<PointT>::Ptr;
+      using SampleConsensusModelPtr = typename SampleConsensusModel<PointT>::Ptr;
 
       /** \brief Empty constructor. 
         * \param[in] random if true set the random seed to the current time, else set to 12345 (default: false)
         */
-      SACSegmentation (bool random = false) 
-        : model_ ()
-        , sac_ ()
-        , model_type_ (-1)
-        , method_type_ (0)
-        , threshold_ (0)
-        , optimize_coefficients_ (true)
-        , radius_min_ (-std::numeric_limits<double>::max ())
-        , radius_max_ (std::numeric_limits<double>::max ())
-        , samples_radius_ (0.0)
-        , samples_radius_search_ ()
-        , eps_angle_ (0.0)
-        , axis_ (Eigen::Vector3f::Zero ())
-        , max_iterations_ (50)
-        , probability_ (0.99)
-        , random_ (random)
-      {
-      }
+      SACSegmentation(bool random = false)
+      : random_(random)
+      {}
 
       /** \brief Empty destructor. */
-      virtual ~SACSegmentation () { /*srv_.reset ();*/ };
+      ~SACSegmentation () override = default;
 
       /** \brief The type of model to use (user given parameter).
         * \param[in] model the model type (check \a model_types.h)
@@ -161,6 +145,13 @@ namespace pcl
       /** \brief Get the probability of choosing at least one sample free from outliers. */
       inline double 
       getProbability () const { return (probability_); }
+
+      /** \brief Set the number of threads to use or turn off parallelization.
+        * \param[in] nr_threads the number of hardware threads to use (0 sets the value automatically, a negative number turns parallelization off)
+        * \note Not all SAC methods have a parallel implementation. Some will ignore this setting.
+        */
+      inline void
+      setNumberOfThreads (const int nr_threads = -1) { threads_ = nr_threads; }
 
       /** \brief Set to true if a coefficient refinement is required.
         * \param[in] optimize true for enabling model coefficient refinement, false otherwise
@@ -257,43 +248,46 @@ namespace pcl
       initSAC (const int method_type);
 
       /** \brief The model that needs to be segmented. */
-      SampleConsensusModelPtr model_;
+      SampleConsensusModelPtr model_{nullptr};
 
       /** \brief The sample consensus segmentation method. */
-      SampleConsensusPtr sac_;
+      SampleConsensusPtr sac_{nullptr};
 
       /** \brief The type of model to use (user given parameter). */
-      int model_type_;
+      int model_type_{-1};
 
       /** \brief The type of sample consensus method to use (user given parameter). */
-      int method_type_;
+      int method_type_{0};
 
       /** \brief Distance to the model threshold (user given parameter). */
-      double threshold_;
+      double threshold_{0.0};
 
       /** \brief Set to true if a coefficient refinement is required. */
-      bool optimize_coefficients_;
+      bool optimize_coefficients_{true};
 
       /** \brief The minimum and maximum radius limits for the model. Applicable to all models that estimate a radius. */
-      double radius_min_, radius_max_;
+      double radius_min_{-std::numeric_limits<double>::max()}, radius_max_{std::numeric_limits<double>::max()};
 
       /** \brief The maximum distance of subsequent samples from the first (radius search) */
-      double samples_radius_;
+      double samples_radius_{0.0};
 
       /** \brief The search object for picking subsequent samples using radius search */
-      SearchPtr samples_radius_search_;
+      SearchPtr samples_radius_search_{nullptr};
 
       /** \brief The maximum allowed difference between the model normal and the given axis. */
-      double eps_angle_;
+      double eps_angle_{0.0};
 
       /** \brief The axis along which we need to search for a model perpendicular to. */
-      Eigen::Vector3f axis_;
+      Eigen::Vector3f axis_{Eigen::Vector3f::Zero()};
 
       /** \brief Maximum number of iterations before giving up (user given parameter). */
-      int max_iterations_;
+      int max_iterations_{50};
+
+      /** \brief The number of threads the scheduler should use, or a negative number if no parallelization is wanted. */
+      int threads_{-1};
 
       /** \brief Desired probability of choosing at least one sample free from outliers (user given parameter). */
-      double probability_;
+      double probability_{0.99};
 
       /** \brief Set to true if we need a random seed. */
       bool random_;
@@ -322,33 +316,28 @@ namespace pcl
       using PCLBase<PointT>::input_;
       using PCLBase<PointT>::indices_;
 
-      typedef typename SACSegmentation<PointT>::PointCloud PointCloud;
-      typedef typename PointCloud::Ptr PointCloudPtr;
-      typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+      using PointCloud = typename SACSegmentation<PointT>::PointCloud;
+      using PointCloudPtr = typename PointCloud::Ptr;
+      using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
-      typedef typename pcl::PointCloud<PointNT> PointCloudN;
-      typedef typename PointCloudN::Ptr PointCloudNPtr;
-      typedef typename PointCloudN::ConstPtr PointCloudNConstPtr;
+      using PointCloudN = pcl::PointCloud<PointNT>;
+      using PointCloudNPtr = typename PointCloudN::Ptr;
+      using PointCloudNConstPtr = typename PointCloudN::ConstPtr;
 
-      typedef typename SampleConsensus<PointT>::Ptr SampleConsensusPtr;
-      typedef typename SampleConsensusModel<PointT>::Ptr SampleConsensusModelPtr;
-      typedef typename SampleConsensusModelFromNormals<PointT, PointNT>::Ptr SampleConsensusModelFromNormalsPtr;
+      using SampleConsensusPtr = typename SampleConsensus<PointT>::Ptr;
+      using SampleConsensusModelPtr = typename SampleConsensusModel<PointT>::Ptr;
+      using SampleConsensusModelFromNormalsPtr = typename SampleConsensusModelFromNormals<PointT, PointNT>::Ptr;
 
       /** \brief Empty constructor.
         * \param[in] random if true set the random seed to the current time, else set to 12345 (default: false)
         */
       SACSegmentationFromNormals (bool random = false) 
         : SACSegmentation<PointT> (random)
-        , normals_ ()
-        , distance_weight_ (0.1)
-        , distance_from_origin_ (0)
-        , min_angle_ ()
-        , max_angle_ ()
       {};
 
       /** \brief Provide a pointer to the input dataset that contains the point normals of 
         * the XYZ dataset.
-        * \param[in] normals the const boost shared pointer to a PointCloud message
+        * \param[in] normals the const shared pointer to a PointCloud message
         */
       inline void 
       setInputNormals (const PointCloudNConstPtr &normals) { normals_ = normals; }
@@ -370,7 +359,7 @@ namespace pcl
       getNormalDistanceWeight () const { return (distance_weight_); }
 
       /** \brief Set the minimum opning angle for a cone model.
-        * \param min_angle the opening angle which we need minumum to validate a cone model.
+        * \param min_angle the opening angle which we need minimum to validate a cone model.
         * \param max_angle the opening angle which we need maximum to validate a cone model.
         */
       inline void
@@ -380,7 +369,7 @@ namespace pcl
         max_angle_ = max_angle;
       }
  
-      /** \brief Get the opening angle which we need minumum to validate a cone model. */
+      /** \brief Get the opening angle which we need minimum to validate a cone model. */
       inline void
       getMinMaxOpeningAngle (double &min_angle, double &max_angle)
       {
@@ -389,7 +378,7 @@ namespace pcl
       }
 
       /** \brief Set the distance we expect a plane model to be from the origin
-        * \param[in] d distance from the template plane modl to the origin
+        * \param[in] d distance from the template plane model to the origin
         */
       inline void
       setDistanceFromOrigin (const double d) { distance_from_origin_ = d; }
@@ -400,34 +389,32 @@ namespace pcl
 
     protected:
       /** \brief A pointer to the input dataset that contains the point normals of the XYZ dataset. */
-      PointCloudNConstPtr normals_;
+      PointCloudNConstPtr normals_{nullptr};
 
       /** \brief The relative weight (between 0 and 1) to give to the angular
         * distance (0 to pi/2) between point normals and the plane normal. 
         */
-      double distance_weight_;
+      double distance_weight_{0.1};
 
       /** \brief The distance from the template plane to the origin. */
-      double distance_from_origin_;
+      double distance_from_origin_{0.0};
 
       /** \brief The minimum and maximum allowed opening angle of valid cone model. */
-      double min_angle_;
-      double max_angle_;
+      double min_angle_{0.0};
+      double max_angle_{M_PI_2};
 
       /** \brief Initialize the Sample Consensus model and set its parameters.
         * \param[in] model_type the type of SAC model that is to be used
         */
-      virtual bool 
-      initSACModel (const int model_type);
+      bool 
+      initSACModel (const int model_type) override;
 
       /** \brief Class get name method. */
-      virtual std::string 
-      getClassName () const { return ("SACSegmentationFromNormals"); }
+      std::string 
+      getClassName () const override { return ("SACSegmentationFromNormals"); }
   };
 }
 
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/segmentation/impl/sac_segmentation.hpp>
 #endif
-
-#endif  //#ifndef PCL_SEGMENTATION_SAC_SEGMENTATION_H_

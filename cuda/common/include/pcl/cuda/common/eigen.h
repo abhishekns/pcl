@@ -87,14 +87,12 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#ifndef PCL_CUDA_EIGEN_H_
-#define PCL_CUDA_EIGEN_H_
+#pragma once
 
 #include <pcl/cuda/point_cloud.h>
 #include <pcl/cuda/cutil_math.h>
 
 #include <limits>
-#include <float.h>
 
 namespace pcl
 {
@@ -103,7 +101,9 @@ namespace pcl
   
     inline __host__ __device__ bool isMuchSmallerThan (float x, float y)
     {
-      float prec_sqr = FLT_EPSILON * FLT_EPSILON; // copied from <eigen>/include/Eigen/src/Core/NumTraits.h
+      // inspired by Eigen's implementation
+      float prec_sqr =
+          std::numeric_limits<float>::epsilon() * std::numeric_limits<float>::epsilon();
       return x * x <= prec_sqr * y * y;
     }
   
@@ -180,7 +180,7 @@ namespace pcl
       float  c2 = m.data[0].x + m.data[1].y + m.data[2].z;
   
   
-  		if (fabs(c0) < FLT_EPSILON) // one root is 0 -> quadratic equation
+      if (std::abs(c0) < std::numeric_limits<float>::epsilon()) // one root is 0 -> quadratic equation
   			computeRoots2 (c2, c1, roots);
   		else
   		{
@@ -202,7 +202,7 @@ namespace pcl
   		  // Compute the eigenvalues by solving for the roots of the polynomial.
   		  float rho = sqrtf (-a_over_3);
   		  float theta = std::atan2 (sqrtf (-q), half_b) * s_inv3;
-  		  float cos_theta = cos (theta);
+  		  float cos_theta = std::cos (theta);
   		  float sin_theta = sin (theta);
   		  roots.x = c2_over_3 + 2.f * rho * cos_theta;
   		  roots.y = c2_over_3 - rho * (cos_theta + s_sqrt3 * sin_theta);
@@ -218,7 +218,7 @@ namespace pcl
   		      swap (roots.x, roots.y);
   		  }
   		  
-  		  if (roots.x <= 0.0f) // eigenval for symetric positive semi-definite matrix can not be negative! Set it to 0
+  		  if (roots.x <= 0.0f) // eigenval for symmetric positive semi-definite matrix can not be negative! Set it to 0
   			  computeRoots2 (c2, c1, roots);
   		}
     }
@@ -234,7 +234,7 @@ namespace pcl
       //Scalar scale = mat.cwiseAbs ().maxCoeff ();
       float3 scale_tmp = fmaxf (fmaxf (fabs (mat.data[0]), fabs (mat.data[1])), fabs (mat.data[2]));
       float scale = fmaxf (fmaxf (scale_tmp.x, scale_tmp.y), scale_tmp.z);
-      if (scale <= FLT_MIN)
+      if (scale <= std::numeric_limits<float>::min())
       	scale = 1.0f;
       
       CovarianceMatrix scaledMat;
@@ -245,14 +245,14 @@ namespace pcl
       // Compute the eigenvalues
       computeRoots (scaledMat, evals);
       
-  		if ((evals.z-evals.x) <= FLT_EPSILON)
+  		if ((evals.z - evals.x) <= std::numeric_limits<float>::epsilon())
   		{
   			// all three equal
   			evecs.data[0] = make_float3 (1.0f, 0.0f, 0.0f);
   			evecs.data[1] = make_float3 (0.0f, 1.0f, 0.0f);
   			evecs.data[2] = make_float3 (0.0f, 0.0f, 1.0f);
   		}
-  		else if ((evals.y-evals.x) <= FLT_EPSILON)
+      else if ((evals.y - evals.x) <= std::numeric_limits<float>::epsilon())
   		{
   			// first and second equal
   			CovarianceMatrix tmp;
@@ -282,7 +282,7 @@ namespace pcl
   			evecs.data[1] = unitOrthogonal (evecs.data[2]); 
   			evecs.data[0] = cross (evecs.data[1], evecs.data[2]);
   		}
-  		else if ((evals.z-evals.y) <= FLT_EPSILON)
+      else if ((evals.z - evals.y) <= std::numeric_limits<float>::epsilon())
   		{
   			// second and third equal
   			CovarianceMatrix tmp;
@@ -572,10 +572,10 @@ namespace pcl
         bounds.z += height_ / 2.0f;
         bounds.w += height_ / 2.0f;
   
-        res.x = (int)floor (bounds.x); 
-        res.y = (int)ceil  (bounds.y);
-        res.z = (int)floor (bounds.z);
-        res.w = (int)ceil  (bounds.w);
+        res.x = (int)std::floor (bounds.x); 
+        res.y = (int)std::ceil  (bounds.y);
+        res.z = (int)std::floor (bounds.z);
+        res.w = (int)std::ceil  (bounds.w);
   
         // clamp the coordinates to fit to depth image size
         res.x = clamp (res.x, 0, width_-1);
@@ -770,5 +770,3 @@ namespace pcl
   
   } // namespace
 } // namespace
-
-#endif  //#ifndef PCL_CUDA_EIGEN_H_

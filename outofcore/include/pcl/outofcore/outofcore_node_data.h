@@ -36,14 +36,15 @@
  *  $Id: outofcore_node_data.h 6915 2012-08-22 10:54:21Z stfox88 $
  */
 
-#ifndef PCL_OUTOFCORE_OCTREE_NODE_METADATA_H_
-#define PCL_OUTOFCORE_OCTREE_NODE_METADATA_H_
+#pragma once
 
+#include <pcl/memory.h>
 #include <pcl/pcl_macros.h>
-#include <pcl/outofcore/boost.h>
 #include <pcl/outofcore/cJSON.h>
 
 #include <pcl/common/eigen.h>
+
+#include <boost/filesystem.hpp>
 
 #include <ostream>
 
@@ -85,8 +86,8 @@ namespace pcl
 
       public:
         //public typedefs
-        typedef boost::shared_ptr<OutofcoreOctreeNodeMetadata> Ptr;
-        typedef boost::shared_ptr<const OutofcoreOctreeNodeMetadata> ConstPtr;
+        using Ptr = shared_ptr<OutofcoreOctreeNodeMetadata>;
+        using ConstPtr = shared_ptr<const OutofcoreOctreeNodeMetadata>;
   
         /** \brief Empty constructor */
         OutofcoreOctreeNodeMetadata ();
@@ -175,7 +176,7 @@ namespace pcl
         /** \brief Metadata (JSON) file pathname (oct_idx extension JSON file) */
         boost::filesystem::path metadata_filename_;
         /** \brief Outofcore library version identifier */
-        int outofcore_version_;
+        int outofcore_version_{0};
 
         /** \brief Computes the midpoint; used when bounding box is changed */
         inline void 
@@ -186,5 +187,3 @@ namespace pcl
     };
   }//namespace outofcore
 }//namespace pcl
-  
-#endif // PCL_OUTOFCORE_OCTREE_NODE_METADATA_H_

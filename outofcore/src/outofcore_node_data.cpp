@@ -42,33 +42,22 @@
 #include <pcl/console/print.h>
 
 #include <pcl/pcl_macros.h>
-#include <pcl/common/io.h>
+#include <pcl/exceptions.h> // for PCL_THROW_EXCEPTION, PCLException
 
 #include <iostream>
 #include <fstream>
-#include <sstream>
+#include <memory>
 
 namespace pcl
 {
   namespace outofcore
   {
     
-    OutofcoreOctreeNodeMetadata::OutofcoreOctreeNodeMetadata () 
-      : min_bb_ (),
-        max_bb_ (),
-        binary_point_filename_ (),
-        midpoint_xyz_ (),
-        directory_ (),
-        metadata_filename_ (),
-        outofcore_version_ ()
-    {
-    }
+    OutofcoreOctreeNodeMetadata::OutofcoreOctreeNodeMetadata () = default;
 
     ////////////////////////////////////////////////////////////////////////////////
 
-    OutofcoreOctreeNodeMetadata::~OutofcoreOctreeNodeMetadata ()
-    {
-    }
+    OutofcoreOctreeNodeMetadata::~OutofcoreOctreeNodeMetadata () = default;
 
     ////////////////////////////////////////////////////////////////////////////////
 
@@ -216,7 +205,7 @@ namespace pcl
     void 
     OutofcoreOctreeNodeMetadata::serializeMetadataToDisk ()
     {
-      boost::shared_ptr<cJSON> idx (cJSON_CreateObject (), cJSON_Delete);
+      std::shared_ptr<cJSON> idx (cJSON_CreateObject (), cJSON_Delete);
 
       cJSON* cjson_outofcore_version = cJSON_CreateNumber (outofcore_version_);
   
@@ -265,7 +254,7 @@ namespace pcl
         PCL_ERROR ("[pcl::outofcore::OutofcoreOctreeNodeMetadata] Can not find index metadata at %s.\n", metadata_filename_.c_str ());
         return (0);
       }
-      else if(boost::filesystem::is_directory (metadata_filename_))
+      if(boost::filesystem::is_directory (metadata_filename_))
       {
         PCL_ERROR ("[pcl::outofcore::OutofcoreOctreeNodeMetadata] Got a directory, but no oct_idx metadata?\n");
         return (0);
@@ -273,7 +262,7 @@ namespace pcl
 
       //load CJSON
       std::vector<char> idx_input;
-      boost::uintmax_t len = boost::filesystem::file_size (metadata_filename_);
+      std::uintmax_t len = boost::filesystem::file_size (metadata_filename_);
       idx_input.resize (len + 1);
       
       std::ifstream f (metadata_filename_.string ().c_str (), std::ios::in);
@@ -281,7 +270,7 @@ namespace pcl
       idx_input.back () = '\0';
       
       //Parse
-      boost::shared_ptr<cJSON> idx (cJSON_Parse (&(idx_input.front ())), cJSON_Delete);
+      std::shared_ptr<cJSON> idx (cJSON_Parse (&(idx_input.front ())), cJSON_Delete);
 
       cJSON* cjson_outofcore_version = cJSON_GetObjectItem (idx.get (), "version");
       cJSON* cjson_bb_min = cJSON_GetObjectItem (idx.get (), "bb_min");

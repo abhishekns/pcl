@@ -1,5 +1,4 @@
-#ifndef PCL_OUTOFCORE_SCENE_H_
-#define PCL_OUTOFCORE_SCENE_H_
+#pragma once
 
 // PCL
 #include "camera.h"
@@ -15,12 +14,13 @@ private:
 
   static Scene *instance_;
 
-  Scene ();
-  Scene (const Scene& op);
-  Scene&
-  operator= (const Scene& op);
 
 public:
+
+  Scene ();
+  Scene (const Scene& op) = delete;
+  Scene&
+  operator= (const Scene& op) = delete;
 
   // Singleton
   static Scene*
@@ -44,7 +44,7 @@ public:
   getCamera (vtkCamera *camera);
 
   Camera*
-  getCamera (std::string name);
+  getCamera (const std::string& name);
 
   // Accessors - Objects
   // -----------------------------------------------------------------------------
@@ -52,7 +52,7 @@ public:
   addObject (Object *object);
 
   Object*
-  getObjectByName (std::string name);
+  getObjectByName (const std::string& name);
 
   std::vector<Object*>
   getObjects ();
@@ -83,8 +83,6 @@ private:
   std::vector<Viewport*> viewports_;
   std::vector<Object*> objects_;
 
-  boost::mutex render_mutex_;
+  std::mutex render_mutex_;
 
 };
-
-#endif

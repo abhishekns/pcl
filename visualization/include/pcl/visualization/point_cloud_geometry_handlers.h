@@ -34,14 +34,15 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#ifndef PCL_POINT_CLOUD_GEOMETRY_HANDLERS_H_
-#define PCL_POINT_CLOUD_GEOMETRY_HANDLERS_H_
+
+#pragma once
 
 #if defined __GNUC__
 #pragma GCC system_header
 #endif
 
 // PCL includes
+#include <pcl/pcl_base.h> // for UNAVAILABLE
 #include <pcl/point_cloud.h>
 #include <pcl/common/io.h>
 // VTK includes
@@ -61,22 +62,22 @@ namespace pcl
     class PointCloudGeometryHandler
     {
       public:
-        typedef pcl::PointCloud<PointT> PointCloud;
-        typedef typename PointCloud::Ptr PointCloudPtr;
-        typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+        using PointCloud = pcl::PointCloud<PointT>;
+        using PointCloudPtr = typename PointCloud::Ptr;
+        using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
-        typedef typename boost::shared_ptr<PointCloudGeometryHandler<PointT> > Ptr;
-        typedef typename boost::shared_ptr<const PointCloudGeometryHandler<PointT> > ConstPtr;
+        using Ptr = shared_ptr<PointCloudGeometryHandler<PointT> >;
+        using ConstPtr = shared_ptr<const PointCloudGeometryHandler<PointT> >;
 
         /** \brief Constructor. */
         PointCloudGeometryHandler (const PointCloudConstPtr &cloud) :
           cloud_ (cloud), capable_ (false),
-          field_x_idx_ (-1), field_y_idx_ (-1), field_z_idx_ (-1),
+          field_x_idx_ (UNAVAILABLE), field_y_idx_ (UNAVAILABLE), field_z_idx_ (UNAVAILABLE),
           fields_ ()
         {}
 
         /** \brief Destructor. */
-        virtual ~PointCloudGeometryHandler () {}
+        virtual ~PointCloudGeometryHandler() = default;
 
         /** \brief Abstract getName method.
           * \return the name of the class/object.
@@ -88,7 +89,7 @@ namespace pcl
         virtual std::string
         getFieldName () const  = 0;
 
-        /** \brief Checl if this handler is capable of handling the input data or not. */
+        /** \brief Check if this handler is capable of handling the input data or not. */
         inline bool
         isCapable () const { return (capable_); }
 
@@ -117,13 +118,13 @@ namespace pcl
         bool capable_;
 
         /** \brief The index of the field holding the X data. */
-        int field_x_idx_;
+        index_t field_x_idx_;
 
         /** \brief The index of the field holding the Y data. */
-        int field_y_idx_;
+        index_t field_y_idx_;
 
         /** \brief The index of the field holding the Z data. */
-        int field_z_idx_;
+        index_t field_z_idx_;
 
         /** \brief The list of fields available for this PointCloud. */
         std::vector<pcl::PCLPointField> fields_;
@@ -139,18 +140,15 @@ namespace pcl
     class PointCloudGeometryHandlerXYZ : public PointCloudGeometryHandler<PointT>
     {
       public:
-        typedef typename PointCloudGeometryHandler<PointT>::PointCloud PointCloud;
-        typedef typename PointCloud::Ptr PointCloudPtr;
-        typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+        using PointCloud = typename PointCloudGeometryHandler<PointT>::PointCloud;
+        using PointCloudPtr = typename PointCloud::Ptr;
+        using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
-        typedef typename boost::shared_ptr<PointCloudGeometryHandlerXYZ<PointT> > Ptr;
-        typedef typename boost::shared_ptr<const PointCloudGeometryHandlerXYZ<PointT> > ConstPtr;
+        using Ptr = shared_ptr<PointCloudGeometryHandlerXYZ<PointT> >;
+        using ConstPtr = shared_ptr<const PointCloudGeometryHandlerXYZ<PointT> >;
 
         /** \brief Constructor. */
         PointCloudGeometryHandlerXYZ (const PointCloudConstPtr &cloud);
-
-        /** \brief Destructor. */
-        virtual ~PointCloudGeometryHandlerXYZ () {};
 
         /** \brief Class getName method. */
         virtual std::string
@@ -179,7 +177,7 @@ namespace pcl
     //////////////////////////////////////////////////////////////////////////////////////
     /** \brief Surface normal handler class for PointCloud geometry. Given an input
       * dataset, all data present in fields "normal_x", "normal_y", and "normal_z" is
-      * extracted and dislayed on screen as XYZ data.
+      * extracted and displayed on screen as XYZ data.
       * \author Radu B. Rusu 
       * \ingroup visualization
       */
@@ -187,12 +185,12 @@ namespace pcl
     class PointCloudGeometryHandlerSurfaceNormal : public PointCloudGeometryHandler<PointT>
     {
       public:
-        typedef typename PointCloudGeometryHandler<PointT>::PointCloud PointCloud;
-        typedef typename PointCloud::Ptr PointCloudPtr;
-        typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+        using PointCloud = typename PointCloudGeometryHandler<PointT>::PointCloud;
+        using PointCloudPtr = typename PointCloud::Ptr;
+        using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
-        typedef typename boost::shared_ptr<PointCloudGeometryHandlerSurfaceNormal<PointT> > Ptr;
-        typedef typename boost::shared_ptr<const PointCloudGeometryHandlerSurfaceNormal<PointT> > ConstPtr;
+        using Ptr = shared_ptr<PointCloudGeometryHandlerSurfaceNormal<PointT> >;
+        using ConstPtr = shared_ptr<const PointCloudGeometryHandlerSurfaceNormal<PointT> >;
 
         /** \brief Constructor. */
         PointCloudGeometryHandlerSurfaceNormal (const PointCloudConstPtr &cloud);
@@ -232,27 +230,28 @@ namespace pcl
     class PointCloudGeometryHandlerCustom : public PointCloudGeometryHandler<PointT>
     {
       public:
-        typedef typename PointCloudGeometryHandler<PointT>::PointCloud PointCloud;
-        typedef typename PointCloud::Ptr PointCloudPtr;
-        typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+        using PointCloud = typename PointCloudGeometryHandler<PointT>::PointCloud;
+        using PointCloudPtr = typename PointCloud::Ptr;
+        using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
-        typedef typename boost::shared_ptr<PointCloudGeometryHandlerCustom<PointT> > Ptr;
-        typedef typename boost::shared_ptr<const PointCloudGeometryHandlerCustom<PointT> > ConstPtr;
+        using Ptr = shared_ptr<PointCloudGeometryHandlerCustom<PointT> >;
+        using ConstPtr = shared_ptr<const PointCloudGeometryHandlerCustom<PointT> >;
 
         /** \brief Constructor. */
         PointCloudGeometryHandlerCustom (const PointCloudConstPtr &cloud,
                                          const std::string &x_field_name,
                                          const std::string &y_field_name,
                                          const std::string &z_field_name)
+          : pcl::visualization::PointCloudGeometryHandler<PointT>::PointCloudGeometryHandler (cloud)
         {
-          field_x_idx_ = pcl::getFieldIndex (*cloud, x_field_name, fields_);
-          if (field_x_idx_ == -1)
+          field_x_idx_ = pcl::getFieldIndex<PointT> (x_field_name, fields_);
+          if (field_x_idx_ == UNAVAILABLE)
             return;
-          field_y_idx_ = pcl::getFieldIndex (*cloud, y_field_name, fields_);
-          if (field_y_idx_ == -1)
+          field_y_idx_ = pcl::getFieldIndex<PointT> (y_field_name, fields_);
+          if (field_y_idx_ == UNAVAILABLE)
             return;
-          field_z_idx_ = pcl::getFieldIndex (*cloud, z_field_name, fields_);
-          if (field_z_idx_ == -1)
+          field_z_idx_ = pcl::getFieldIndex<PointT> (z_field_name, fields_);
+          if (field_z_idx_ == UNAVAILABLE)
             return;
           field_name_ = x_field_name + y_field_name + z_field_name;
           capable_ = true;
@@ -278,15 +277,15 @@ namespace pcl
           if (!points)
             points = vtkSmartPointer<vtkPoints>::New ();
           points->SetDataTypeToFloat ();
-          points->SetNumberOfPoints (cloud_->points.size ());
+          points->SetNumberOfPoints (cloud_->size ());
 
           float data;
           // Add all points
           double p[3];
-          for (vtkIdType i = 0; i < static_cast<vtkIdType> (cloud_->points.size ()); ++i)
+          for (vtkIdType i = 0; i < static_cast<vtkIdType> (cloud_->size ()); ++i)
           {
             // Copy the value at the specified field
-            const uint8_t* pt_data = reinterpret_cast<const uint8_t*> (&cloud_->points[i]);
+            const std::uint8_t* pt_data = reinterpret_cast<const std::uint8_t*> (&(*cloud_)[i]);
             memcpy (&data, pt_data + fields_[field_x_idx_].offset, sizeof (float));
             p[0] = data;
 
@@ -322,26 +321,26 @@ namespace pcl
     class PCL_EXPORTS PointCloudGeometryHandler<pcl::PCLPointCloud2>
     {
       public:
-        typedef pcl::PCLPointCloud2 PointCloud;
-        typedef PointCloud::Ptr PointCloudPtr;
-        typedef PointCloud::ConstPtr PointCloudConstPtr;
+        using PointCloud = pcl::PCLPointCloud2;
+        using PointCloudPtr = PointCloud::Ptr;
+        using PointCloudConstPtr = PointCloud::ConstPtr;
 
-        typedef boost::shared_ptr<PointCloudGeometryHandler<PointCloud> > Ptr;
-        typedef boost::shared_ptr<const PointCloudGeometryHandler<PointCloud> > ConstPtr;
+        using Ptr = shared_ptr<PointCloudGeometryHandler<PointCloud> >;
+        using ConstPtr = shared_ptr<const PointCloudGeometryHandler<PointCloud> >;
 
         /** \brief Constructor. */
         PointCloudGeometryHandler (const PointCloudConstPtr &cloud, const Eigen::Vector4f & = Eigen::Vector4f::Zero ())
           : cloud_ (cloud)
           , capable_ (false)
-          , field_x_idx_ (-1)
-          , field_y_idx_ (-1)
-          , field_z_idx_ (-1)
+          , field_x_idx_ (UNAVAILABLE)
+          , field_y_idx_ (UNAVAILABLE)
+          , field_z_idx_ (UNAVAILABLE)
           , fields_ (cloud_->fields)
         {
         }
 
         /** \brief Destructor. */
-        virtual ~PointCloudGeometryHandler () {}
+        virtual ~PointCloudGeometryHandler() = default;
 
         /** \brief Abstract getName method. */
         virtual std::string
@@ -380,13 +379,13 @@ namespace pcl
         bool capable_;
 
         /** \brief The index of the field holding the X data. */
-        int field_x_idx_;
+        index_t field_x_idx_;
 
         /** \brief The index of the field holding the Y data. */
-        int field_y_idx_;
+        index_t field_y_idx_;
 
         /** \brief The index of the field holding the Z data. */
-        int field_z_idx_;
+        index_t field_z_idx_;
 
         /** \brief The list of fields available for this PointCloud. */
         std::vector<pcl::PCLPointField> fields_;
@@ -402,18 +401,15 @@ namespace pcl
     class PCL_EXPORTS PointCloudGeometryHandlerXYZ<pcl::PCLPointCloud2> : public PointCloudGeometryHandler<pcl::PCLPointCloud2>
     {
       public:
-        typedef PointCloudGeometryHandler<pcl::PCLPointCloud2>::PointCloud PointCloud;
-        typedef PointCloud::Ptr PointCloudPtr;
-        typedef PointCloud::ConstPtr PointCloudConstPtr;
+        using PointCloud = PointCloudGeometryHandler<pcl::PCLPointCloud2>::PointCloud;
+        using PointCloudPtr = PointCloud::Ptr;
+        using PointCloudConstPtr = PointCloud::ConstPtr;
 
-        typedef boost::shared_ptr<PointCloudGeometryHandlerXYZ<PointCloud> > Ptr;
-        typedef boost::shared_ptr<const PointCloudGeometryHandlerXYZ<PointCloud> > ConstPtr;
+        using Ptr = shared_ptr<PointCloudGeometryHandlerXYZ<PointCloud> >;
+        using ConstPtr = shared_ptr<const PointCloudGeometryHandlerXYZ<PointCloud> >;
 
         /** \brief Constructor. */
         PointCloudGeometryHandlerXYZ (const PointCloudConstPtr &cloud);
-
-        /** \brief Destructor. */
-        virtual ~PointCloudGeometryHandlerXYZ () {}
 
         /** \brief Class getName method. */
         virtual std::string 
@@ -427,7 +423,7 @@ namespace pcl
     //////////////////////////////////////////////////////////////////////////////////////
     /** \brief Surface normal handler class for PointCloud geometry. Given an input
       * dataset, all data present in fields "normal_x", "normal_y", and "normal_z" is
-      * extracted and dislayed on screen as XYZ data.
+      * extracted and displayed on screen as XYZ data.
       * \author Radu B. Rusu 
       * \ingroup visualization
       */
@@ -435,12 +431,12 @@ namespace pcl
     class PCL_EXPORTS PointCloudGeometryHandlerSurfaceNormal<pcl::PCLPointCloud2> : public PointCloudGeometryHandler<pcl::PCLPointCloud2>
     {
       public:
-        typedef PointCloudGeometryHandler<pcl::PCLPointCloud2>::PointCloud PointCloud;
-        typedef PointCloud::Ptr PointCloudPtr;
-        typedef PointCloud::ConstPtr PointCloudConstPtr;
+        using PointCloud = PointCloudGeometryHandler<pcl::PCLPointCloud2>::PointCloud;
+        using PointCloudPtr = PointCloud::Ptr;
+        using PointCloudConstPtr = PointCloud::ConstPtr;
 
-        typedef boost::shared_ptr<PointCloudGeometryHandlerSurfaceNormal<PointCloud> > Ptr;
-        typedef boost::shared_ptr<const PointCloudGeometryHandlerSurfaceNormal<PointCloud> > ConstPtr;
+        using Ptr = shared_ptr<PointCloudGeometryHandlerSurfaceNormal<PointCloud> >;
+        using ConstPtr = shared_ptr<const PointCloudGeometryHandlerSurfaceNormal<PointCloud> >;
 
         /** \brief Constructor. */
         PointCloudGeometryHandlerSurfaceNormal (const PointCloudConstPtr &cloud);
@@ -465,18 +461,15 @@ namespace pcl
     class PCL_EXPORTS PointCloudGeometryHandlerCustom<pcl::PCLPointCloud2> : public PointCloudGeometryHandler<pcl::PCLPointCloud2>
     {
       public:
-        typedef PointCloudGeometryHandler<pcl::PCLPointCloud2>::PointCloud PointCloud;
-        typedef PointCloud::Ptr PointCloudPtr;
-        typedef PointCloud::ConstPtr PointCloudConstPtr;
+        using PointCloud = PointCloudGeometryHandler<pcl::PCLPointCloud2>::PointCloud;
+        using PointCloudPtr = PointCloud::Ptr;
+        using PointCloudConstPtr = PointCloud::ConstPtr;
 
         /** \brief Constructor. */
         PointCloudGeometryHandlerCustom (const PointCloudConstPtr &cloud,
                                          const std::string &x_field_name,
                                          const std::string &y_field_name,
                                          const std::string &z_field_name);
-
-        /** \brief Destructor. */
-        virtual ~PointCloudGeometryHandlerCustom () {}
 
         /** \brief Class getName method. */
         virtual std::string
@@ -496,6 +489,3 @@ namespace pcl
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/visualization/impl/point_cloud_geometry_handlers.hpp>
 #endif
-
-#endif    // PCL_POINT_CLOUD_GEOMETRY_HANDLERS_H_
-

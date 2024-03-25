@@ -34,14 +34,13 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PCL_RECOGNITION_HV_PAPAZOV_H_
-#define PCL_RECOGNITION_HV_PAPAZOV_H_
+#pragma once
 
-#include <pcl/recognition/boost.h>
 #include <pcl/pcl_macros.h>
-#include <pcl/common/common.h>
 #include <pcl/recognition/hv/hypotheses_verification.h>
 #include <boost/graph/adjacency_list.hpp>
+
+#include <memory>
 
 namespace pcl
 {
@@ -49,6 +48,7 @@ namespace pcl
   /** \brief A hypothesis verification method proposed in
     * "An Efficient RANSAC for 3D Object Recognition in Noisy and Occluded Scenes", C. Papazov and D. Burschka, ACCV 2010
     * \author Aitor Aldoma, Federico Tombari
+    * \ingroup recognition
     */
 
   template<typename ModelT, typename SceneT>
@@ -66,7 +66,7 @@ namespace pcl
     float penalty_threshold_;
     float support_threshold_;
 
-    class RecognitionModel 
+    class RecognitionModel
     {
       public:
         std::vector<int> explained_; //indices vector referencing explained_by_RM_
@@ -76,12 +76,14 @@ namespace pcl
         int id_;
     };
 
-    std::vector<int> explained_by_RM_; //represents the points of scene_cloud_ that are explained by the recognition models
-    std::vector< boost::shared_ptr<RecognitionModel> > recognition_models_;
-    std::vector< std::vector <boost::shared_ptr<RecognitionModel> > > points_explained_by_rm_; //if inner size > 1, conflict
-    std::map<int, boost::shared_ptr<RecognitionModel> > graph_id_model_map_;
+    using RecognitionModelPtr = std::shared_ptr<RecognitionModel>;
 
-    typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, boost::shared_ptr<RecognitionModel> > Graph;
+    std::vector<int> explained_by_RM_; //represents the points of scene_cloud_ that are explained by the recognition models
+    std::vector<RecognitionModelPtr> recognition_models_;
+    std::vector<std::vector<RecognitionModelPtr>> points_explained_by_rm_; //if inner size > 1, conflict
+    std::map<int, RecognitionModelPtr> graph_id_model_map_;
+
+    using Graph = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, RecognitionModelPtr>;
     Graph conflict_graph_;
 
     //builds the conflict_graph
@@ -112,12 +114,10 @@ namespace pcl
 
       //build conflict graph
       //non-maxima supression
-      void verify();
+      void verify() override;
   };
 }
 
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/recognition/impl/hv/hv_papazov.hpp>
 #endif
-
-#endif /* PCL_RECOGNITION_HV_PAPAZOV_H_ */

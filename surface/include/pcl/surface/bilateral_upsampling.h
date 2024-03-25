@@ -37,10 +37,10 @@
  *
  */
 
+#pragma once
 
-#ifndef PCL_SURFACE_BILATERAL_UPSAMPLING_H_
-#define PCL_SURFACE_BILATERAL_UPSAMPLING_H_
-
+#include <pcl/memory.h>
+#include <pcl/pcl_macros.h>
 #include <pcl/surface/processing.h>
 
 namespace pcl
@@ -48,7 +48,7 @@ namespace pcl
 
   /** \brief Bilateral filtering implementation, based on the following paper:
     *   * Kopf, Johannes and Cohen, Michael F. and Lischinski, Dani and Uyttendaele, Matt - Joint Bilateral Upsampling,
-    *   * ACM Transations in Graphics, July 2007
+    *   * ACM Transactions in Graphics, July 2007
     *
     * Takes in a colored organized point cloud (i.e. PointXYZRGB or PointXYZRGBA), that might contain nan values for the
     * depth information, and it will return an upsampled version of this cloud, based on the formula:
@@ -63,8 +63,8 @@ namespace pcl
   class BilateralUpsampling: public CloudSurfaceProcessing<PointInT, PointOutT>
   {
     public:
-      typedef boost::shared_ptr<BilateralUpsampling<PointInT, PointOutT> > Ptr;
-      typedef boost::shared_ptr<const BilateralUpsampling<PointInT, PointOutT> > ConstPtr;
+      using Ptr = shared_ptr<BilateralUpsampling<PointInT, PointOutT> >;
+      using ConstPtr = shared_ptr<const BilateralUpsampling<PointInT, PointOutT> >;
 
       using PCLBase<PointInT>::input_;
       using PCLBase<PointInT>::indices_;
@@ -72,19 +72,12 @@ namespace pcl
       using PCLBase<PointInT>::deinitCompute;
       using CloudSurfaceProcessing<PointInT, PointOutT>::process;
 
-      typedef pcl::PointCloud<PointOutT> PointCloudOut;
+      using PointCloudOut = pcl::PointCloud<PointOutT>;
 
       Eigen::Matrix3f KinectVGAProjectionMatrix, KinectSXGAProjectionMatrix;
 
       /** \brief Constructor. */
-      BilateralUpsampling () 
-        : KinectVGAProjectionMatrix ()
-        , KinectSXGAProjectionMatrix ()
-        , window_size_ (5)
-        , sigma_color_ (15.0f)
-        , sigma_depth_ (0.5f)
-        , projection_matrix_ ()
-        , unprojection_matrix_ ()
+      BilateralUpsampling ()
       {
         KinectVGAProjectionMatrix << 525.0f, 0.0f, 320.0f,
                                      0.0f, 525.0f, 240.0f,
@@ -139,11 +132,11 @@ namespace pcl
       /** \brief Method that does the actual processing on the input cloud.
         * \param[out] output the container of the resulting upsampled cloud */
       void
-      process (pcl::PointCloud<PointOutT> &output);
+      process (pcl::PointCloud<PointOutT> &output) override;
 
     protected:
       void
-      performProcessing (pcl::PointCloud<PointOutT> &output);
+      performProcessing (pcl::PointCloud<PointOutT> &output) override;
 
       /** \brief Computes the distance for depth and RGB.
         * \param[out] val_exp_depth distance values for depth
@@ -152,13 +145,11 @@ namespace pcl
       computeDistances (Eigen::MatrixXf &val_exp_depth, Eigen::VectorXf &val_exp_rgb);
 
     private:
-      int window_size_;
-      float sigma_color_, sigma_depth_;
+      int window_size_{5};
+      float sigma_color_{15.0f}, sigma_depth_{0.5f};
       Eigen::Matrix3f projection_matrix_, unprojection_matrix_;
 
     public:
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+      PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
 }
-
-#endif /* PCL_SURFACE_BILATERAL_UPSAMPLING_H_ */

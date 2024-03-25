@@ -41,35 +41,23 @@
 
 #include <pcl/common/common.h>
 #include <pcl/common/io.h>
+#include <pcl/common/point_tests.h> // for isFinite
 #include <pcl/filters/morphological_filter.h>
-#include <pcl/filters/extract_indices.h>
 #include <pcl/segmentation/approximate_progressive_morphological_filter.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
-pcl::ApproximateProgressiveMorphologicalFilter<PointT>::ApproximateProgressiveMorphologicalFilter () :
-  max_window_size_ (33),
-  slope_ (0.7f),
-  max_distance_ (10.0f),
-  initial_distance_ (0.15f),
-  cell_size_ (1.0f),
-  base_ (2.0f),
-  exponential_ (true),
-  threads_ (0)
-{
-}
+pcl::ApproximateProgressiveMorphologicalFilter<PointT>::ApproximateProgressiveMorphologicalFilter () = default;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT>
-pcl::ApproximateProgressiveMorphologicalFilter<PointT>::~ApproximateProgressiveMorphologicalFilter ()
-{
-}
+pcl::ApproximateProgressiveMorphologicalFilter<PointT>::~ApproximateProgressiveMorphologicalFilter () = default;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT> void
-pcl::ApproximateProgressiveMorphologicalFilter<PointT>::extract (std::vector<int>& ground)
+pcl::ApproximateProgressiveMorphologicalFilter<PointT>::extract (Indices& ground)
 {
   bool segmentation_is_possible = initCompute ();
   if (!segmentation_is_possible)
@@ -83,25 +71,17 @@ pcl::ApproximateProgressiveMorphologicalFilter<PointT>::extract (std::vector<int
   std::vector<float> window_sizes;
   std::vector<int> half_sizes;
   int iteration = 0;
-  int half_size = 0.0f;
-  float window_size = 0.0f;
-  float height_threshold = 0.0f;
+  float window_size = 0.0f;	
 
   while (window_size < max_window_size_)
   {
     // Determine the initial window size.
-    if (exponential_)
-      half_size = static_cast<int> (std::pow (static_cast<float> (base_), iteration));
-    else
-      half_size = (iteration+1) * base_;
+    int half_size = (exponential_) ? (static_cast<int> (std::pow (static_cast<float> (base_), iteration))) : ((iteration+1) * base_);
 
     window_size = 2 * half_size + 1;
 
     // Calculate the height threshold to be used in the next iteration.
-    if (iteration == 0)
-      height_threshold = initial_distance_;
-    else
-      height_threshold = slope_ * (window_size - window_sizes[iteration-1]) * cell_size_ + initial_distance_;
+    float height_threshold = (iteration == 0) ? (initial_distance_) : (slope_ * (window_size - window_sizes[iteration-1]) * cell_size_ + initial_distance_);
 
     // Enforce max distance on height threshold
     if (height_threshold > max_distance_)
@@ -133,28 +113,54 @@ pcl::ApproximateProgressiveMorphologicalFilter<PointT>::extract (std::vector<int
   Eigen::MatrixXf Zf (rows, cols);
   Zf.setConstant (std::numeric_limits<float>::quiet_NaN ());
 
-#ifdef _OPENMP
-#pragma omp parallel for num_threads(threads_)
-#endif
-  for (int i = 0; i < (int)input_->points.size (); ++i)
-  {
-    // ...then test for lower points within the cell
-    PointT p = input_->points[i];
-    int row = std::floor((p.y - global_min.y ()) / cell_size_);
-    int col = std::floor((p.x - global_min.x ()) / cell_size_);
+  if (input_->is_dense) {
+#pragma omp parallel for \
+  default(none) \
+  shared(A, global_min) \
+  num_threads(threads_)
+    for (int i = 0; i < static_cast<int>(input_->size ()); ++i) {
+      // ...then test for lower points within the cell
+      const PointT& p = (*input_)[i];
+      int row = std::floor((p.y - global_min.y ()) / cell_size_);
+      int col = std::floor((p.x - global_min.x ()) / cell_size_);
 
-    if (p.z < A (row, col) || pcl_isnan (A (row, col)))
-    {
-      A (row, col) = p.z;
+      if (p.z < A (row, col) || std::isnan (A (row, col)))
+        A (row, col) = p.z;
+    }
+  }
+  else {
+#pragma omp parallel for \
+  default(none) \
+  shared(A, global_min) \
+  num_threads(threads_)
+    for (int i = 0; i < static_cast<int>(input_->size ()); ++i) {
+      // ...then test for lower points within the cell
+      const PointT& p = (*input_)[i];
+      if (!pcl::isFinite(p))
+        continue;
+      int row = std::floor((p.y - global_min.y ()) / cell_size_);
+      int col = std::floor((p.x - global_min.x ()) / cell_size_);
+
+      if (p.z < A (row, col) || std::isnan (A (row, col)))
+        A (row, col) = p.z;
     }
   }
 
   // Ground indices are initially limited to those points in the input cloud we
   // wish to process
-  ground = *indices_;
+  if (input_->is_dense) {
+    ground = *indices_;
+  }
+  else {
+    ground.clear();
+    ground.reserve(indices_->size());
+    for (const auto& index: *indices_)
+      if (pcl::isFinite((*input_)[index]))
+        ground.push_back(index);
+  }
 
   // Progressively filter ground returns using morphological open
-  for (size_t i = 0; i < window_sizes.size (); ++i)
+  for (std::size_t i = 0; i < window_sizes.size (); ++i)
   {
     PCL_DEBUG ("      Iteration %d (height threshold = %f, window size = %f, half size = %d)...",
                i, height_thresholds[i], window_sizes[i], half_sizes[i]);
@@ -164,9 +170,10 @@ pcl::ApproximateProgressiveMorphologicalFilter<PointT>::extract (std::vector<int
     pcl::copyPointCloud<PointT> (*input_, ground, *cloud);
 
     // Apply the morphological opening operation at the current window size.
-#ifdef _OPENMP
-#pragma omp parallel for num_threads(threads_)
-#endif
+#pragma omp parallel for \
+  default(none) \
+  shared(A, cols, half_sizes, i, rows, Z) \
+  num_threads(threads_)
     for (int row = 0; row < rows; ++row)
     {
       int rs, re;
@@ -198,9 +205,10 @@ pcl::ApproximateProgressiveMorphologicalFilter<PointT>::extract (std::vector<int
       }
     }
 
-#ifdef _OPENMP
-#pragma omp parallel for num_threads(threads_)
-#endif
+#pragma omp parallel for \
+  default(none) \
+  shared(cols, half_sizes, i, rows, Z, Zf) \
+  num_threads(threads_)
     for (int row = 0; row < rows; ++row)
     {
       int rs, re;
@@ -234,10 +242,10 @@ pcl::ApproximateProgressiveMorphologicalFilter<PointT>::extract (std::vector<int
 
     // Find indices of the points whose difference between the source and
     // filtered point clouds is less than the current height threshold.
-    std::vector<int> pt_indices;
-    for (size_t p_idx = 0; p_idx < ground.size (); ++p_idx)
+    Indices pt_indices;
+    for (std::size_t p_idx = 0; p_idx < ground.size (); ++p_idx)
     {
-      PointT p = cloud->points[p_idx];
+      const PointT& p = (*cloud)[p_idx];
       int erow = static_cast<int> (std::floor ((p.y - global_min.y ()) / cell_size_));
       int ecol = static_cast<int> (std::floor ((p.x - global_min.x ()) / cell_size_));
 
@@ -258,7 +266,7 @@ pcl::ApproximateProgressiveMorphologicalFilter<PointT>::extract (std::vector<int
 }
 
 
-#define PCL_INSTANTIATE_ApproximateProgressiveMorphologicalFilter(T) template class pcl::ApproximateProgressiveMorphologicalFilter<T>;
+#define PCL_INSTANTIATE_ApproximateProgressiveMorphologicalFilter(T) template class PCL_EXPORTS pcl::ApproximateProgressiveMorphologicalFilter<T>;
 
 #endif    // PCL_SEGMENTATION_APPROXIMATE_PROGRESSIVE_MORPHOLOGICAL_FILTER_HPP_
 

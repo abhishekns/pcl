@@ -39,10 +39,11 @@
 /// CommandQueue.
 /// @author Yue Li and Matthew Hielsberg
 
-#ifndef COMMAND_H_
-#define COMMAND_H_
+#pragma once
 
 #include <pcl/apps/point_cloud_editor/localTypes.h>
+
+#include <cassert>
 
 /// @brief The abstract parent class of all the command classes. Commands are
 /// non-copyable.
@@ -51,8 +52,7 @@ class Command
   public:
     /// @brief Destructor
     virtual ~Command ()
-    {
-    }
+    = default;
 
   protected:
     /// Allows command queues to be the only objects which are able to execute
@@ -101,4 +101,3 @@ class Command
       assert(false); return (*this);
     }
 };
-#endif //COMMAND_H_

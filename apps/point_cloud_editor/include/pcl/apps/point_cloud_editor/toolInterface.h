@@ -39,10 +39,11 @@
 /// Note that the CTRL key may be evaluated as the Command key in OSX.
 /// @author  Yue Li and Matthew Hielsberg
 
-#ifndef TOOL_INTERFACE_H_
-#define TOOL_INTERFACE_H_
+#pragma once
 
 #include <pcl/apps/point_cloud_editor/localTypes.h>
+
+#include <cassert>
 
 /// @brief the parent class of all the select and the transform tool classes
 class ToolInterface
@@ -50,8 +51,7 @@ class ToolInterface
   public:
     /// @brief Destructor.
     virtual ~ToolInterface ()
-    {
-    }
+    = default;
 
     /// @brief set the initial state of the tool from the screen coordinates
     /// of the mouse as well as the value of the modifier.
@@ -103,8 +103,7 @@ class ToolInterface
   protected:
     /// @brief Default constructor
     ToolInterface ()
-    {
-    }
+    = default;
 
   private:
     /// @brief Copy constructor - tools are non-copyable
@@ -120,4 +119,3 @@ class ToolInterface
       assert(false); return (*this);
     }
 };
-#endif // TOOL_INTERFACE_H_

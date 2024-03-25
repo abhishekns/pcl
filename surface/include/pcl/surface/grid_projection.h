@@ -35,11 +35,14 @@
  *
  */
 
-#ifndef PCL_SURFACE_GRID_PROJECTION_H_
-#define PCL_SURFACE_GRID_PROJECTION_H_
+#pragma once
 
-#include <pcl/surface/boost.h>
+#include <pcl/memory.h>
+#include <pcl/pcl_macros.h>
 #include <pcl/surface/reconstruction.h>
+
+#include <boost/dynamic_bitset/dynamic_bitset.hpp> // for dynamic_bitset
+#include <unordered_map>
 
 namespace pcl
 {
@@ -72,28 +75,28 @@ namespace pcl
   class GridProjection : public SurfaceReconstruction<PointNT>
   {
     public:
-      typedef boost::shared_ptr<GridProjection<PointNT> > Ptr;
-      typedef boost::shared_ptr<const GridProjection<PointNT> > ConstPtr;
+      using Ptr = shared_ptr<GridProjection<PointNT> >;
+      using ConstPtr = shared_ptr<const GridProjection<PointNT> >;
 
       using SurfaceReconstruction<PointNT>::input_;
       using SurfaceReconstruction<PointNT>::tree_;
 
-      typedef typename pcl::PointCloud<PointNT>::Ptr PointCloudPtr;
+      using PointCloudPtr = typename pcl::PointCloud<PointNT>::Ptr;
 
-      typedef typename pcl::KdTree<PointNT> KdTree;
-      typedef typename pcl::KdTree<PointNT>::Ptr KdTreePtr;
+      using KdTree = pcl::KdTree<PointNT>;
+      using KdTreePtr = typename KdTree::Ptr;
 
       /** \brief Data leaf. */
       struct Leaf
       {
-        Leaf () : data_indices (), pt_on_surface (), vect_at_grid_pt () {}
+        Leaf () = default;
 
-        std::vector<int> data_indices;
+        pcl::Indices data_indices;
         Eigen::Vector4f pt_on_surface; 
         Eigen::Vector3f vect_at_grid_pt;
       };
 
-      typedef boost::unordered_map<int, Leaf, boost::hash<int>, std::equal_to<int>, Eigen::aligned_allocator<int> > HashMap;
+      using HashMap = std::unordered_map<int, Leaf, std::hash<int>, std::equal_to<>, Eigen::aligned_allocator<std::pair<const int, Leaf>>>;
 
       /** \brief Constructor. */ 
       GridProjection ();
@@ -104,7 +107,7 @@ namespace pcl
       GridProjection (double in_resolution);
 
       /** \brief Destructor. */
-      ~GridProjection ();
+      ~GridProjection () override;
 
       /** \brief Set the size of the grid cell
         * \param resolution  the size of the grid cell
@@ -125,7 +128,7 @@ namespace pcl
         *  points within the padding area,and do a weighted average. Say if the padding
         *  size is 1, when we process cell (x,y,z), we will find union of input data points
         *  from (x-1) to (x+1), (y-1) to (y+1), (z-1) to (z+1)(in total, 27 cells). In this
-        *  way, even the cells itself doesnt contain any data points, we will stil process it
+        *  way, even the cells itself doesn't contain any data points, we will still process it
         *  because there are data points in the padding area. This can help us fix holes which 
         *  is smaller than the padding size.
         * \param padding_size The num of padding cells we want to create 
@@ -213,7 +216,7 @@ namespace pcl
         * \param[out] output the resultant polygonal mesh
         */
       void 
-      performReconstruction (pcl::PolygonMesh &output);
+      performReconstruction (pcl::PolygonMesh &output) override;
 
       /** \brief Create the surface. 
         *
@@ -227,11 +230,11 @@ namespace pcl
         */
       void 
       performReconstruction (pcl::PointCloud<PointNT> &points, 
-                             std::vector<pcl::Vertices> &polygons);
+                             std::vector<pcl::Vertices> &polygons) override;
 
       /** \brief When the input data points don't fill into the 1*1*1 box, 
         * scale them so that they can be filled in the unit box. Otherwise, 
-        * it will be some drawing problem when doing visulization
+        * it will be some drawing problem when doing visualization
         * \param scale_factor scale all the input data point by scale_factor
         */
       void 
@@ -312,16 +315,16 @@ namespace pcl
         * \param pt_union_indices the union of input data points within the cell and padding cells
         */
       void 
-      getDataPtsUnion (const Eigen::Vector3i &index, std::vector <int> &pt_union_indices);
+      getDataPtsUnion (const Eigen::Vector3i &index, pcl::Indices &pt_union_indices);
 
       /** \brief Given the index of a cell, exam it's up, left, front edges, and add
-        * the vectices to m_surface list.the up, left, front edges only share 4
+        * the vertices to m_surface list.the up, left, front edges only share 4
         * points, we first get the vectors at these 4 points and exam whether those
         * three edges are intersected by the surface \param index the input index
         * \param pt_union_indices the union of input data points within the cell and padding cells
         */
       void 
-      createSurfaceForCell (const Eigen::Vector3i &index, std::vector <int> &pt_union_indices);
+      createSurfaceForCell (const Eigen::Vector3i &index, pcl::Indices &pt_union_indices);
 
 
       /** \brief Given the coordinates of one point, project it onto the surface, 
@@ -332,7 +335,7 @@ namespace pcl
         * \param projection the resultant point projected
         */
       void
-      getProjection (const Eigen::Vector4f &p, std::vector<int> &pt_union_indices, Eigen::Vector4f &projection);
+      getProjection (const Eigen::Vector4f &p, pcl::Indices &pt_union_indices, Eigen::Vector4f &projection);
 
       /** \brief Given the coordinates of one point, project it onto the surface,
         * return the projected point. Find the plane which fits all the points in
@@ -343,7 +346,7 @@ namespace pcl
         */
       void 
       getProjectionWithPlaneFit (const Eigen::Vector4f &p, 
-                                 std::vector<int> &pt_union_indices, 
+                                 pcl::Indices &pt_union_indices, 
                                  Eigen::Vector4f &projection);
 
 
@@ -354,7 +357,7 @@ namespace pcl
         */
       void
       getVectorAtPoint (const Eigen::Vector4f &p, 
-                        std::vector <int> &pt_union_indices, Eigen::Vector3f &vo);
+                        pcl::Indices &pt_union_indices, Eigen::Vector3f &vo);
 
       /** \brief Given the location of a point, get it's vector
         * \param p the coordinates of the input point
@@ -365,7 +368,7 @@ namespace pcl
         */
       void
       getVectorAtPointKNN (const Eigen::Vector4f &p, 
-                           std::vector<int> &k_indices, 
+                           pcl::Indices &k_indices, 
                            std::vector<float> &k_squared_distances,
                            Eigen::Vector3f &vo);
 
@@ -374,7 +377,7 @@ namespace pcl
         * \param pt_union_indices the union of input data points within the cell and padding cells
         */
       double 
-      getMagAtPoint (const Eigen::Vector4f &p, const std::vector <int> &pt_union_indices);
+      getMagAtPoint (const Eigen::Vector4f &p, const pcl::Indices &pt_union_indices);
 
       /** \brief Get the 1st derivative
         * \param p the coordinate of the input point
@@ -383,7 +386,7 @@ namespace pcl
         */
       double 
       getD1AtPoint (const Eigen::Vector4f &p, const Eigen::Vector3f &vec, 
-                    const std::vector <int> &pt_union_indices);
+                    const pcl::Indices &pt_union_indices);
 
       /** \brief Get the 2nd derivative
         * \param p the coordinate of the input point
@@ -392,11 +395,11 @@ namespace pcl
         */
       double 
       getD2AtPoint (const Eigen::Vector4f &p, const Eigen::Vector3f &vec, 
-                    const std::vector <int> &pt_union_indices);
+                    const pcl::Indices &pt_union_indices);
 
       /** \brief Test whether the edge is intersected by the surface by 
         * doing the dot product of the vector at two end points. Also test 
-        * whether the edge is intersected by the maximum surface by examing 
+        * whether the edge is intersected by the maximum surface by examining 
         * the 2nd derivative of the intersection point 
         * \param end_pts the two points of the edge
         * \param vect_at_end_pts 
@@ -405,7 +408,7 @@ namespace pcl
       bool 
       isIntersected (const std::vector<Eigen::Vector4f, Eigen::aligned_allocator<Eigen::Vector4f> > &end_pts, 
                      std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > &vect_at_end_pts, 
-                     std::vector <int> &pt_union_indices);
+                     pcl::Indices &pt_union_indices);
 
       /** \brief Find point where the edge intersects the surface.
         * \param level binary search level
@@ -420,7 +423,7 @@ namespace pcl
                         const std::vector<Eigen::Vector4f, Eigen::aligned_allocator<Eigen::Vector4f> > &end_pts, 
                         const std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > &vect_at_end_pts, 
                         const Eigen::Vector4f &start_pt, 
-                        std::vector<int> &pt_union_indices,
+                        pcl::Indices &pt_union_indices,
                         Eigen::Vector4f &intersection);
 
       /** \brief Go through all the entries in the hash table and update the
@@ -439,7 +442,7 @@ namespace pcl
        */
       void
       storeVectAndSurfacePoint (int index_1d, const Eigen::Vector3i &index_3d, 
-                                std::vector<int> &pt_union_indices, const Leaf &cell_data);
+                                pcl::Indices &pt_union_indices, const Leaf &cell_data);
 
       /** \brief Go through all the entries in the hash table and update the cellData. 
         * When creating the hash table, the pt_on_surface field store the center point
@@ -495,12 +498,12 @@ namespace pcl
       boost::dynamic_bitset<> occupied_cell_list_;
 
       /** \brief Class get name method. */
-      std::string getClassName () const { return ("GridProjection"); }
+      std::string getClassName () const override { return ("GridProjection"); }
+
+      /** \brief Output will be scaled up by this factor, if previously scaled down by scaleInputDataPoint. */
+      double cloud_scale_factor_ = 1.0;
 
     public:
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+      PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
 }
-
-#endif  // PCL_SURFACE_GRID_PROJECTION_H_
- 

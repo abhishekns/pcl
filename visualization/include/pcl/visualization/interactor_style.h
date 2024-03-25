@@ -37,20 +37,19 @@
  * $Id$
  *
  */
-#ifndef PCL_PCL_VISUALIZER_INTERACTOR_STYLE_H_
-#define PCL_PCL_VISUALIZER_INTERACTOR_STYLE_H_
 
-#include <pcl/console/print.h>
+#pragma once
+
 #include <pcl/visualization/common/actor_map.h>
 #include <pcl/visualization/common/ren_win_interact_map.h>
 #include <pcl/visualization/keyboard_event.h>
 #include <pcl/visualization/mouse_event.h>
 #include <pcl/visualization/point_picking_event.h>
 #include <pcl/visualization/area_picking_event.h>
-#ifndef Q_MOC_RUN
 #include <boost/signals2/signal.hpp>
-#endif
 #include <vtkInteractorStyleRubberBandPick.h>
+#include <vtkRendererCollection.h>
+#include <vtkRenderWindow.h>
 
 class vtkRendererCollection;
 class vtkLegendScaleActor;
@@ -107,22 +106,16 @@ namespace pcl
       */
     class PCL_EXPORTS PCLVisualizerInteractorStyle : public vtkInteractorStyleRubberBandPick
     {
-      typedef boost::shared_ptr<CloudActorMap> CloudActorMapPtr;
-
       public:
+        using CloudActorMapPtr = pcl::visualization::CloudActorMapPtr;
+
         static PCLVisualizerInteractorStyle *New ();
 
         /** \brief Empty constructor. */
-        PCLVisualizerInteractorStyle () : 
-          init_ (), rens_ (), cloud_actors_ (), shape_actors_ (), win_height_ (), win_width_ (), win_pos_x_ (), win_pos_y_ (),
-          max_win_height_ (), max_win_width_ (), use_vbos_ (false), grid_enabled_ (), grid_actor_ (), lut_enabled_ (),
-          lut_actor_ (), snapshot_writer_ (), wif_ (), mouse_signal_ (), keyboard_signal_ (),
-          point_picking_signal_ (), area_picking_signal_ (), stereo_anaglyph_mask_default_ (),
-          mouse_callback_ (), modifier_ (), camera_file_ (), camera_ (), camera_saved_ (), win_ (), lut_actor_id_ ("")
-        {}
+        PCLVisualizerInteractorStyle () = default;
       
         /** \brief Empty destructor */
-        virtual ~PCLVisualizerInteractorStyle () {}
+        ~PCLVisualizerInteractorStyle () override = default;
 
         // this macro defines Superclass, the isA functionality and the safe downcast method
         vtkTypeMacro (PCLVisualizerInteractorStyle, vtkInteractorStyleRubberBandPick);
@@ -166,32 +159,32 @@ namespace pcl
         setUseVbos (const bool use_vbos) { use_vbos_ = use_vbos; }
 
         /** \brief Register a callback function for mouse events
-          * \param[in] cb a boost function that will be registered as a callback for a mouse event
+          * \param[in] cb a std function that will be registered as a callback for a mouse event
           * \return a connection object that allows to disconnect the callback function.
           */
         boost::signals2::connection 
-        registerMouseCallback (boost::function<void (const pcl::visualization::MouseEvent&)> cb);
+        registerMouseCallback (std::function<void (const pcl::visualization::MouseEvent&)> cb);
 
-        /** \brief Register a callback boost::function for keyboard events
-          * \param[in] cb a boost function that will be registered as a callback for a keyboard event
+        /** \brief Register a callback std::function for keyboard events
+          * \param[in] cb a std function that will be registered as a callback for a keyboard event
           * \return a connection object that allows to disconnect the callback function.
           */
         boost::signals2::connection 
-        registerKeyboardCallback (boost::function<void (const pcl::visualization::KeyboardEvent&)> cb);
+        registerKeyboardCallback (std::function<void (const pcl::visualization::KeyboardEvent&)> cb);
 
         /** \brief Register a callback function for point picking events
-          * \param[in] cb a boost function that will be registered as a callback for a point picking event
+          * \param[in] cb a std function that will be registered as a callback for a point picking event
           * \return a connection object that allows to disconnect the callback function.
           */
         boost::signals2::connection 
-        registerPointPickingCallback (boost::function<void (const pcl::visualization::PointPickingEvent&)> cb);
+        registerPointPickingCallback (std::function<void (const pcl::visualization::PointPickingEvent&)> cb);
 
         /** \brief Register a callback function for area picking events
-          * \param[in] cb a boost function that will be registered as a callback for a area picking event
+          * \param[in] cb a std function that will be registered as a callback for a area picking event
           * \return a connection object that allows to disconnect the callback function.
           */
         boost::signals2::connection
-        registerAreaPickingCallback (boost::function<void (const pcl::visualization::AreaPickingEvent&)> cb);
+        registerAreaPickingCallback (std::function<void (const pcl::visualization::AreaPickingEvent&)> cb);
 
         /** \brief Save the current rendered image to disk, as a PNG screenshot.
           * \param[in] file the name of the PNG file
@@ -205,11 +198,9 @@ namespace pcl
         bool
         saveCameraParameters (const std::string &file);
 
-        /** \brief Get camera parameters and save them to a \ref pcl::visualization::Camera.
-          * \param[out] camera the name of the \ref pcl::visualization::Camera
-          */
+        /** \brief Get camera parameters of a given viewport (0 means default viewport). */
         void
-        getCameraParameters (Camera &camera);
+        getCameraParameters (Camera &camera, int viewport = 0) const;
 
         /** \brief Load camera parameters from a camera parameter file.
           * \param[in] file the name of the camera parameter file
@@ -237,7 +228,7 @@ namespace pcl
           * \param[in] file the name of the camera parameter file
           */
         void
-        setCameraFile (const std::string file)
+        setCameraFile (const std::string& file)
         {
           camera_file_ = file;
         }
@@ -264,36 +255,36 @@ namespace pcl
 
        protected:
         /** \brief Set to true after initialization is complete. */
-        bool init_;
+        bool init_{false};
 
         /** \brief Collection of vtkRenderers stored internally. */
         vtkSmartPointer<vtkRendererCollection> rens_;
 
         /** \brief Cloud actor map stored internally. */
-        CloudActorMapPtr cloud_actors_;
+        CloudActorMapPtr cloud_actors_{nullptr};
 
         /** \brief Shape map stored internally. */
-        ShapeActorMapPtr shape_actors_;
+        ShapeActorMapPtr shape_actors_{nullptr};
 
         /** \brief The current window width/height. */
-        int win_height_, win_width_;
+        int win_height_{0}, win_width_{0};
 
         /** \brief The current window position x/y. */
-        int win_pos_x_, win_pos_y_;
+        int win_pos_x_{0}, win_pos_y_{0};
 
         /** \brief The maximum resizeable window width/height. */
-        int max_win_height_, max_win_width_;
+        int max_win_height_{0}, max_win_width_{0};
 
         /** \brief Boolean that holds whether or not to use the vtkVertexBufferObjectMapper*/
-        bool use_vbos_;
+        bool use_vbos_{false};
 
         /** \brief Set to true if the grid actor is enabled. */
-        bool grid_enabled_;
+        bool grid_enabled_{false};
         /** \brief Actor for 2D grid on screen. */
         vtkSmartPointer<vtkLegendScaleActor> grid_actor_;
 
         /** \brief Set to true if the LUT actor is enabled. */
-        bool lut_enabled_;
+        bool lut_enabled_{false};
         /** \brief Actor for 2D lookup table on screen. */
         vtkSmartPointer<vtkScalarBarActor> lut_actor_;
 
@@ -310,39 +301,39 @@ namespace pcl
         boost::signals2::signal<void (const pcl::visualization::AreaPickingEvent&)> area_picking_signal_;
 
         /** \brief Interactor style internal method. Gets called whenever a key is pressed. */
-        virtual void 
-        OnChar ();
+        void 
+        OnChar () override;
 
         // Keyboard events
-        virtual void 
-        OnKeyDown ();
-        virtual void 
-        OnKeyUp ();
+        void 
+        OnKeyDown () override;
+        void 
+        OnKeyUp () override;
         
         // mouse button events
-        virtual void 	
-        OnMouseMove ();
-        virtual void 	
-        OnLeftButtonDown ();
-        virtual void 	
-        OnLeftButtonUp ();
-        virtual void 	
-        OnMiddleButtonDown ();
-        virtual void 	
-        OnMiddleButtonUp ();
-        virtual void 	
-        OnRightButtonDown ();
-        virtual void 	
-        OnRightButtonUp ();
-        virtual void 	
-        OnMouseWheelForward ();
-        virtual void 	
-        OnMouseWheelBackward ();
+        void 	
+        OnMouseMove () override;
+        void 	
+        OnLeftButtonDown () override;
+        void 	
+        OnLeftButtonUp () override;
+        void 	
+        OnMiddleButtonDown () override;
+        void 	
+        OnMiddleButtonUp () override;
+        void 	
+        OnRightButtonDown () override;
+        void 	
+        OnRightButtonUp () override;
+        void 	
+        OnMouseWheelForward () override;
+        void 	
+        OnMouseWheelBackward () override;
         
         // mouse move event
         /** \brief Interactor style internal method. Gets called periodically if a timer is set. */
-        virtual void 
-        OnTimer ();
+        void 
+        OnTimer () override;
 
         /** \brief Interactor style internal method. Zoom in. */
         void 
@@ -355,7 +346,7 @@ namespace pcl
         /** \brief Get camera parameters from a string vector.
           * \param[in] camera A string vector:
           * Clipping Range, Focal Point, Position, ViewUp, Distance, Field of View Y, Window Size, Window Pos.
-          * Values in each string are seperated by a ','
+          * Values in each string are separated by a ','
           */
         bool
         getCameraParameters (const std::vector<std::string> &camera);
@@ -368,20 +359,20 @@ namespace pcl
         }
 
         /** \brief True if we're using red-blue colors for anaglyphic stereo, false if magenta-green. */
-        bool stereo_anaglyph_mask_default_;
+        bool stereo_anaglyph_mask_default_{false};
 
         /** \brief A VTK Mouse Callback object, used for point picking. */
         vtkSmartPointer<PointPickingCallback> mouse_callback_;
 
         /** \brief The keyboard modifier to use. Default: Alt. */
-        InteractorKeyboardModifier modifier_;
+        InteractorKeyboardModifier modifier_{};
 
         /** \brief Camera file for camera parameter saving/restoring. */
         std::string camera_file_;
         /** \brief A \ref pcl::visualization::Camera for camera parameter saving/restoring. */
         Camera camera_;
         /** \brief A \ref pcl::visualization::Camera is saved or not. */
-        bool camera_saved_;
+        bool camera_saved_{false};
         /** \brief The render window.
           * Only used when interactor maybe not available
           */
@@ -412,7 +403,7 @@ namespace pcl
         static PCLHistogramVisualizerInteractorStyle *New ();
 
         /** \brief Empty constructor. */
-        PCLHistogramVisualizerInteractorStyle () : wins_ (), init_ (false) {}
+        PCLHistogramVisualizerInteractorStyle () = default;
 
         /** \brief Initialization routine. Must be called before anything else. */
         void 
@@ -429,15 +420,13 @@ namespace pcl
         RenWinInteractMap wins_;
 
         /** \brief Set to true after initialization is complete. */
-        bool init_;
+        bool init_{false};
 
         /** \brief Interactor style internal method. Gets called whenever a key is pressed. */
-        void OnKeyDown ();
+        void OnKeyDown () override;
 
         /** \brief Interactor style internal method. Gets called periodically if a timer is set. */
-        void OnTimer ();
+        void OnTimer () override;
     };
   }
 }
-
-#endif

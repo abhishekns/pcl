@@ -36,7 +36,6 @@
  */
 
 #include <pcl/io/auto_io.h>
-#include <pcl/io/boost.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/io/ply_io.h>
 #include <pcl/io/ifs_io.h>
@@ -47,7 +46,7 @@
 int
 pcl::io::load (const std::string& file_name, pcl::PCLPointCloud2& blob)
 {
-  boost::filesystem::path p (file_name.c_str ());
+  pcl_fs::path p (file_name.c_str ());
   std::string extension = p.extension ().string ();
   int result = -1;
   if (extension == ".pcd")
@@ -60,7 +59,7 @@ pcl::io::load (const std::string& file_name, pcl::PCLPointCloud2& blob)
     result = pcl::io::loadOBJFile (file_name, blob);
   else
   {
-    PCL_ERROR ("[pcl::io::load] Don't know how to handle file with extension %s", extension.c_str ());
+    PCL_ERROR ("[pcl::io::load] Don't know how to handle file with extension %s\n", extension.c_str ());
     result = -1;
   }
   return (result);
@@ -69,7 +68,7 @@ pcl::io::load (const std::string& file_name, pcl::PCLPointCloud2& blob)
 int
 pcl::io::load (const std::string& file_name, pcl::PolygonMesh& mesh)
 {
-  boost::filesystem::path p (file_name.c_str ());
+  pcl_fs::path p (file_name.c_str ());
   std::string extension = p.extension ().string ();
   int result = -1;
   if (extension == ".ply")
@@ -80,7 +79,7 @@ pcl::io::load (const std::string& file_name, pcl::PolygonMesh& mesh)
     result = pcl::io::loadOBJFile (file_name, mesh);
   else
   {
-    PCL_ERROR ("[pcl::io::load] Don't know how to handle file with extension %s", extension.c_str ());
+    PCL_ERROR ("[pcl::io::load] Don't know how to handle file with extension %s\n", extension.c_str ());
     result = -1;
   }
   return (result);
@@ -89,14 +88,14 @@ pcl::io::load (const std::string& file_name, pcl::PolygonMesh& mesh)
 int
 pcl::io::load (const std::string& file_name, pcl::TextureMesh& mesh)
 {
-  boost::filesystem::path p (file_name.c_str ());
+  pcl_fs::path p (file_name.c_str ());
   std::string extension = p.extension ().string ();
   int result = -1;
   if (extension == ".obj")
     result = pcl::io::loadOBJFile (file_name, mesh);
   else
   {
-    PCL_ERROR ("[pcl::io::load] Don't know how to handle file with extension %s", extension.c_str ());
+    PCL_ERROR ("[pcl::io::load] Don't know how to handle file with extension %s\n", extension.c_str ());
     result = -1;
   }
   return (result);
@@ -105,7 +104,7 @@ pcl::io::load (const std::string& file_name, pcl::TextureMesh& mesh)
 int
 pcl::io::save (const std::string& file_name, const pcl::PCLPointCloud2& blob, unsigned precision)
 {
-  boost::filesystem::path p (file_name.c_str ());
+  pcl_fs::path p (file_name.c_str ());
   std::string extension = p.extension ().string ();
   int result = -1;
   if (extension == ".pcd")
@@ -126,7 +125,7 @@ pcl::io::save (const std::string& file_name, const pcl::PCLPointCloud2& blob, un
     result = pcl::io::saveVTKFile (file_name, blob, precision);
   else
   {
-    PCL_ERROR ("[pcl::io::save] Don't know how to handle file with extension %s", extension.c_str ());
+    PCL_ERROR ("[pcl::io::save] Don't know how to handle file with extension %s\n", extension.c_str ());
     result = -1;
   }
   return (result);
@@ -135,14 +134,14 @@ pcl::io::save (const std::string& file_name, const pcl::PCLPointCloud2& blob, un
 int
 pcl::io::save (const std::string &file_name, const pcl::TextureMesh &tex_mesh, unsigned precision)
 {
-  boost::filesystem::path p (file_name.c_str ());
+  pcl_fs::path p (file_name.c_str ());
   std::string extension = p.extension ().string ();
   int result = -1;
   if (extension == ".obj")
     result = pcl::io::saveOBJFile (file_name, tex_mesh, precision);
   else
   {
-    PCL_ERROR ("[pcl::io::save] Don't know how to handle file with extension %s", extension.c_str ());
+    PCL_ERROR ("[pcl::io::save] Don't know how to handle file with extension %s\n", extension.c_str ());
     result = -1;
   }
   return (result);
@@ -151,7 +150,7 @@ pcl::io::save (const std::string &file_name, const pcl::TextureMesh &tex_mesh, u
 int
 pcl::io::save (const std::string &file_name, const pcl::PolygonMesh &poly_mesh, unsigned precision)
 {
-  boost::filesystem::path p (file_name.c_str ());
+  pcl_fs::path p (file_name.c_str ());
   std::string extension = p.extension ().string ();
   int result = -1;
   if (extension == ".ply")
@@ -162,7 +161,7 @@ pcl::io::save (const std::string &file_name, const pcl::PolygonMesh &poly_mesh, 
     result = pcl::io::saveVTKFile (file_name, poly_mesh, precision);
   else
   {
-    PCL_ERROR ("[pcl::io::save] Don't know how to handle file with extension %s", extension.c_str ());
+    PCL_ERROR ("[pcl::io::save] Don't know how to handle file with extension %s\n", extension.c_str ());
     result = -1;
   }
   return (result);

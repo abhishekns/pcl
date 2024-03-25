@@ -35,8 +35,7 @@
  *
  */
  
- #ifndef PCL_STANDALONE_MARCHING_CUBES_H_
- #define PCL_STANDALONE_MARCHING_CUBES_H_
+#pragma once
 
 //General includes and I/O
 
@@ -45,8 +44,8 @@
 #include <pcl/io/ply_io.h>
 #include <pcl/io/vtk_io.h>
 #include <pcl/point_types.h>
-#include <stdio.h>
-#include <stdarg.h>
+#include <cstdio>
+#include <cstdarg>
 #include <pcl/pcl_macros.h>
 
 //Marching cubes includes
@@ -78,17 +77,14 @@ namespace pcl
       class StandaloneMarchingCubes
       {
       public:
-          typedef typename pcl::PointCloud<PointT> PointCloud;
-          typedef typename pcl::PointCloud<PointT>::Ptr PointCloudPtr;
-          typedef boost::shared_ptr<pcl::PolygonMesh> MeshPtr;
+          using PointCloud = pcl::PointCloud<PointT>;
+          using PointCloudPtr = typename PointCloud::Ptr;
+          using MeshPtr = pcl::PolygonMesh::Ptr;
 
       /** \brief Constructor        
         */
       StandaloneMarchingCubes (int voxels_x = 512, int voxels_y = 512, int voxels_z = 512, float volume_size = 3.0f);
-      
-      /** \brief Destructor
-        */
-      ~StandaloneMarchingCubes (){}
+
 
       /** \brief Run marching cubes in a TSDF cloud and returns a PolygonMesh. Input X,Y,Z coordinates must be in indices of the TSDF volume grid, output is in meters. 
         * \param[in] cloud TSDF cloud with indices between [0 ... VOXELS_X][0 ... VOXELS_Y][0 ... VOXELS_Z]. Intensity value corresponds to the TSDF value in that coordinate.
@@ -169,6 +165,3 @@ namespace pcl
 }
 
 #define PCL_INSTANTIATE_StandaloneMarchingCubes(PointT) template class PCL_EXPORTS pcl::gpu::kinfuLS::StandaloneMarchingCubes<PointT>;
-
-#endif // PCL_STANDALONE_MARCHING_CUBES_H_
- 

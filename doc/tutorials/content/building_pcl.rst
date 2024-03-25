@@ -24,7 +24,7 @@ PCL basic settings
 Let's say PCL is placed under /PATH/TO/PCL, which we will refer to as PCL_ROOT::
 
   $ cd $PCL_ROOT
-  $ mkdir build
+  $ mkdir build && cd build
   $ cmake ..
 
 This will cause `cmake` to create a file called CMakeCache.txt in the build
@@ -116,11 +116,11 @@ YYY then XXX will be built but won't appear in the cache.
 
 You can also change the build type:
 
-* **Debug**: means that no optimization is done and all the debugging symbols are imbedded into the libraries file. This is plateform and compiler dependent. On Linux with gcc this is equivalent to running gcc with `-O0 -g -ggdb -Wall`
+* **Debug**: means that no optimization is done and all the debugging symbols are embedded into the libraries file. This is platform and compiler dependent. On Linux with gcc this is equivalent to running gcc with `-O0 -g -ggdb -Wall`
 
-* **Release**: the compiled code is optimized and no debug information will be print out. This will lead to `-O3` for gcc and `-O5` for clang
+* **Release**: the compiled code is optimized and no debug information will be printed out. This will lead to `-O3` for gcc and `-O5` for clang
 
-* **RelWithDebInfo**: the compiled code is optimized but debugging data is also imbedded in the libraries. This is a tradeoff between the two former ones.
+* **RelWithDebInfo**: the compiled code is optimized but debugging data is also embedded in the libraries. This is a tradeoff between the two former ones.
 
 * **MinSizeRel**: this, normally, results in the smallest libraries you can build. This is interesting when building for Android or a restricted memory/space system.
 
@@ -134,7 +134,7 @@ Tweaking advanced settings
 Now we are done with all the basic stuff. To turn on advanced cache
 options hit `t` while in ccmake.
 Advanced options become especially useful when you have dependencies
-installed in unusal locations and thus cmake hangs with
+installed in unusual locations and thus cmake hangs with
 `XXX_NOT_FOUND` this can even prevent you from building PCL although
 you have all the dependencies installed. In this section we will
 discuss each dependency entry so that you can configure/build or
@@ -176,14 +176,13 @@ The available ROOTs you can set are as follow:
 * **CMINPACK_ROOT**: for cminpack with value `C:/Program Files/CMINPACK 1.1.13` for instance
 * **QHULL_ROOT**: for qhull with value `C:/Program Files/qhull 6.2.0.1373` for instance
 * **FLANN_ROOT**: for flann with value `C:/Program Files/flann 1.6.8` for instance
-* **EIGEN_ROOT**: for eigen with value `C:/Program Files/Eigen 3.0.0` for instance
 
 To ensure that all the dependencies were correctly found, beside the
 message you get from CMake, you can check or edit each dependency specific
 variables and give it the value that best fits your needs. 
 
 UNIX users generally don't have to bother with debug vs release versions
-they are fully complient. You would just loose debug symbols if you use
+they are fully compliant. You would just loose debug symbols if you use
 release libraries version instead of debug while you will end up with much
 more verbose output and slower execution. This said, Windows MSVC users
 and Apple iCode ones can build debug/release from the same project, thus
@@ -198,37 +197,31 @@ then a sample value is given for reference.
 
 * Boost
 
-+----------------------------------+---------------------------------------------------------------+------------------------------------------+ 
-| cache variable                   | meaning                                                       | sample value                             |
-+==================================+===============================================================+==========================================+
-| Boost_DATE_TIME_LIBRARY          | full path to boost_date-time.[so,lib,a]                       | /usr/local/lib/libboost_date_time.so     |
-+----------------------------------+---------------------------------------------------------------+------------------------------------------+
-| Boost_DATE_TIME_LIBRARY_DEBUG    | full path to boost_date-time.[so,lib,a] (debug version)       | /usr/local/lib/libboost_date_time-gd.so  |
-+----------------------------------+---------------------------------------------------------------+------------------------------------------+
-| Boost_DATE_TIME_LIBRARY_RELEASE  | full path to boost_date-time.[so,lib,a] (release version)     | /usr/local/lib/libboost_date_time.so     |
-+----------------------------------+---------------------------------------------------------------+------------------------------------------+
-| Boost_FILESYSTEM_LIBRARY         | full path to boost_filesystem.[so,lib,a]                      | /usr/local/lib/libboost_filesystem.so    |
-+----------------------------------+---------------------------------------------------------------+------------------------------------------+
-| Boost_FILESYSTEM_LIBRARY_DEBUG   | full path to boost_filesystem.[so,lib,a] (debug version)      | /usr/local/lib/libboost_filesystem-gd.so |
-+----------------------------------+---------------------------------------------------------------+------------------------------------------+
-| Boost_FILESYSTEM_LIBRARY_RELEASE | full path to boost_filesystem.[so,lib,a] (release version)    | /usr/local/lib/libboost_filesystem.so    |
-+----------------------------------+---------------------------------------------------------------+------------------------------------------+
-| Boost_INCLUDE_DIR                | path to boost headers directory                               | /usr/local/include                       |
-+----------------------------------+---------------------------------------------------------------+------------------------------------------+
-| Boost_LIBRARY_DIRS               | path to boost libraries directory                             | /usr/local/lib                           |
-+----------------------------------+---------------------------------------------------------------+------------------------------------------+
-| Boost_SYSTEM_LIBRARY             | full path to boost_system.[so,lib,a]                          | /usr/local/lib/libboost_system.so        |
-+----------------------------------+---------------------------------------------------------------+------------------------------------------+
-| Boost_SYSTEM_LIBRARY_DEBUG       | full path to boost_system.[so,lib,a] (debug version)          | /usr/local/lib/libboost_system-gd.so     |
-+----------------------------------+---------------------------------------------------------------+------------------------------------------+
-| Boost_SYSTEM_LIBRARY_RELEASE     | full path to boost_system.[so,lib,a] (release version)        | /usr/local/lib/libboost_system.so        |
-+----------------------------------+---------------------------------------------------------------+------------------------------------------+
-| Boost_THREAD_LIBRARY             | full path to boost_thread.[so,lib,a]                          | /usr/local/lib/libboost_thread.so        |
-+----------------------------------+---------------------------------------------------------------+------------------------------------------+
-| Boost_THREAD_LIBRARY_DEBUG       | full path to boost_thread.[so,lib,a] (debug version)          | /usr/local/lib/libboost_thread-gd.so     |
-+----------------------------------+---------------------------------------------------------------+------------------------------------------+
-| Boost_THREAD_LIBRARY_RELEASE     | full path to boost_thread.[so,lib,a] (release version)        | /usr/local/lib/libboost_thread.so        |
-+----------------------------------+---------------------------------------------------------------+------------------------------------------+
++-------------------------------------+---------------------------------------------------------------+---------------------------------------------+ 
+| cache variable                      | meaning                                                       | sample value                                |
++=====================================+===============================================================+=============================================+
+| Boost_SERIALIZATION_LIBRARY         | full path to boost_serialization.[so,lib,a]                   | /usr/local/lib/libboost_serialization.so    |
++-------------------------------------+---------------------------------------------------------------+---------------------------------------------+
+| Boost_SERIALIZATION_LIBRARY_DEBUG   | full path to boost_serialization.[so,lib,a] (debug version)   | /usr/local/lib/libboost_serialization-gd.so |
++-------------------------------------+---------------------------------------------------------------+---------------------------------------------+
+| Boost_SERIALIZATION_LIBRARY_RELEASE | full path to boost_serialization.[so,lib,a] (release version) | /usr/local/lib/libboost_serialization.so    |
++-------------------------------------+---------------------------------------------------------------+---------------------------------------------+
+| Boost_FILESYSTEM_LIBRARY            | full path to boost_filesystem.[so,lib,a]                      | /usr/local/lib/libboost_filesystem.so       |
++-------------------------------------+---------------------------------------------------------------+---------------------------------------------+
+| Boost_FILESYSTEM_LIBRARY_DEBUG      | full path to boost_filesystem.[so,lib,a] (debug version)      | /usr/local/lib/libboost_filesystem-gd.so    |
++-------------------------------------+---------------------------------------------------------------+---------------------------------------------+
+| Boost_FILESYSTEM_LIBRARY_RELEASE    | full path to boost_filesystem.[so,lib,a] (release version)    | /usr/local/lib/libboost_filesystem.so       |
++-------------------------------------+---------------------------------------------------------------+---------------------------------------------+
+| Boost_INCLUDE_DIR                   | path to boost headers directory                               | /usr/local/include                          |
++-------------------------------------+---------------------------------------------------------------+---------------------------------------------+
+| Boost_LIBRARY_DIRS                  | path to boost libraries directory                             | /usr/local/lib                              |
++-------------------------------------+---------------------------------------------------------------+---------------------------------------------+
+| Boost_SYSTEM_LIBRARY                | full path to boost_system.[so,lib,a]                          | /usr/local/lib/libboost_system.so           |
++-------------------------------------+---------------------------------------------------------------+---------------------------------------------+
+| Boost_SYSTEM_LIBRARY_DEBUG          | full path to boost_system.[so,lib,a] (debug version)          | /usr/local/lib/libboost_system-gd.so        |
++-------------------------------------+---------------------------------------------------------------+---------------------------------------------+
+| Boost_SYSTEM_LIBRARY_RELEASE        | full path to boost_system.[so,lib,a] (release version)        | /usr/local/lib/libboost_system.so           |
++-------------------------------------+---------------------------------------------------------------+---------------------------------------------+
 
 
 * CMinpack
@@ -259,9 +252,8 @@ then a sample value is given for reference.
 
 * Eigen
 
-+------------------+---------------------------------+---------------------------+
-| cache variable   | meaning                         | sample value              |
-+==================+=================================+===========================+ 
-| EIGEN_INCLUDE_DIR| path to eigen headers directory | /usr/local/include/eigen3 |
-+------------------+---------------------------------+---------------------------+
-
++--------------------+---------------------------------+-------------------------------+
+| cache variable     | meaning                         | sample value                  |
++====================+=================================+===============================+ 
+| Eigen3_DIR         | path to eigen cmake directory   | /usr/local/share/eigen3/cmake |
++--------------------+---------------------------------+-------------------------------+

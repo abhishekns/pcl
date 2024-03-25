@@ -43,15 +43,12 @@
  *      Author: papazov
  */
 
-#ifndef PCL_RECOGNITION_ORR_OCTREE_H_
-#define PCL_RECOGNITION_ORR_OCTREE_H_
+#pragma once
 
 #include "auxiliary.h"
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <pcl/pcl_exports.h>
-#include <cstdlib>
-#include <ctime>
 #include <vector>
 #include <list>
 #include <set>
@@ -71,9 +68,9 @@ namespace pcl
     class PCL_EXPORTS ORROctree
     {
       public:
-        typedef pcl::PointCloud<pcl::PointXYZ> PointCloudIn;
-        typedef pcl::PointCloud<pcl::PointXYZ> PointCloudOut;
-        typedef pcl::PointCloud<pcl::Normal> PointCloudN;
+        using PointCloudIn = pcl::PointCloud<pcl::PointXYZ>;
+        using PointCloudOut = pcl::PointCloud<pcl::PointXYZ>;
+        using PointCloudN = pcl::PointCloud<pcl::Normal>;
 
         class Node
         {
@@ -81,18 +78,18 @@ namespace pcl
             class Data
             {
               public:
-                Data (int id_x, int id_y, int id_z, int lin_id, void* user_data = NULL)
+                Data (int id_x, int id_y, int id_z, int lin_id, void* user_data = nullptr)
                 : id_x_ (id_x),
                   id_y_ (id_y),
                   id_z_ (id_z),
                   lin_id_ (lin_id),
-                  num_points_ (0),
+                  
                   user_data_ (user_data)
                 {
                   n_[0] = n_[1] = n_[2] = p_[0] = p_[1] = p_[2] = 0.0f;
                 }
 
-                virtual~ Data (){}
+                virtual~ Data () = default;
 
                 inline void
                 addToPoint (float x, float y, float z)
@@ -159,17 +156,13 @@ namespace pcl
                 getNeighbors () const { return (neighbors_);}
 
               protected:
-                float n_[3], p_[3];
-                int id_x_, id_y_, id_z_, lin_id_, num_points_;
+                float n_[3]{}, p_[3]{};
+                int id_x_{0}, id_y_{0}, id_z_{0}, lin_id_{0}, num_points_{0};
                 std::set<Node*> neighbors_;
-                void *user_data_;
+                void *user_data_{nullptr};
             };
 
-            Node ()
-            : data_ (NULL),
-              parent_ (NULL),
-              children_(NULL)
-            {}
+            Node () = default;
 
             virtual~ Node ()
             {
@@ -206,7 +199,7 @@ namespace pcl
             inline void
             getBounds(float b[6]) const
             {
-              memcpy (b, bounds_, 6*sizeof (float));
+              std::copy(bounds_, bounds_ + 6, b);
             }
 
             inline Node*
@@ -235,30 +228,24 @@ namespace pcl
 
             /** \brief Computes the "radius" of the node which is half the diagonal length. */
             inline float
-            getRadius (){ return radius_;}
+            getRadius () const{ return radius_;}
 
             bool
             createChildren ();
 
             inline void
             deleteChildren ()
-            {
-              if ( children_ )
               {
                 delete[] children_;
-                children_ = NULL;
+                children_ = nullptr;
               }
-            }
 
             inline void
             deleteData ()
-            {
-              if ( data_ )
               {
                 delete data_;
-                data_ = NULL;
+                data_ = nullptr;
               }
-            }
 
             /** \brief Make this and 'node' neighbors by inserting each node in the others node neighbor set. Nothing happens
               * of either of the nodes has no data. */
@@ -273,9 +260,9 @@ namespace pcl
             }
 
           protected:
-            Node::Data *data_;
-            float center_[3], bounds_[6], radius_;
-            Node *parent_, *children_;
+            Node::Data *data_{nullptr};
+            float center_[3]{}, bounds_[6]{}, radius_{0.0f};
+            Node *parent_{nullptr}, *children_{nullptr};
         };
 
         ORROctree ();
@@ -289,7 +276,7 @@ namespace pcl
           * by enlarging the bounds by that factor. For example, enlarge_bounds = 1 means that the
           * bounds will be enlarged by 100%. The default value is fine. */
         void
-        build (const PointCloudIn& points, float voxel_size, const PointCloudN* normals = NULL, float enlarge_bounds = 0.00001f);
+        build (const PointCloudIn& points, float voxel_size, const PointCloudN* normals = nullptr, float enlarge_bounds = 0.00001f);
 
         /** \brief Creates an empty octree with bounds at least as large as the ones provided as input and with leaf
           * size equal to 'voxel_size'. */
@@ -308,7 +295,7 @@ namespace pcl
                y < bounds_[2] || y > bounds_[3] ||
                z < bounds_[4] || z > bounds_[5] )
           {
-            return (NULL);
+            return (nullptr);
           }
 
           ORROctree::Node* node = root_;
@@ -331,7 +318,7 @@ namespace pcl
 
           if ( !node->getData () )
           {
-            Node::Data* data = new Node::Data (
+            auto* data = new Node::Data (
                 static_cast<int> ((node->getCenter ()[0] - bounds_[0])/voxel_size_),
                 static_cast<int> ((node->getCenter ()[1] - bounds_[2])/voxel_size_),
                 static_cast<int> ((node->getCenter ()[2] - bounds_[4])/voxel_size_),
@@ -381,7 +368,7 @@ namespace pcl
                y < bounds_[2] || y > bounds_[3] ||
                z < bounds_[4] || z > bounds_[5] )
           {
-            return (NULL);
+            return (nullptr);
           }
 
           ORROctree::Node* node = root_;
@@ -392,7 +379,7 @@ namespace pcl
           for ( int l = 0 ; l < tree_levels_ ; ++l )
           {
             if ( !node->hasChildren () )
-              return (NULL);
+              return (nullptr);
 
             c = node->getCenter ();
             id = 0;
@@ -436,7 +423,7 @@ namespace pcl
         inline void
         getBounds (float b[6]) const
         {
-          memcpy (b, bounds_, 6*sizeof (float));
+          std::copy(bounds_, bounds_ + 6, b);
         }
 
         inline float
@@ -481,12 +468,10 @@ namespace pcl
         }
 
       protected:
-        float voxel_size_, bounds_[6];
-        int tree_levels_;
-        Node* root_;
+        float voxel_size_{-1.0}, bounds_[6];
+        int tree_levels_{-1};
+        Node* root_{nullptr};
         std::vector<Node*> full_leaves_;
     };
   } // namespace recognition
 } // namespace pcl
-
-#endif /* PCL_RECOGNITION_ORR_OCTREE_H_ */

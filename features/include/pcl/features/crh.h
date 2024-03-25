@@ -38,8 +38,7 @@
  *
  */
 
-#ifndef PCL_FEATURES_CRH_H_
-#define PCL_FEATURES_CRH_H_
+#pragma once
 
 #include <pcl/features/feature.h>
 
@@ -61,8 +60,8 @@ namespace pcl
   class CRHEstimation : public FeatureFromNormals<PointInT, PointNT, PointOutT>
   {
     public:
-      typedef boost::shared_ptr<CRHEstimation<PointInT, PointNT, PointOutT> > Ptr;
-      typedef boost::shared_ptr<const CRHEstimation<PointInT, PointNT, PointOutT> > ConstPtr;
+      using Ptr = shared_ptr<CRHEstimation<PointInT, PointNT, PointOutT> >;
+      using ConstPtr = shared_ptr<const CRHEstimation<PointInT, PointNT, PointOutT> >;
 
       using Feature<PointInT, PointOutT>::feature_name_;
       using Feature<PointInT, PointOutT>::getClassName;
@@ -72,16 +71,14 @@ namespace pcl
       using Feature<PointInT, PointOutT>::surface_;
       using FeatureFromNormals<PointInT, PointNT, PointOutT>::normals_;
 
-      typedef typename Feature<PointInT, PointOutT>::PointCloudOut PointCloudOut;
+      using PointCloudOut = typename Feature<PointInT, PointOutT>::PointCloudOut;
 
       /** \brief Constructor. */
-      CRHEstimation () :
-        vpx_ (0), vpy_ (0), vpz_ (0), nbins_ (90)
+      CRHEstimation ()
       {
         k_ = 1;
         feature_name_ = "CRHEstimation";
       }
-      ;
 
       /** \brief Set the viewpoint.
        * \param[in] vpx the X coordinate of the viewpoint
@@ -119,10 +116,10 @@ namespace pcl
       /** \brief Values describing the viewpoint ("pinhole" camera model assumed). 
        * By default, the viewpoint is set to 0,0,0.
        */
-      float vpx_, vpy_, vpz_;
+      float vpx_{0.0f}, vpy_{0.0f}, vpz_{0.0f};
 
       /** \brief Number of bins, this should match the Output type */
-      int nbins_;
+      int nbins_{90};
 
       /** \brief Centroid to be used */
       Eigen::Vector4f centroid_;
@@ -134,12 +131,10 @@ namespace pcl
        * \param[out] output the resultant point cloud with a CRH histogram
        */
       void
-      computeFeature (PointCloudOut &output);
+      computeFeature (PointCloudOut &output) override;
   };
 }
 
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/features/impl/crh.hpp>
 #endif
-
-#endif  //#ifndef PCL_FEATURES_CRH_H_

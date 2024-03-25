@@ -38,11 +38,11 @@
 /// displayed in a pop-up dialog.
 /// @author Yue Li and Matthew Hielsberg
 
-#ifndef STATISTICS_H_
-#define STATISTICS_H_
+#pragma once
 
 #include <vector>
 #include <string>
+#include <cassert>
 #include <pcl/apps/point_cloud_editor/localTypes.h>
 
 class Statistics
@@ -50,8 +50,7 @@ class Statistics
   public:
     /// @brief Destructor
     virtual ~Statistics ()
-    {
-    }
+    = default;
 
     /// @brief Returns the strings of the statistics.
     static
@@ -65,8 +64,7 @@ class Statistics
   protected:
     /// @brief The default constructor.
     Statistics ()
-    {
-    }
+    = default;
 
     /// @brief Copy Constructor
     Statistics (const Statistics&)
@@ -94,5 +92,3 @@ class Statistics
   private:
     static std::vector<Statistics*> stat_vec_;
 };
-
-#endif // STATISTICS_H_

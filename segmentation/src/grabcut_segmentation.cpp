@@ -39,7 +39,6 @@
 
 #include <pcl/segmentation/grabcut_segmentation.h>
 
-#include <cstdlib>
 #include <cassert>
 #include <vector>
 #include <map>
@@ -48,7 +47,6 @@
 const int pcl::segmentation::grabcut::BoykovKolmogorov::TERMINAL = -1;
 
 pcl::segmentation::grabcut::BoykovKolmogorov::BoykovKolmogorov (std::size_t max_nodes)
-  : flow_value_(0.0)
 {
   if (max_nodes > 0)
   {
@@ -64,7 +62,7 @@ pcl::segmentation::grabcut::BoykovKolmogorov::operator() (int u, int v) const
   if ((u < 0) && (v < 0)) return flow_value_;
   if (u < 0) { return source_edges_[v]; }
   if (v < 0) { return target_edges_[u]; }
-  capacitated_edge::const_iterator it = nodes_[u].find (v);
+  auto it = nodes_[u].find (v);
   if (it == nodes_[u].end ()) return 0.0;
   return it->second;
 }
@@ -84,7 +82,7 @@ pcl::segmentation::grabcut::BoykovKolmogorov::getTargetEdgeCapacity (int u) cons
 void
 pcl::segmentation::grabcut::BoykovKolmogorov::preAugmentPaths ()
 {
-  for (int u = 0; u < (int)nodes_.size (); u++)
+  for (int u = 0; u < static_cast<int>(nodes_.size ()); u++)
   {
     // augment s-u-t paths
     if ((source_edges_[u] > 0.0) && (target_edges_[u] > 0.0))
@@ -98,7 +96,7 @@ pcl::segmentation::grabcut::BoykovKolmogorov::preAugmentPaths ()
     if (source_edges_[u] == 0.0) continue;
 
     // augment s-u-v-t paths
-    for (std::map<int, double>::iterator it = nodes_[u].begin (); it != nodes_[u].end (); ++it)
+    for (auto it = nodes_[u].begin (); it != nodes_[u].end (); ++it)
     {
       const int v = it->first;
       if ((it->second == 0.0) || (target_edges_[v] == 0.0)) continue;
@@ -114,9 +112,9 @@ pcl::segmentation::grabcut::BoykovKolmogorov::preAugmentPaths ()
 }
 
 int
-pcl::segmentation::grabcut::BoykovKolmogorov::addNodes (size_t n)
+pcl::segmentation::grabcut::BoykovKolmogorov::addNodes (std::size_t n)
 {
-  int node_id = (int)nodes_.size ();
+  int node_id = static_cast<int>(nodes_.size ());
   nodes_.resize (nodes_.size () + n);
   source_edges_.resize (nodes_.size (), 0.0);
   target_edges_.resize (nodes_.size (), 0.0);
@@ -164,7 +162,7 @@ pcl::segmentation::grabcut::BoykovKolmogorov::addEdge (int u, int v, double cap_
   assert ((v >= 0) && (v < (int)nodes_.size ()));
   assert (u != v);
 
-  capacitated_edge::iterator it = nodes_[u].find (v);
+  auto it = nodes_[u].find (v);
   if (it == nodes_[u].end ())
   {
     assert (cap_uv + cap_vu >= 0.0);
@@ -195,7 +193,7 @@ pcl::segmentation::grabcut::BoykovKolmogorov::addEdge (int u, int v, double cap_
   }
   else
   {
-    capacitated_edge::iterator jt = nodes_[v].find (u);
+    auto jt = nodes_[v].find (u);
     it->second += cap_uv;
     jt->second += cap_vu;
     assert (it->second + jt->second >= 0.0);
@@ -227,11 +225,11 @@ pcl::segmentation::grabcut::BoykovKolmogorov::reset ()
   flow_value_ = 0.0;
   std::fill (source_edges_.begin (), source_edges_.end (), 0.0);
   std::fill (target_edges_.begin (), target_edges_.end (), 0.0);
-  for (int u = 0; u < (int)nodes_.size (); u++)
+  for (auto &node : nodes_)
   {
-    for (capacitated_edge::iterator it = nodes_[u].begin (); it != nodes_[u].end (); ++it)
+    for (auto &edge : node)
     {
-      it->second = 0.0;
+      edge.second = 0.0;
     }
   }
   std::fill (cut_.begin (), cut_.end (), FREE);
@@ -284,7 +282,7 @@ void
 pcl::segmentation::grabcut::BoykovKolmogorov::initializeTrees ()
 {
   // initialize search tree
-  for (int u = 0; u < (int)nodes_.size (); u++)
+  for (int u = 0; u < static_cast<int>(nodes_.size ()); u++)
   {
     if (source_edges_[u] > 0.0)
     {
@@ -313,7 +311,7 @@ pcl::segmentation::grabcut::BoykovKolmogorov::expandTrees ()
     const int u = active_head_;
 
     if (cut_[u] == SOURCE) {
-      for (capacitated_edge::iterator it = nodes_[u].begin (); it != nodes_[u].end (); ++it)
+      for (auto it = nodes_[u].begin (); it != nodes_[u].end (); ++it)
       {
         if (it->second > 0.0)
         {
@@ -336,7 +334,7 @@ pcl::segmentation::grabcut::BoykovKolmogorov::expandTrees ()
     }
     else
     {
-      for (capacitated_edge::iterator it = nodes_[u].begin (); it != nodes_[u].end (); ++it)
+      for (auto it = nodes_[u].begin (); it != nodes_[u].end (); ++it)
       {
         if (cut_[it->first] == TARGET) continue;
         if (nodes_[it->first][u] > 0.0)
@@ -457,7 +455,7 @@ pcl::segmentation::grabcut::BoykovKolmogorov::adoptOrphans (std::deque<int>& orp
 
     // look for new parent
     bool b_free_orphan = true;
-    for (capacitated_edge::iterator jt = nodes_[u].begin (); jt != nodes_[u].end (); ++jt) {
+    for (auto jt = nodes_[u].begin (); jt != nodes_[u].end (); ++jt) {
       // skip if different trees
       if (cut_[jt->first] != tree_label) continue;
 
@@ -655,7 +653,7 @@ pcl::segmentation::grabcut::GMM::probabilityDensity (std::size_t i, const Color 
                 g * (r*G.inverse (0,1) + g*G.inverse (1,1) + b*G.inverse (2,1)) +
                 b * (r*G.inverse (0,2) + g*G.inverse (1,2) + b*G.inverse (2,2));
 
-      result = static_cast<float> (1.0/(sqrt (G.determinant)) * exp (-0.5*d));
+      result = static_cast<float> (1.0/(std::sqrt (G.determinant)) * std::exp (-0.5*d));
     }
   }
 
@@ -664,7 +662,7 @@ pcl::segmentation::grabcut::GMM::probabilityDensity (std::size_t i, const Color 
 
 void
 pcl::segmentation::grabcut::buildGMMs (const Image& image,
-                                       const std::vector<int>& indices,
+                                       const Indices& indices,
                                        const std::vector<SegmentationValue>& hard_segmentation,
                                        std::vector<std::size_t>& components,
                                        GMM& background_GMM, GMM& foreground_GMM)
@@ -780,12 +778,12 @@ pcl::segmentation::grabcut::buildGMMs (const Image& image,
 
 void
 pcl::segmentation::grabcut::learnGMMs (const Image& image,
-                                       const std::vector<int>& indices,
+                                       const Indices& indices,
                                        const std::vector<SegmentationValue>& hard_segmentation,
                                        std::vector<std::size_t>& components,
                                        GMM& background_GMM, GMM& foreground_GMM)
 {
-  const std::size_t indices_size = static_cast<std::size_t> (indices.size ());
+  const auto indices_size = static_cast<std::size_t> (indices.size ());
   // Step 4: Assign each pixel to the component which maximizes its probability
   for (std::size_t idx = 0; idx < indices_size; ++idx)
   {

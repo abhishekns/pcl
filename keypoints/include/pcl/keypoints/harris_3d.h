@@ -35,8 +35,7 @@
  *
  */
 
-#ifndef PCL_HARRIS_KEYPOINT_3D_H_
-#define PCL_HARRIS_KEYPOINT_3D_H_
+#pragma once
 
 #include <pcl/keypoints/keypoint.h>
 
@@ -52,17 +51,17 @@ namespace pcl
   class HarrisKeypoint3D : public Keypoint<PointInT, PointOutT>
   {
     public:
-      typedef boost::shared_ptr<HarrisKeypoint3D<PointInT, PointOutT, NormalT> > Ptr;
-      typedef boost::shared_ptr<const HarrisKeypoint3D<PointInT, PointOutT, NormalT> > ConstPtr;
+      using Ptr = shared_ptr<HarrisKeypoint3D<PointInT, PointOutT, NormalT> >;
+      using ConstPtr = shared_ptr<const HarrisKeypoint3D<PointInT, PointOutT, NormalT> >;
 
-      typedef typename Keypoint<PointInT, PointOutT>::PointCloudIn PointCloudIn;
-      typedef typename Keypoint<PointInT, PointOutT>::PointCloudOut PointCloudOut;
-      typedef typename Keypoint<PointInT, PointOutT>::KdTree KdTree;
-      typedef typename PointCloudIn::ConstPtr PointCloudInConstPtr;
+      using PointCloudIn = typename Keypoint<PointInT, PointOutT>::PointCloudIn;
+      using PointCloudOut = typename Keypoint<PointInT, PointOutT>::PointCloudOut;
+      using KdTree = typename Keypoint<PointInT, PointOutT>::KdTree;
+      using PointCloudInConstPtr = typename PointCloudIn::ConstPtr;
 
-      typedef typename pcl::PointCloud<NormalT> PointCloudN;
-      typedef typename PointCloudN::Ptr PointCloudNPtr;
-      typedef typename PointCloudN::ConstPtr PointCloudNConstPtr;
+      using PointCloudN = pcl::PointCloud<NormalT>;
+      using PointCloudNPtr = typename PointCloudN::Ptr;
+      using PointCloudNConstPtr = typename PointCloudN::ConstPtr;
 
       using Keypoint<PointInT, PointOutT>::name_;
       using Keypoint<PointInT, PointOutT>::input_;
@@ -76,7 +75,7 @@ namespace pcl
       using Keypoint<PointInT, PointOutT>::initCompute;
       using PCLBase<PointInT>::setInputCloud;
 
-      typedef enum {HARRIS = 1, NOBLE, LOWE, TOMASI, CURVATURE} ResponseMethod;
+      enum ResponseMethod {HARRIS = 1, NOBLE, LOWE, TOMASI, CURVATURE};
 
       /** \brief Constructor
         * \param[in] method the method to be used to determine the corner responses
@@ -85,23 +84,20 @@ namespace pcl
         */
       HarrisKeypoint3D (ResponseMethod method = HARRIS, float radius = 0.01f, float threshold = 0.0f)
       : threshold_ (threshold)
-      , refine_ (true)
-      , nonmax_ (true)
       , method_ (method)
-      , threads_ (0)
       {
         name_ = "HarrisKeypoint3D";
         search_radius_ = radius;
       }
       
       /** \brief Empty destructor */
-      virtual ~HarrisKeypoint3D () {}
+      ~HarrisKeypoint3D () override = default;
 
       /** \brief Provide a pointer to the input dataset
         * \param[in] cloud the const boost shared pointer to a PointCloud message
         */
-      virtual void
-      setInputCloud (const PointCloudInConstPtr &cloud);
+      void
+      setInputCloud (const PointCloudInConstPtr &cloud) override;
 
       /** \brief Set the method of the response to be calculated.
         * \param[in] type
@@ -109,7 +105,7 @@ namespace pcl
       void 
       setMethod (ResponseMethod type);
 
-      /** \brief Set the radius for normal estimation and non maxima supression.
+      /** \brief Set the radius for normal estimation and non maxima suppression.
         * \param[in] radius
         */
       void 
@@ -130,7 +126,7 @@ namespace pcl
       setNonMaxSupression (bool = false);
 
       /** \brief Whether the detected key points should be refined or not. If turned of, the key points are a subset of the original point cloud. Otherwise the key points may be arbitrary.
-        * \brief note non maxima supression needs to be on in order to use this feature.
+        * \brief note non maxima suppression needs to be on in order to use this feature.
         * \param[in] do_refine
         */
       void 
@@ -149,8 +145,8 @@ namespace pcl
         * need to compute the features for a downsampled cloud.
         * \param[in] cloud a pointer to a PointCloud message
         */
-      virtual void
-      setSearchSurface (const PointCloudInConstPtr &cloud) { surface_ = cloud; normals_.reset(); }
+      void
+      setSearchSurface (const PointCloudInConstPtr &cloud) override { surface_ = cloud; normals_.reset(); }
 
       /** \brief Initialize the scheduler and set the number of threads to use.
         * \param nr_threads the number of hardware threads to use (0 sets the value back to automatic)
@@ -159,8 +155,8 @@ namespace pcl
       setNumberOfThreads (unsigned int nr_threads = 0) { threads_ = nr_threads; }
     protected:
       bool
-      initCompute ();
-      void detectKeypoints (PointCloudOut &output);
+      initCompute () override;
+      void detectKeypoints (PointCloudOut &output) override;
       /** \brief gets the corner response for valid input points*/
       void responseHarris (PointCloudOut &output) const;
       void responseNoble (PointCloudOut &output) const;
@@ -169,18 +165,15 @@ namespace pcl
       void responseCurvature (PointCloudOut &output) const;
       void refineCorners (PointCloudOut &corners) const;
       /** \brief calculates the upper triangular part of unnormalized covariance matrix over the normals given by the indices.*/
-      void calculateNormalCovar (const std::vector<int>& neighbors, float* coefficients) const;
+      void calculateNormalCovar (const pcl::Indices& neighbors, float* coefficients) const;
     private:
       float threshold_;
-      bool refine_;
-      bool nonmax_;
+      bool refine_{true};
+      bool nonmax_{true};
       ResponseMethod method_;
       PointCloudNConstPtr normals_;
-      unsigned int threads_;
+      unsigned int threads_{0};
   };
 }
 
 #include <pcl/keypoints/impl/harris_3d.hpp>
-
-#endif // #ifndef PCL_HARRIS_KEYPOINT_3D_H_
-

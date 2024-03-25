@@ -38,7 +38,6 @@
 /// class has been based on
 /// @author Matthew Hielsberg
 
-#include <algorithm>
 #include <limits>
 #include <pcl/apps/point_cloud_editor/common.h>
 #include <pcl/apps/point_cloud_editor/trackball.h>
@@ -49,28 +48,15 @@ TrackBall::TrackBall() : quat_(1.0f), origin_x_(0), origin_y_(0), origin_z_(0)
                 (TRACKBALL_RADIUS_SCALE * static_cast<float>(WINDOW_WIDTH));
 }
 
-TrackBall::TrackBall(const TrackBall &copy) :
-  quat_(copy.quat_), origin_x_(copy.origin_x_), origin_y_(copy.origin_y_),
-  origin_z_(copy.origin_z_), radius_sqr_(copy.radius_sqr_)
-{
-  
-}
+TrackBall::TrackBall(const TrackBall &copy)  
+= default;
 
 TrackBall::~TrackBall()
-{
-    
-}
+= default;
 
 TrackBall&
 TrackBall::operator=(const TrackBall &rhs)
-{
-  quat_ = rhs.quat_;
-  origin_x_ = rhs.origin_x_;
-  origin_y_ = rhs.origin_y_;
-  origin_z_ = rhs.origin_z_;
-  radius_sqr_ = rhs.radius_sqr_;
-  return *this;
-}
+= default;
 
 void
 TrackBall::start(int s_x, int s_y)
@@ -165,7 +151,7 @@ TrackBall::update(int s_x, int s_y)
   normalize(cross_x, cross_y, cross_z, nc_x, nc_y, nc_z);
 
   quat_ = quaternionFromAngleAxis(angle, nc_x, nc_y, nc_z);
-  if (quat_.R_component_1() != quat_.R_component_1())
+  if (std::isnan(quat_.R_component_1()))
     quat_ = boost::math::quaternion<float>(1.0f);
 
   origin_x_ = cur_x;
@@ -221,7 +207,7 @@ TrackBall::reset()
 
 void
 TrackBall::getPointFromScreenPoint(int s_x, int s_y,
-                                   float &x, float &y, float &z)
+                                   float &x, float &y, float &z) const
 {
   // See http://www.opengl.org/wiki/Trackball for more info
     

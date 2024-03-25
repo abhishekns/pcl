@@ -43,8 +43,7 @@
  *      Author: papazov
  */
 
-#ifndef PCL_RECOGNITION_RIGID_TRANSFORM_SPACE_H_
-#define PCL_RECOGNITION_RIGID_TRANSFORM_SPACE_H_
+#pragma once
 
 #include "simple_octree.h"
 #include "model_library.h"
@@ -63,7 +62,6 @@ namespace pcl
         {
           public:
             Entry ()
-            : num_transforms_ (0)
             {
               aux::set3 (axis_angle_, 0.0f);
               aux::set3 (translation_, 0.0f);
@@ -96,7 +94,7 @@ namespace pcl
             }
 
             inline void
-            computeAverageRigidTransform (float *rigid_transform = NULL)
+            computeAverageRigidTransform (float *rigid_transform = nullptr)
             {
               if ( num_transforms_ >= 2 )
               {
@@ -135,11 +133,11 @@ namespace pcl
 
           protected:
             float axis_angle_[3], translation_[3];
-            int num_transforms_;
+            int num_transforms_{0};
         };// class Entry
 
       public:
-        RotationSpaceCell (){}
+        RotationSpaceCell () = default;
         virtual ~RotationSpaceCell ()
         {
           model_to_entry_.clear ();
@@ -154,12 +152,12 @@ namespace pcl
         inline const RotationSpaceCell::Entry*
         getEntry (const ModelLibrary::Model* model) const
         {
-          std::map<const ModelLibrary::Model*, Entry>::const_iterator res = model_to_entry_.find (model);
+          auto res = model_to_entry_.find (model);
 
           if ( res != model_to_entry_.end () )
             return (&res->second);
 
-          return (NULL);
+          return (nullptr);
         }
 
         inline const RotationSpaceCell::Entry&
@@ -175,8 +173,8 @@ namespace pcl
     class RotationSpaceCellCreator
     {
       public:
-        RotationSpaceCellCreator (){}
-        virtual ~RotationSpaceCellCreator (){}
+        RotationSpaceCellCreator () = default;
+        virtual ~RotationSpaceCellCreator () = default;
 
         RotationSpaceCell* create (const SimpleOctree<RotationSpaceCell, RotationSpaceCellCreator, float>::Node* )
         {
@@ -184,7 +182,7 @@ namespace pcl
         }
     };
 
-    typedef SimpleOctree<RotationSpaceCell, RotationSpaceCellCreator, float> CellOctree;
+    using CellOctree = SimpleOctree<RotationSpaceCell, RotationSpaceCellCreator, float>;
 
     /** \brief This is a class for a discrete representation of the rotation space based on the axis-angle representation.
       * This class is not supposed to be very general. That's why it is dependent on the class ModelLibrary.
@@ -230,20 +228,20 @@ namespace pcl
           int max_num_transforms = 0;
 
           // For each full leaf
-          for ( std::vector<CellOctree::Node*>::const_iterator leaf = full_leaves.begin () ; leaf != full_leaves.end () ; ++leaf )
+          for (const auto &full_leaf : full_leaves)
           {
             // Is there an entry for 'model' in the current cell
-            const RotationSpaceCell::Entry *entry = (*leaf)->getData ().getEntry (model);
+            const RotationSpaceCell::Entry *entry = full_leaf->getData ().getEntry (model);
             if ( !entry )
               continue;
 
             int num_transforms = entry->getNumberOfTransforms ();
-            const std::set<CellOctree::Node*>& neighs = (*leaf)->getNeighbors ();
+            const std::set<CellOctree::Node*>& neighs = full_leaf->getNeighbors ();
 
             // For each neighbor
-            for ( std::set<CellOctree::Node*>::const_iterator neigh = neighs.begin () ; neigh != neighs.end () ; ++neigh )
+            for (const auto &neigh : neighs)
             {
-              const RotationSpaceCell::Entry *neigh_entry = (*neigh)->getData ().getEntry (model);
+              const RotationSpaceCell::Entry *neigh_entry = neigh->getData ().getEntry (model);
               if ( !neigh_entry )
                 continue;
 
@@ -294,15 +292,13 @@ namespace pcl
     class RotationSpaceCreator
     {
       public:
-        RotationSpaceCreator()
-        : counter_ (0)
-        {}
+        RotationSpaceCreator() = default;
 
-        virtual ~RotationSpaceCreator(){}
+        virtual ~RotationSpaceCreator() = default;
 
         RotationSpace* create(const SimpleOctree<RotationSpace, RotationSpaceCreator, float>::Node* leaf)
         {
-          RotationSpace *rot_space = new RotationSpace (discretization_);
+          auto *rot_space = new RotationSpace (discretization_);
           rot_space->setCenter (leaf->getCenter ());
           rotation_spaces_.push_back (rot_space);
 
@@ -332,16 +328,16 @@ namespace pcl
 
       protected:
         float discretization_;
-        int counter_;
+        int counter_{0};
         std::list<RotationSpace*> rotation_spaces_;
     };
 
-    typedef SimpleOctree<RotationSpace, RotationSpaceCreator, float> RotationSpaceOctree;
+    using RotationSpaceOctree = SimpleOctree<RotationSpace, RotationSpaceCreator, float>;
 
     class PCL_EXPORTS RigidTransformSpace
     {
       public:
-        RigidTransformSpace (){}
+        RigidTransformSpace () = default;
         virtual ~RigidTransformSpace (){ this->clear ();}
 
         inline void
@@ -410,5 +406,3 @@ namespace pcl
     }; // class RigidTransformSpace
   } // namespace recognition
 } // namespace pcl
-
-#endif /* PCL_RECOGNITION_RIGID_TRANSFORM_SPACE_H_ */

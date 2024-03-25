@@ -36,13 +36,11 @@
 
 #include <pcl/visualization/range_image_visualizer.h>
 
-pcl::visualization::RangeImageVisualizer::RangeImageVisualizer (const std::string& name) : ImageViewer (name), name_ ()
+pcl::visualization::RangeImageVisualizer::RangeImageVisualizer (const std::string& name) : ImageViewer (name)
 {
 }
 
-pcl::visualization::RangeImageVisualizer::~RangeImageVisualizer ()
-{
-}
+pcl::visualization::RangeImageVisualizer::~RangeImageVisualizer () = default;
 
 // void 
 // pcl::visualization::RangeImageVisualizer::setRangeImage (const pcl::RangeImage& range_image, float min_value, float max_value, bool grayscale)
@@ -66,7 +64,7 @@ pcl::visualization::RangeImageVisualizer*
 pcl::visualization::RangeImageVisualizer::getRangeImageWidget (
     const pcl::RangeImage& range_image, float min_value, float max_value, bool grayscale, const std::string& name)
 {
-  RangeImageVisualizer* range_image_widget = new RangeImageVisualizer (name);
+  auto* range_image_widget = new RangeImageVisualizer (name);
   range_image_widget->showRangeImage (range_image, min_value, max_value, grayscale);
   return range_image_widget;
 }
@@ -77,11 +75,11 @@ pcl::visualization::RangeImageVisualizer::visualizeBorders (
     const pcl::PointCloud<pcl::BorderDescription>& border_descriptions)
 {  
   showRangeImage(range_image, min_value, max_value, grayscale);
-  for (size_t y=0; y<range_image.height; ++y)
+  for (std::size_t y=0; y<range_image.height; ++y)
   {
-    for (size_t x=0; x<range_image.width; ++x)
+    for (std::size_t x=0; x<range_image.width; ++x)
     {
-      const pcl::BorderDescription& border_description = border_descriptions.points[y*range_image.width + x];
+      const pcl::BorderDescription& border_description = border_descriptions[y*range_image.width + x];
       const pcl::BorderTraits& border_traits = border_description.traits;
       if (border_traits[pcl::BORDER_TRAIT__OBSTACLE_BORDER])
       {
@@ -104,7 +102,7 @@ pcl::visualization::RangeImageVisualizer::getRangeImageBordersWidget (
     const pcl::PointCloud<pcl::BorderDescription>& border_descriptions, const std::string& name)
 {
   //std::cout << PVARN(range_image)<<PVARN(min_value)<<PVARN(max_value)<<PVARN(grayscale);
-  RangeImageVisualizer* range_image_widget = new RangeImageVisualizer;
+  auto* range_image_widget = new RangeImageVisualizer;
   range_image_widget->visualizeBorders (range_image, min_value, max_value, grayscale,
                                         border_descriptions);
   range_image_widget->setWindowTitle (name);
@@ -115,7 +113,7 @@ pcl::visualization::RangeImageVisualizer*
 pcl::visualization::RangeImageVisualizer::getAnglesWidget (const pcl::RangeImage& range_image, float* angles_image,
                                                            const std::string& name)
 {
-  RangeImageVisualizer* widget = new RangeImageVisualizer;
+  auto* widget = new RangeImageVisualizer;
   widget->showAngleImage(angles_image, range_image.width, range_image.height);
   widget->setWindowTitle (name);
   return widget;
@@ -125,7 +123,7 @@ pcl::visualization::RangeImageVisualizer*
 pcl::visualization::RangeImageVisualizer::getHalfAnglesWidget (const pcl::RangeImage& range_image,
                                                                 float* angles_image, const std::string& name)
 {
-  RangeImageVisualizer* widget = new RangeImageVisualizer;
+  auto* widget = new RangeImageVisualizer;
   widget->showHalfAngleImage(angles_image, range_image.width, range_image.height);
   widget->setWindowTitle (name);
   return widget;
@@ -136,16 +134,15 @@ pcl::visualization::RangeImageVisualizer::getInterestPointsWidget (
     const pcl::RangeImage& range_image, const float* interest_image, float min_value, float max_value, 
     const pcl::PointCloud<pcl::InterestPoint>& interest_points, const std::string& name)
 {
-  RangeImageVisualizer* widget = new RangeImageVisualizer;
+  auto* widget = new RangeImageVisualizer;
   widget->showFloatImage (interest_image, range_image.width, range_image.height, min_value, max_value);
   widget->setWindowTitle (name);
-  for (unsigned int i=0; i<interest_points.points.size(); ++i)
+  for (const auto &interest_point : interest_points.points)
   {
-    const pcl::InterestPoint& interest_point = interest_points.points[i];
     float image_x, image_y;
     range_image.getImagePoint (interest_point.x, interest_point.y, interest_point.z, image_x, image_y);
-    widget->markPoint (static_cast<size_t> (image_x), static_cast<size_t> (image_y), green_color, red_color);
-    //cout << "Marking point "<<image_x<<","<<image_y<<"\n";
+    widget->markPoint (static_cast<std::size_t> (image_x), static_cast<std::size_t> (image_y), green_color, red_color);
+    //std::cout << "Marking point "<<image_x<<","<<image_y<<"\n";
   }
   return widget;
 }

@@ -96,9 +96,9 @@ development that everyone should follow:
 
   An in-depth discussion about the PCL 2.x API can be found here.
 
-Commiting changes to the git master
------------------------------------
-In order to oversee the commit messages more easier and that the changelist looks homogenous please keep the following format:
+Committing changes to the git master
+------------------------------------
+In order to oversee the commit messages more easier and that the changelist looks homogeneous please keep the following format:
 
 "* <fixed|bugfix|changed|new> X in @<classname>@ (#<bug number>)" 
 

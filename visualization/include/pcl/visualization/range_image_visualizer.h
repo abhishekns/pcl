@@ -34,12 +34,10 @@
  *
  */
 
-#include <pcl/pcl_config.h>
-
-#ifndef PCL_VISUALIZATION_RANGE_IMAGE_VISUALIZER_H_
-#define PCL_VISUALIZATION_RANGE_IMAGE_VISUALIZER_H_
+#pragma once
 
 // PCL includes
+#include <pcl/pcl_config.h>
 #include <pcl/range_image/range_image.h>
 #include <pcl/visualization/image_viewer.h>
 
@@ -58,7 +56,7 @@ namespace pcl
         //! Constructor
         RangeImageVisualizer (const std::string& name="Range Image");
         //! Destructor
-        ~RangeImageVisualizer ();
+        ~RangeImageVisualizer () override;
         
         // =====PUBLIC STATIC METHODS=====
         /** Get a widget visualizing the given range image.
@@ -113,5 +111,3 @@ namespace pcl
     };
   }
 }
-
-#endif  //#define PCL_VISUALIZATION_RANGE_IMAGE_VISUALIZER_H_

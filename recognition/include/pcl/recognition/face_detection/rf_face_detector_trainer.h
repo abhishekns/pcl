@@ -5,86 +5,61 @@
  *      Author: Aitor Aldoma
  */
 
-#ifndef PCL_RF_FACE_DETECTOR_TRAINER_H_
-#define PCL_RF_FACE_DETECTOR_TRAINER_H_
+#pragma once
 
 #include "pcl/recognition/face_detection/face_detector_data_provider.h"
 #include "pcl/recognition/face_detection/rf_face_utils.h"
 #include "pcl/ml/dt/decision_forest.h"
-#include <pcl/features/integral_image2D.h>
 
 namespace pcl
 {
   class PCL_EXPORTS RFFaceDetectorTrainer
   {
     private:
-      int w_size_;
-      int max_patch_size_;
-      int stride_sw_;
-      int ntrees_;
-      std::string forest_filename_;
-      int nfeatures_;
-      float thres_face_;
-      int num_images_;
-      float trans_max_variance_;
-      size_t min_votes_size_;
-      int used_for_pose_;
-      bool use_normals_;
+      int w_size_ {80};
+      int max_patch_size_ {40};
+      int stride_sw_ {4};
+      int ntrees_ {10};
+      std::string forest_filename_ {"forest.txt"};
+      int nfeatures_ {10000};
+      float thres_face_ {1.f};
+      int num_images_ {1000};
+      float trans_max_variance_ {1600.f};
+      std::size_t min_votes_size_;
+      int used_for_pose_ {std::numeric_limits<int>::max ()};
+      bool use_normals_ {false};
       std::string directory_;
-      float HEAD_ST_DIAMETER_;
-      float larger_radius_ratio_;
-      std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > head_center_votes_;
-      std::vector<std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > > head_center_votes_clustered_;
-      std::vector<std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > > head_center_original_votes_clustered_;
-      std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > angle_votes_;
-      std::vector<float> uncertainties_;
-      std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > head_clusters_centers_;
-      std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > head_clusters_rotation_;
+      float HEAD_ST_DIAMETER_ {0.2364f};
+      float larger_radius_ratio_ {1.5f};
+      std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > head_center_votes_{};
+      std::vector<std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > > head_center_votes_clustered_{};
+      std::vector<std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > > head_center_original_votes_clustered_{};
+      std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > angle_votes_{};
+      std::vector<float> uncertainties_{};
+      std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > head_clusters_centers_{};
+      std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > head_clusters_rotation_{};
 
-      pcl::PointCloud<pcl::PointXYZ>::Ptr input_;
-      pcl::PointCloud<pcl::PointXYZI>::Ptr face_heat_map_;
+      pcl::PointCloud<pcl::PointXYZ>::Ptr input_{};
+      pcl::PointCloud<pcl::PointXYZI>::Ptr face_heat_map_{};
 
-      typedef face_detection::RFTreeNode<face_detection::FeatureType> NodeType;
-      pcl::DecisionForest<NodeType> forest_;
+      using NodeType = face_detection::RFTreeNode<face_detection::FeatureType>;
+      pcl::DecisionForest<NodeType> forest_{};
 
-      std::string model_path_;
-      bool pose_refinement_;
-      int icp_iterations_;
+      std::string model_path_ {"face_mesh.ply"};
+      bool pose_refinement_ {false};
+      int icp_iterations_{};
 
-      pcl::PointCloud<pcl::PointXYZ>::Ptr model_original_;
-      float res_;
+      pcl::PointCloud<pcl::PointXYZ>::Ptr model_original_{};
+      float res_ {0.005f};
 
     public:
 
-      RFFaceDetectorTrainer()
-      {
-        w_size_ = 80;
-        max_patch_size_ = 40;
-        stride_sw_ = 4;
-        ntrees_ = 10;
-        forest_filename_ = std::string ("forest.txt");
-        nfeatures_ = 10000;
-        thres_face_ = 1.f;
-        num_images_ = 1000;
-        trans_max_variance_ = 1600.f;
-        used_for_pose_ = std::numeric_limits<int>::max ();
-        use_normals_ = false;
-        directory_ = std::string ("");
-        HEAD_ST_DIAMETER_ = 0.2364f;
-        larger_radius_ratio_ = 1.5f;
-        face_heat_map_.reset ();
-        model_path_ = std::string ("face_mesh.ply");
-        pose_refinement_ = false;
-        res_ = 0.005f;
-      }
+      RFFaceDetectorTrainer() = default;
 
-      virtual ~RFFaceDetectorTrainer()
-      {
-
-      }
+      virtual ~RFFaceDetectorTrainer() = default;
 
       /*
-       * Common parameters
+       * Set name of the file in which RFFaceDetectorTrainer will store the forest.
        */
       void setForestFilename(std::string & ff)
       {
@@ -161,6 +136,9 @@ namespace pcl
         used_for_pose_ = n;
       }
 
+      /*
+       * This forest is used to detect faces.
+       */
       void setForest(pcl::DecisionForest<NodeType> & forest)
       {
         forest_ = forest;
@@ -179,28 +157,28 @@ namespace pcl
       void getVotes(pcl::PointCloud<pcl::PointXYZ>::Ptr & votes_cloud)
       {
         votes_cloud->points.resize (head_center_votes_.size ());
-        votes_cloud->width = static_cast<int>(head_center_votes_.size ());
+        votes_cloud->width = head_center_votes_.size ();
         votes_cloud->height = 1;
 
-        for (size_t i = 0; i < head_center_votes_.size (); i++)
+        for (std::size_t i = 0; i < head_center_votes_.size (); i++)
         {
-          votes_cloud->points[i].getVector3fMap () = head_center_votes_[i];
+          (*votes_cloud)[i].getVector3fMap () = head_center_votes_[i];
         }
       }
 
       void getVotes(pcl::PointCloud<pcl::PointXYZI>::Ptr & votes_cloud)
       {
         votes_cloud->points.resize (head_center_votes_.size ());
-        votes_cloud->width = static_cast<int>(head_center_votes_.size ());
+        votes_cloud->width = head_center_votes_.size ();
         votes_cloud->height = 1;
 
         int p = 0;
-        for (size_t i = 0; i < head_center_votes_clustered_.size (); i++)
+        for (std::size_t i = 0; i < head_center_votes_clustered_.size (); i++)
         {
-          for (size_t j = 0; j < head_center_votes_clustered_[i].size (); j++, p++)
+          for (std::size_t j = 0; j < head_center_votes_clustered_[i].size (); j++, p++)
           {
-            votes_cloud->points[p].getVector3fMap () = head_center_votes_clustered_[i][j];
-            votes_cloud->points[p].intensity = 0.1f * static_cast<float> (i);
+            (*votes_cloud)[p].getVector3fMap () = head_center_votes_clustered_[i][j];
+            (*votes_cloud)[p].intensity = 0.1f * static_cast<float> (i);
           }
         }
 
@@ -210,16 +188,16 @@ namespace pcl
       void getVotes2(pcl::PointCloud<pcl::PointXYZI>::Ptr & votes_cloud)
       {
         votes_cloud->points.resize (head_center_votes_.size ());
-        votes_cloud->width = static_cast<int>(head_center_votes_.size ());
+        votes_cloud->width = head_center_votes_.size ();
         votes_cloud->height = 1;
 
         int p = 0;
-        for (size_t i = 0; i < head_center_original_votes_clustered_.size (); i++)
+        for (std::size_t i = 0; i < head_center_original_votes_clustered_.size (); i++)
         {
-          for (size_t j = 0; j < head_center_original_votes_clustered_[i].size (); j++, p++)
+          for (std::size_t j = 0; j < head_center_original_votes_clustered_[i].size (); j++, p++)
           {
-            votes_cloud->points[p].getVector3fMap () = head_center_original_votes_clustered_[i][j];
-            votes_cloud->points[p].intensity = 0.1f * static_cast<float> (i);
+            (*votes_cloud)[p].getVector3fMap () = head_center_original_votes_clustered_[i][j];
+            (*votes_cloud)[p].intensity = 0.1f * static_cast<float> (i);
           }
         }
 
@@ -229,7 +207,7 @@ namespace pcl
       //get heads
       void getDetectedFaces(std::vector<Eigen::VectorXf> & faces)
       {
-        for (size_t i = 0; i < head_clusters_centers_.size (); i++)
+        for (std::size_t i = 0; i < head_clusters_centers_.size (); i++)
         {
           Eigen::VectorXf head (6);
           head[0] = head_clusters_centers_[i][0];
@@ -259,5 +237,3 @@ namespace pcl
       void detectFaces();
   };
 }
-
-#endif /* PCL_RF_FACE_DETECTOR_TRAINER_H_ */

@@ -38,8 +38,7 @@
  *
  */
 
-#ifndef PCL_TEST_GEOMETRY_TEST_MESH_COMMON_FUNCTIONS_H
-#define PCL_TEST_GEOMETRY_TEST_MESH_COMMON_FUNCTIONS_H
+#pragma once
 
 #include <iostream>
 #include <vector>
@@ -47,18 +46,18 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // Abort circulating if the number of evaluations is too damn high.
-const unsigned int max_number_polygon_vertices  = 100;
-const unsigned int max_number_boundary_vertices = 100;
+constexpr unsigned int max_number_polygon_vertices = 100;
+constexpr unsigned int max_number_boundary_vertices = 100;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 /** \brief Check if the faces of the mesh are equal to the reference faces (defined by a vector of vertices). */
 template <class MeshT> bool
-hasFaces (const MeshT& mesh, const std::vector <typename MeshT::VertexIndices> faces, const bool verbose = false)
+hasFaces (const MeshT& mesh, const std::vector <typename MeshT::VertexIndices> &faces, const bool verbose = false)
 {
-  typedef typename MeshT::VertexAroundFaceCirculator VAFC;
-  typedef typename MeshT::VertexIndices              VertexIndices;
-  typedef typename MeshT::FaceIndex                  FaceIndex;
+  using VAFC = typename MeshT::VertexAroundFaceCirculator;
+  using VertexIndices = typename MeshT::VertexIndices;
+  using FaceIndex = typename MeshT::FaceIndex;
 
   if (mesh.sizeFaces () != faces.size ())
   {
@@ -66,11 +65,11 @@ hasFaces (const MeshT& mesh, const std::vector <typename MeshT::VertexIndices> f
     {
       std::cerr << "Incorrect number of faces: " << mesh.sizeFaces () << " != " << faces.size () << "\n";
     }
-    return (false);
+    return false;
   }
 
   VertexIndices vi;
-  for (unsigned int i=0; i<mesh.sizeFaces (); ++i)
+  for (std::size_t i = 0; i < mesh.sizeFaces (); ++i)
   {
     if (verbose) std::cerr << "Face " << std::setw (2) << i << ": ";
     VAFC       circ     = mesh.getVertexAroundFaceCirculator (FaceIndex (i));
@@ -85,7 +84,7 @@ hasFaces (const MeshT& mesh, const std::vector <typename MeshT::VertexIndices> f
       if (++counter > max_number_polygon_vertices)
       {
         if (verbose) std::cerr << "... Infinite loop aborted.\n";
-        return (false);
+        return false;
       }
       vi.push_back (circ.getTargetIndex ());
     } while (++circ != circ_end);
@@ -93,20 +92,20 @@ hasFaces (const MeshT& mesh, const std::vector <typename MeshT::VertexIndices> f
     if (vi.size () != faces [i].size ())
     {
       std::cerr << "Wrong size!\n";
-      return (false);
+      return false;
     }
     if (verbose) std::cerr << "\texpected: ";
-    for (unsigned int j=0; j<vi.size (); ++j)
+    for (std::size_t j = 0; j < vi.size (); ++j)
     {
       if (verbose) std::cerr << std::setw (2) << faces [i][j] << " ";
       if (vi [j] != faces [i][j])
       {
-        return (false);
+        return false;
       }
     }
     if (verbose) std::cerr << "\n";
   }
-  return (true);
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -115,11 +114,11 @@ hasFaces (const MeshT& mesh, const std::vector <typename MeshT::VertexIndices> f
  *  \note This method assumes that the vertex data is of type 'int'.
  */
 template <class MeshT> bool
-hasFaces (const MeshT& mesh, const std::vector <std::vector <int> > faces, const bool verbose = false)
+hasFaces (const MeshT& mesh, const std::vector <std::vector <int> > &faces, const bool verbose = false)
 {
-  typedef typename MeshT::VertexAroundFaceCirculator VAFC;
-  typedef typename MeshT::FaceIndex                  FaceIndex;
-  typedef typename MeshT::VertexDataCloud            VertexDataCloud;
+  using VAFC = typename MeshT::VertexAroundFaceCirculator;
+  using FaceIndex = typename MeshT::FaceIndex;
+  using VertexDataCloud = typename MeshT::VertexDataCloud;
 
   if (mesh.sizeFaces () != faces.size ())
   {
@@ -127,12 +126,12 @@ hasFaces (const MeshT& mesh, const std::vector <std::vector <int> > faces, const
     {
       std::cerr << "Incorrect number of faces: " << mesh.sizeFaces () << " != " << faces.size () << "\n";
     }
-    return (false);
+    return false;
   }
 
   const VertexDataCloud& vdc = mesh.getVertexDataCloud ();
   std::vector <int> vv;
-  for (unsigned int i=0; i<mesh.sizeFaces (); ++i)
+  for (std::size_t i = 0; i < mesh.sizeFaces (); ++i)
   {
     if (verbose) std::cerr << "Face " << std::setw (2) << i << ": ";
     VAFC       circ     = mesh.getVertexAroundFaceCirculator (FaceIndex (i));
@@ -147,7 +146,7 @@ hasFaces (const MeshT& mesh, const std::vector <std::vector <int> > faces, const
       if (++counter > max_number_polygon_vertices)
       {
         if (verbose) std::cerr << "... Infinite loop aborted.\n";
-        return (false);
+        return false;
       }
       vv.push_back (vdc [circ.getTargetIndex ().get ()]);
     } while (++circ != circ_end);
@@ -155,21 +154,21 @@ hasFaces (const MeshT& mesh, const std::vector <std::vector <int> > faces, const
     if (vv.size () != faces [i].size ())
     {
       std::cerr << "Wrong size!\n";
-      return (false);
+      return false;
     }
     if (verbose) std::cerr << "\texpected: ";
-    for (unsigned int j=0; j<vv.size (); ++j)
+    for (std::size_t j=0; j<vv.size (); ++j)
     {
       if (verbose) std::cerr << std::setw (2) << faces [i][j] << " ";
       if (vv [j] != faces [i][j])
       {
         if (verbose) std::cerr << "\n";
-        return (false);
+        return false;
       }
     }
     if (verbose) std::cerr << "\n";
   }
-  return (true);
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -178,9 +177,9 @@ hasFaces (const MeshT& mesh, const std::vector <std::vector <int> > faces, const
 template <class MeshT> typename MeshT::VertexIndices
 getBoundaryVertices (const MeshT& mesh, const typename MeshT::VertexIndex& first, const bool verbose = false)
 {
-  typedef typename MeshT::VertexAroundFaceCirculator VAFC;
-  typedef typename MeshT::HalfEdgeIndex              HalfEdgeIndex;
-  typedef typename MeshT::VertexIndices              VertexIndices;
+  using VAFC = typename MeshT::VertexAroundFaceCirculator;
+  using HalfEdgeIndex = typename MeshT::HalfEdgeIndex;
+  using VertexIndices = typename MeshT::VertexIndices;
 
   const HalfEdgeIndex boundary_he = mesh.getOutgoingHalfEdgeIndex (first);
   if (!mesh.isBoundary (boundary_he))
@@ -188,7 +187,7 @@ getBoundaryVertices (const MeshT& mesh, const typename MeshT::VertexIndex& first
     if (verbose) std::cerr << "Vertex " << first << "with outgoing half_edge "
                            << mesh.getOriginatingVertexIndex (boundary_he) << "-"
                            << mesh.getTerminatingVertexIndex (boundary_he) << " is not on the boundary!\n";
-    return (VertexIndices ());
+    return {};
   }
 
   VAFC       circ     = mesh.getVertexAroundFaceCirculator (boundary_he);
@@ -204,12 +203,12 @@ getBoundaryVertices (const MeshT& mesh, const typename MeshT::VertexIndex& first
     if (++counter > max_number_boundary_vertices)
     {
       if (verbose) std::cerr << "... Infinite loop aborted.\n";
-      return (VertexIndices ());
+      return {};
     }
     boundary_vertices.push_back (circ.getTargetIndex ());
   } while (++circ != circ_end);
   if (verbose) std::cerr << "\n";
-  return (boundary_vertices);
+  return boundary_vertices;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -218,9 +217,9 @@ getBoundaryVertices (const MeshT& mesh, const typename MeshT::VertexIndex& first
 template <class MeshT> std::vector <int>
 getBoundaryVertices (const MeshT& mesh, const int first, const bool verbose = false)
 {
-  typedef typename MeshT::VertexAroundFaceCirculator VAFC;
-  typedef typename MeshT::VertexIndex                VertexIndex;
-  typedef typename MeshT::HalfEdgeIndex              HalfEdgeIndex;
+  using VAFC = typename MeshT::VertexAroundFaceCirculator;
+  using VertexIndex = typename MeshT::VertexIndex;
+  using HalfEdgeIndex = typename MeshT::HalfEdgeIndex;
 
   const HalfEdgeIndex boundary_he = mesh.getOutgoingHalfEdgeIndex (VertexIndex (first));
   if (!mesh.isBoundary (boundary_he))
@@ -228,7 +227,7 @@ getBoundaryVertices (const MeshT& mesh, const int first, const bool verbose = fa
     if (verbose) std::cerr << "Vertex " << first << "with outgoing half_edge "
                            << mesh.getOriginatingVertexIndex (boundary_he) << "-"
                            << mesh.getTerminatingVertexIndex (boundary_he) << " is not on the boundary!\n";
-    return (std::vector <int> ());
+    return {};
   }
 
   VAFC       circ     = mesh.getVertexAroundFaceCirculator (boundary_he);
@@ -244,12 +243,12 @@ getBoundaryVertices (const MeshT& mesh, const int first, const bool verbose = fa
     if (++counter > max_number_boundary_vertices)
     {
       if (verbose) std::cerr << "... Infinite loop aborted.\n";
-      return (std::vector <int> ());
+      return {};
     }
     boundary_vertices.push_back (mesh.getVertexDataCloud () [circ.getTargetIndex ().get ()]);
   } while (++circ != circ_end);
   if (verbose) std::cerr << "\n";
-  return (boundary_vertices);
+  return boundary_vertices;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -260,12 +259,12 @@ getBoundaryVertices (const MeshT& mesh, const int first, const bool verbose = fa
 template <class ContainerT> bool
 isCircularPermutation (const ContainerT& expected, const ContainerT& actual, const bool verbose = false)
 {
-  const unsigned int n = static_cast <unsigned int> (expected.size ());
+  const auto n = static_cast <unsigned int> (expected.size ());
   EXPECT_EQ (n, actual.size ());
   if (n != actual.size ())
   {
     if (verbose) std::cerr << "expected.size () != actual.size (): " << n << " != " << actual.size () << "\n";
-    return (false);
+    return false;
   }
 
   for (unsigned int i=0; i<n; ++i)
@@ -283,25 +282,25 @@ isCircularPermutation (const ContainerT& expected, const ContainerT& actual, con
     if (all_equal)
     {
       if (verbose) std::cerr << " SUCCESS\n";
-      return (true);
+      return true;
     }
     if (verbose) std::cerr << "\n";
   }
-  return (false);
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 /** \brief Check if both the inner and outer input vector are a circular permutation. */
 template <class ContainerT> bool
-isCircularPermutationVec (const std::vector <ContainerT> expected, const std::vector <ContainerT> actual, const bool verbose = false)
+isCircularPermutationVec (const std::vector <ContainerT> &expected, const std::vector <ContainerT> &actual, const bool verbose = false)
 {
-  const unsigned int n = static_cast<unsigned int> (expected.size ());
+  const auto n = static_cast<unsigned int> (expected.size ());
   EXPECT_EQ (n, actual.size ());
   if (n != actual.size ())
   {
     if (verbose) std::cerr << "expected.size () != actual.size (): " << n << " != " << actual.size () << "\n";
-    return (false);
+    return false;
   }
 
   for (unsigned int i=0; i<n; ++i)
@@ -318,10 +317,10 @@ isCircularPermutationVec (const std::vector <ContainerT> expected, const std::ve
     if (verbose) std::cerr << "\n";
     if (all_equal)
     {
-      return (true);
+      return true;
     }
   }
-  return (false);
+  return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -334,12 +333,11 @@ findHalfEdge (const MeshT&                       mesh,
               const typename MeshT::VertexIndex& idx_v_0,
               const typename MeshT::VertexIndex& idx_v_1)
 {
-  typedef typename MeshT::HalfEdgeIndex                HalfEdgeIndex;
-  typedef typename MeshT::VertexAroundVertexCirculator VAVC;
+  using VAVC = typename MeshT::VertexAroundVertexCirculator;
 
   if (mesh.isIsolated (idx_v_0) || mesh.isIsolated (idx_v_1))
   {
-    return (HalfEdgeIndex ());
+    return {};
   }
 
   VAVC       circ     = mesh.getVertexAroundVertexCirculator (idx_v_0);
@@ -353,7 +351,7 @@ findHalfEdge (const MeshT&                       mesh,
     }
   } while (++circ != circ_end);
 
-  return (HalfEdgeIndex ());
+  return {};
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -365,11 +363,9 @@ checkHalfEdge (const MeshT&                        mesh,
                const typename MeshT::VertexIndex   ind_v_a,
                const typename MeshT::VertexIndex   ind_v_b)
 {
-  if (mesh.getOriginatingVertexIndex (ind_he_ab) != ind_v_a) return (false);
-  if (mesh.getTerminatingVertexIndex (ind_he_ab) != ind_v_b) return (false);
-  return (true);
+  if (mesh.getOriginatingVertexIndex (ind_he_ab) != ind_v_a) return false;
+  if (mesh.getTerminatingVertexIndex (ind_he_ab) != ind_v_b) return false;
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-#endif // PCL_TEST_GEOMETRY_TEST_MESH_COMMON_FUNCTIONS_H

@@ -59,7 +59,7 @@ Estimating VFH features
 -----------------------
 
 The Viewpoint Feature Histogram is implemented in PCL as part of the
-`pcl_features <http://docs.pointclouds.org/trunk/a02944.html>`_
+`pcl_features <https://pointclouds.org/documentation/group__features.html>`_
 library.
 
 The default VFH implementation uses 45 binning subdivisions for each of the
@@ -105,14 +105,14 @@ points in the input dataset.
      // Compute the features
      vfh.compute (*vfhs);
 
-     // vfhs->points.size () should be of size 1*
+     // vfhs->size () should be of size 1*
    }
 
 Visualizing VFH signatures
 --------------------------
 
 *libpcl_visualization* contains a special **PCLHistogramVisualization** class,
-which is also used by **pcl_viewer** to automaticall display the VFH
+which is also used by **pcl_viewer** to automatically display the VFH
 descriptors as a histogram of float values. For more information, please see
 http://www.pointclouds.org/documentation/overview/visualization.php.
 

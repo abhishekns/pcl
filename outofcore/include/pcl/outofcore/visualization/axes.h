@@ -1,5 +1,4 @@
-#ifndef PCL_OUTOFCORE_AXES_H_
-#define PCL_OUTOFCORE_AXES_H_
+#pragma once
 
 // C++
 #include <iostream>
@@ -27,9 +26,8 @@ public:
   // Operators
   // -----------------------------------------------------------------------------
   Axes (std::string name, float size = 1.0) :
-      Object (name)
+      Object (name), axes_ (vtkSmartPointer<vtkAxes>::New ())
   {
-    axes_ = vtkSmartPointer<vtkAxes>::New ();
     axes_->SetOrigin (0, 0, 0);
     axes_->SetScaleFactor (size);
     axes_->Update ();
@@ -47,21 +45,13 @@ public:
     axes_data->GetPointData ()->SetScalars (axes_colors);
 
     vtkSmartPointer<vtkTubeFilter> axes_tubes = vtkSmartPointer<vtkTubeFilter>::New ();
-#if VTK_MAJOR_VERSION < 6
-    axes_tubes->SetInput (axes_data);
-#else
     axes_tubes->SetInputData (axes_data);
-#endif
     axes_tubes->SetRadius (axes_->GetScaleFactor () / 100.0);
     axes_tubes->SetNumberOfSides (6);
 
     vtkSmartPointer<vtkPolyDataMapper> axes_mapper = vtkSmartPointer<vtkPolyDataMapper>::New ();
     axes_mapper->SetScalarModeToUsePointData ();
-#if VTK_MAJOR_VERSION < 6
-    axes_mapper->SetInput (axes_tubes->GetOutput ());
-#else
     axes_mapper->SetInputData (axes_tubes->GetOutput ());
-#endif
 
     axes_actor_ = vtkSmartPointer<vtkActor>::New ();
     axes_actor_->GetProperty ()->SetLighting (false);
@@ -69,7 +59,6 @@ public:
 
     addActor (axes_actor_);
   }
-  //~Axes () { }
 
   // Accessors
   // -----------------------------------------------------------------------------
@@ -93,6 +82,3 @@ private:
   vtkSmartPointer<vtkActor> axes_actor_;
 
 };
-
-#endif
-

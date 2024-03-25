@@ -36,15 +36,16 @@
  * $Id$
  *
  */
-#ifndef PCL_SURFACE_VTK_H_
-#define PCL_SURFACE_VTK_H_
+
+#pragma once
 
 #if defined __GNUC__
 #  pragma GCC system_header 
 #endif
 
+#include <vtkVersion.h>
+#if VTK_MAJOR_VERSION == 9 && VTK_MINOR_VERSION == 0
+#include <limits> // This must be included before vtkPolyData.h
+#endif
 #include <vtkPolyData.h>
 #include <vtkSmartPointer.h>
-
-#endif    // PCL_SURFACE_VTK_H_
-

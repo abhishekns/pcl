@@ -35,13 +35,11 @@
  *
  */
 
-#ifndef PCL_IO_IFS_IO_H_
-#define PCL_IO_IFS_IO_H_
+#pragma once
 
 #include <pcl/point_cloud.h>
 #include <pcl/PCLPointCloud2.h>
 #include <pcl/conversions.h>
-#include <pcl/io/boost.h>
 #include <pcl/PolygonMesh.h>
 
 namespace pcl
@@ -55,9 +53,9 @@ namespace pcl
   {
     public:
       /** Empty constructor */
-      IFSReader () {}
+      IFSReader () = default;
       /** Empty destructor */
-      ~IFSReader () {}
+      ~IFSReader () = default;
 
       /** \brief we support two versions
         * 1.0 classic
@@ -144,8 +142,8 @@ namespace pcl
   class PCL_EXPORTS IFSWriter
   {
     public:
-      IFSWriter() {}
-      ~IFSWriter() {}
+      IFSWriter() = default;
+      ~IFSWriter() = default;
 
       /** \brief Save point cloud data to an IFS file containing 3D points.
         * \param[in] file_name the output file name
@@ -254,5 +252,3 @@ namespace pcl
     }
   }
 }
-
-#endif  //#ifndef PCL_IO_IFS_IO_H_

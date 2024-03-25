@@ -1,5 +1,4 @@
-#ifndef KISS_FTR_H
-#define KISS_FTR_H
+#pragma once
 
 #include "kiss_fft.h"
 #ifdef __cplusplus
@@ -15,7 +14,7 @@ extern "C" {
  
  */
 
-typedef struct kiss_fftr_state *kiss_fftr_cfg;
+typedef struct kiss_fftr_state *kiss_fftr_cfg;	// NOLINT
 
 
 kiss_fftr_cfg PCL_EXPORTS kiss_fftr_alloc(int nfft,int inverse_fft,void * mem, size_t * lenmem);
@@ -42,5 +41,4 @@ void PCL_EXPORTS kiss_fftri(kiss_fftr_cfg cfg,const kiss_fft_cpx *freqdata,kiss_
 
 #ifdef __cplusplus
 }
-#endif
 #endif

@@ -34,30 +34,23 @@
  *
  */
 
+#include <pcl/apps/modeler/cloud_mesh.h>
 #include <pcl/apps/modeler/points_actor_item.h>
 
-#include <pcl/apps/modeler/cloud_mesh.h>
-
-#include <vtkVertexGlyphFilter.h>
-#include <vtkLODActor.h>
 #include <vtkDataSetMapper.h>
+#include <vtkLODActor.h>
 #include <vtkPointData.h>
 #include <vtkProperty.h>
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-pcl::modeler::PointsActorItem::PointsActorItem(QTreeWidgetItem* parent,
-                                               const boost::shared_ptr<CloudMesh>& cloud_mesh,
-                                               const vtkSmartPointer<vtkRenderWindow>& render_window)
-  :ChannelActorItem(parent, cloud_mesh, render_window, vtkSmartPointer<vtkLODActor>::New(), "Points")
-{
-}
+#include <vtkVertexGlyphFilter.h>
 
 //////////////////////////////////////////////////////////////////////////////////////////////
-pcl::modeler::PointsActorItem::~PointsActorItem ()
-{
-
-}
+pcl::modeler::PointsActorItem::PointsActorItem(
+    QTreeWidgetItem* parent,
+    const CloudMesh::Ptr& cloud_mesh,
+    const vtkSmartPointer<vtkRenderWindow>& render_window)
+: ChannelActorItem(
+      parent, cloud_mesh, render_window, vtkSmartPointer<vtkLODActor>::New(), "Points")
+{}
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 void
@@ -65,12 +58,9 @@ pcl::modeler::PointsActorItem::initImpl()
 {
   poly_data_->SetPoints(cloud_mesh_->getVtkPoints());
 
-  vtkSmartPointer<vtkVertexGlyphFilter> vertex_glyph_filter = vtkSmartPointer<vtkVertexGlyphFilter>::New();
-#if VTK_MAJOR_VERSION < 6
-  vertex_glyph_filter->AddInput(poly_data_);
-#else
-  vertex_glyph_filter->AddInputData (poly_data_);
-#endif
+  vtkSmartPointer<vtkVertexGlyphFilter> vertex_glyph_filter =
+      vtkSmartPointer<vtkVertexGlyphFilter>::New();
+  vertex_glyph_filter->AddInputData(poly_data_);
   vertex_glyph_filter->Update();
 
   vtkSmartPointer<vtkDataSetMapper> mapper = vtkSmartPointer<vtkDataSetMapper>::New();
@@ -78,7 +68,7 @@ pcl::modeler::PointsActorItem::initImpl()
 
   vtkSmartPointer<vtkDataArray> scalars;
   cloud_mesh_->getColorScalarsFromField(scalars, color_scheme_);
-  poly_data_->GetPointData ()->SetScalars (scalars);
+  poly_data_->GetPointData()->SetScalars(scalars);
 
   double minmax[2];
   scalars->GetRange(minmax);
@@ -87,12 +77,13 @@ pcl::modeler::PointsActorItem::initImpl()
   mapper->SetScalarModeToUsePointData();
   mapper->InterpolateScalarsBeforeMappingOn();
   mapper->ScalarVisibilityOn();
-  mapper->ImmediateModeRenderingOff();
 
-  vtkSmartPointer<vtkLODActor> actor = vtkSmartPointer<vtkLODActor>(dynamic_cast<vtkLODActor*>(actor_.GetPointer()));
+  vtkSmartPointer<vtkLODActor> actor =
+      vtkSmartPointer<vtkLODActor>(dynamic_cast<vtkLODActor*>(actor_.GetPointer()));
   actor->SetMapper(mapper);
 
-  actor->SetNumberOfCloudPoints(int(std::max<vtkIdType> (1, poly_data_->GetNumberOfPoints () / 10)));
+  actor->SetNumberOfCloudPoints(
+      int(std::max<vtkIdType>(1, poly_data_->GetNumberOfPoints() / 10)));
   actor->GetProperty()->SetInterpolationToFlat();
 }
 
@@ -102,33 +93,24 @@ pcl::modeler::PointsActorItem::updateImpl()
 {
   vtkSmartPointer<vtkDataArray> scalars;
   cloud_mesh_->getColorScalarsFromField(scalars, color_scheme_);
-  poly_data_->GetPointData ()->SetScalars (scalars);
+  poly_data_->GetPointData()->SetScalars(scalars);
 
   double minmax[2];
   scalars->GetRange(minmax);
   actor_->GetMapper()->SetScalarRange(minmax);
-
-  return;
 }
-
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 void
 pcl::modeler::PointsActorItem::prepareContextMenu(QMenu*) const
-{
-
-}
+{}
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 void
 pcl::modeler::PointsActorItem::prepareProperties(ParameterDialog*)
-{
-
-}
+{}
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 void
 pcl::modeler::PointsActorItem::setProperties()
-{
-
-}
+{}

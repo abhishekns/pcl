@@ -88,7 +88,7 @@ and save the results to disk.
     float
     G (float x, float sigma)
     {
-      return exp (- (x*x)/(2*sigma*sigma));
+      return std::exp (- (x*x)/(2*sigma*sigma));
     }
 
     int
@@ -124,21 +124,21 @@ and save the results to disk.
         tree->radiusSearch (point_id, 2 * sigma_s, k_indices, k_distances);
 
         // For each neighbor
-        for (size_t n_id = 0; n_id < k_indices.size (); ++n_id)
+        for (std::size_t n_id = 0; n_id < k_indices.size (); ++n_id)
         {
           float id = k_indices.at (n_id);
           float dist = sqrt (k_distances.at (n_id));
-          float intensity_dist = abs (cloud->points[point_id].intensity - cloud->points[id].intensity);
+          float intensity_dist = std::abs ((*cloud)[point_id].intensity - (*cloud)[id].intensity);
 
           float w_a = G (dist, sigma_s);
           float w_b = G (intensity_dist, sigma_r);
           float weight = w_a * w_b;
 
-          BF += weight * cloud->points[id].intensity;
+          BF += weight * (*cloud)[id].intensity;
           W += weight;
         }
 
-        outcloud.points[point_id].intensity = BF / W;
+        outcloud[point_id].intensity = BF / W;
       }
 
       // Save filtered output
@@ -160,10 +160,10 @@ Setting up the structure
 
   If you're not familiar with the PCL file structure already, please go ahead
   and read the `PCL C++ Programming Style Guide
-  <http://www.pointclouds.org/documentation/advanced/pcl_style_guide.php>`_ to
+  <https://pcl.readthedocs.io/projects/advanced/en/latest/pcl_style_guide.html>`_ to
   familiarize yourself with the concepts. 
 
-There's two different ways we could set up the structure: i) set up the code
+There're two different ways we could set up the structure: i) set up the code
 separately, as a standalone PCL class, but outside of the PCL code tree; or ii)
 set up the files directly in the PCL code tree. Since our assumption is that
 the end result will be contributed back to PCL, it's best to concentrate on the
@@ -181,7 +181,7 @@ Assuming that we want the new algorithm to be part of the PCL Filtering library,
 
 We also need a name for our new class. Let's call it `BilateralFilter`.
 
-.. [*] The PCL Filtering API specifies that two definitions and implementations must be available for every algorithm: one operating on PointCloud<T> and another one operating on PCLPointCloud2. For the purpose of this tutorial, we will concentrate only on the former.
+.. [*] Some PCL filter algorithms provide two implementations: one for PointCloud<T> types and another one operating on legacy PCLPointCloud2 types. This is no longer required.
 
 bilateral.h
 ===========
@@ -193,8 +193,7 @@ skeleton:
 .. code-block:: cpp
    :linenos:
 
-    #ifndef PCL_FILTERS_BILATERAL_H_
-    #define PCL_FILTERS_BILATERAL_H_
+    #pragma once
 
     #include <pcl/filters/filter.h>
 
@@ -206,8 +205,6 @@ skeleton:
       };
     }
 
-    #endif // PCL_FILTERS_BILATERAL_H_
-
 bilateral.hpp
 =============
 
@@ -217,12 +214,9 @@ While we're at it, let's set up two skeleton *bilateral.hpp* and
 .. code-block:: cpp
    :linenos:
 
-    #ifndef PCL_FILTERS_BILATERAL_IMPL_H_
-    #define PCL_FILTERS_BILATERAL_IMPL_H_
+    #pragma once
 
     #include <pcl/filters/bilateral.h>
-    
-    #endif // PCL_FILTERS_BILATERAL_H_
 
 This should be straightforward. We haven't declared any methods for
 `BilateralFilter` yet, therefore there is no implementation. 
@@ -239,7 +233,7 @@ Let's write *bilateral.cpp* too:
     #include <pcl/filters/impl/bilateral.hpp>
     
 Because we are writing templated code in PCL (1.x) where the template parameter
-is a point type (see :ref:`adding_custom_ptype`), we want to explicitely
+is a point type (see :ref:`adding_custom_ptype`), we want to explicitly
 instantiate the most common use cases in *bilateral.cpp*, so that users don't
 have to spend extra cycles when compiling code that uses our
 `BilateralFilter`. To do this, we need to access both the header
@@ -258,7 +252,7 @@ enable the build.
     set (srcs
          src/conditional_removal.cpp
          # ...
-         src/bilateral.cpp)
+         src/bilateral.cpp
          )
 
     # Find "set (incs", and add a new entry there, e.g.,
@@ -288,7 +282,7 @@ begin filling in the actual code in each file. Let's start with the
 bilateral.cpp
 =============
 
-As previously mentioned, we're going to explicitely instantiate and
+As previously mentioned, we're going to explicitly instantiate and
 *precompile* a number of templated specializations for the `BilateralFilter`
 class. While this might lead to an increased compilation time for the PCL
 Filtering library, it will save users the pain of processing and compiling the
@@ -328,7 +322,7 @@ defined in the *point_types.h* file (see
 :pcl:`PCL_XYZ_POINT_TYPES<PCL_XYZ_POINT_TYPES>` for more information).
 
 By looking closer at the code presented in :ref:`bilateral_filter_example`, we
-notice constructs such as `cloud->points[point_id].intensity`. This indicates
+notice constructs such as `(*cloud)[point_id].intensity`. This indicates
 that our filter expects the presence of an **intensity** field in the point
 type. Because of this, using **PCL_XYZ_POINT_TYPES** won't work, as not all the
 types defined there have intensity data present. In fact, it's easy to notice
@@ -349,7 +343,7 @@ that only two of the types contain intensity, namely:
 
 Note that at this point we haven't declared the PCL_INSTANTIATE template for
 `BilateralFilter`, nor did we actually implement the pure virtual functions in
-the abstract class :pcl:`pcl::Filter<pcl::Filter>` so attemping to compile the
+the abstract class :pcl:`pcl::Filter<pcl::Filter>` so attempting to compile the
 code will result in errors like::
 
   filters/src/bilateral.cpp:6:32: error: expected constructor, destructor, or type conversion before ‘(’ token
@@ -385,7 +379,7 @@ paradigms.
           }
 
           double
-          getSigmaS ()
+          getSigmaS () const
           {
             return (sigma_s_);
           }
@@ -397,7 +391,7 @@ paradigms.
           }
 
           double
-          getSigmaR ()
+          getSigmaR () const
           {
             return (sigma_r_);
           }
@@ -511,8 +505,7 @@ header file becomes:
 .. code-block:: cpp
    :linenos:
 
-    #ifndef PCL_FILTERS_BILATERAL_H_
-    #define PCL_FILTERS_BILATERAL_H_
+    #pragma once
 
     #include <pcl/filters/filter.h>
     #include <pcl/kdtree/kdtree.h>
@@ -546,7 +539,7 @@ header file becomes:
           }
 
           double 
-          getSigmaS ()
+          getSigmaS () const
           {
             return (sigma_s_);
           }
@@ -558,7 +551,7 @@ header file becomes:
           }
 
           double 
-          getSigmaR ()
+          getSigmaR () const
           {
             return (sigma_r_);
           }
@@ -575,7 +568,7 @@ header file becomes:
           inline double
           kernel (double x, double sigma)
           {
-            return (exp (- (x*x)/(2*sigma*sigma)));
+            return (std::exp (- (x*x)/(2*sigma*sigma)));
           }
 
           double sigma_s_;
@@ -584,12 +577,10 @@ header file becomes:
       };
     }
 
-    #endif // PCL_FILTERS_BILATERAL_H_
-
 bilateral.hpp
 =============
 
-There's two methods that we need to implement here, namely `applyFilter` and
+There're two methods that we need to implement here, namely `applyFilter` and
 `computePointWeight`. 
 
 .. code-block:: cpp
@@ -603,15 +594,15 @@ There's two methods that we need to implement here, namely `applyFilter` and
       double BF = 0, W = 0;
 
       // For each neighbor
-      for (size_t n_id = 0; n_id < indices.size (); ++n_id)
+      for (std::size_t n_id = 0; n_id < indices.size (); ++n_id)
       {
         double id = indices[n_id];
         double dist = std::sqrt (distances[n_id]);
-        double intensity_dist = abs (input_->points[pid].intensity - input_->points[id].intensity);
+        double intensity_dist = std::abs ((*input_)[pid].intensity - (*input_)[id].intensity);
 
         double weight = kernel (dist, sigma_s_) * kernel (intensity_dist, sigma_r_);
 
-        BF += weight * input_->points[id].intensity;
+        BF += weight * (*input_)[id].intensity;
         W += weight;
       }
       return (BF / W);
@@ -627,11 +618,11 @@ There's two methods that we need to implement here, namely `applyFilter` and
 
       output = *input_;
 
-      for (size_t point_id = 0; point_id < input_->points.size (); ++point_id)
+      for (std::size_t point_id = 0; point_id < input_->size (); ++point_id)
       {
         tree_->radiusSearch (point_id, sigma_s_ * 2, k_indices, k_distances);
 
-        output.points[point_id].intensity = computePointWeight (point_id, k_indices, k_distances);
+        output[point_id].intensity = computePointWeight (point_id, k_indices, k_distances);
       }
       
     }
@@ -651,16 +642,13 @@ entry for the class:
 .. code-block:: cpp
    :linenos:
 
-    #ifndef PCL_FILTERS_BILATERAL_IMPL_H_
-    #define PCL_FILTERS_BILATERAL_IMPL_H_
+    #pragma once
 
     #include <pcl/filters/bilateral.h>
 
     ...
 
     #define PCL_INSTANTIATE_BilateralFilter(T) template class PCL_EXPORTS pcl::BilateralFilter<T>;
-
-    #endif // PCL_FILTERS_BILATERAL_H_
 
 One additional thing that we can do is error checking on:
 
@@ -676,7 +664,7 @@ execution of the code, its value is still 0, we will print an error using the
 In the case of the search method, we can either do the same, or be clever and
 provide a default option for the user. The best default options are:
 
- * use an organized search method via :pcl:`pcl::OrganizedNeighbor<pcl::OrganizedNeighbor>` if the point cloud is organized;
+ * use an organized search method via :pcl:`pcl::search::OrganizedNeighbor<pcl::search::OrganizedNeighbor>` if the point cloud is organized;
  * use a general purpose kdtree via :pcl:`pcl::KdTreeFLANN<pcl::KdTreeFLANN>` if the point cloud is unorganized.
 
 .. code-block:: cpp
@@ -709,8 +697,7 @@ The implementation file header thus becomes:
 .. code-block:: cpp
    :linenos:
 
-    #ifndef PCL_FILTERS_BILATERAL_IMPL_H_
-    #define PCL_FILTERS_BILATERAL_IMPL_H_
+    #pragma once
 
     #include <pcl/filters/bilateral.h>
     #include <pcl/kdtree/kdtree_flann.h>
@@ -724,15 +711,15 @@ The implementation file header thus becomes:
       double BF = 0, W = 0;
 
       // For each neighbor
-      for (size_t n_id = 0; n_id < indices.size (); ++n_id)
+      for (std::size_t n_id = 0; n_id < indices.size (); ++n_id)
       {
         double id = indices[n_id];
         double dist = std::sqrt (distances[n_id]);
-        double intensity_dist = abs (input_->points[pid].intensity - input_->points[id].intensity);
+        double intensity_dist = std::abs ((*input_)[pid].intensity - (*input_)[id].intensity);
 
         double weight = kernel (dist, sigma_s_) * kernel (intensity_dist, sigma_r_);
 
-        BF += weight * input_->points[id].intensity;
+        BF += weight * (*input_)[id].intensity;
         W += weight;
       }
       return (BF / W);
@@ -760,17 +747,15 @@ The implementation file header thus becomes:
 
       output = *input_;
 
-      for (size_t point_id = 0; point_id < input_->points.size (); ++point_id)
+      for (std::size_t point_id = 0; point_id < input_->size (); ++point_id)
       {
         tree_->radiusSearch (point_id, sigma_s_ * 2, k_indices, k_distances);
 
-        output.points[point_id].intensity = computePointWeight (point_id, k_indices, k_distances);
+        output[point_id].intensity = computePointWeight (point_id, k_indices, k_distances);
       }
     }
      
     #define PCL_INSTANTIATE_BilateralFilter(T) template class PCL_EXPORTS pcl::BilateralFilter<T>;
-
-    #endif // PCL_FILTERS_BILATERAL_H_
 
 
 Taking advantage of other PCL concepts
@@ -785,7 +770,7 @@ defines a way to define a region of interest / *list of point indices* that the
 algorithm should operate on, rather than the entire cloud, via
 :pcl:`setIndices<pcl::PCLBase::setIndices>`.
 
-All classes inheriting from :pcl:`PCLBase<pcl::PCLBase>` exhbit the following
+All classes inheriting from :pcl:`PCLBase<pcl::PCLBase>` exhibit the following
 behavior: in case no set of indices is given by the user, a fake one is created
 once and used for the duration of the algorithm. This means that we could
 easily change the implementation code above to operate on a *<cloud, indices>*
@@ -824,8 +809,7 @@ The implementation file header thus becomes:
 .. code-block:: cpp
    :linenos:
 
-    #ifndef PCL_FILTERS_BILATERAL_IMPL_H_
-    #define PCL_FILTERS_BILATERAL_IMPL_H_
+    #pragma once
 
     #include <pcl/filters/bilateral.h>
     #include <pcl/kdtree/kdtree_flann.h>
@@ -839,15 +823,15 @@ The implementation file header thus becomes:
       double BF = 0, W = 0;
 
       // For each neighbor
-      for (size_t n_id = 0; n_id < indices.size (); ++n_id)
+      for (std::size_t n_id = 0; n_id < indices.size (); ++n_id)
       {
         double id = indices[n_id];
         double dist = std::sqrt (distances[n_id]);
-        double intensity_dist = abs (input_->points[pid].intensity - input_->points[id].intensity);
+        double intensity_dist = std::abs ((*input_)[pid].intensity - (*input_)[id].intensity);
 
         double weight = kernel (dist, sigma_s_) * kernel (intensity_dist, sigma_r_);
 
-        BF += weight * input_->points[id].intensity;
+        BF += weight * (*input_)[id].intensity;
         W += weight;
       }
       return (BF / W);
@@ -875,17 +859,15 @@ The implementation file header thus becomes:
 
       output = *input_;
 
-      for (size_t i = 0; i < indices_->size (); ++i)
+      for (std::size_t i = 0; i < indices_->size (); ++i)
       {
         tree_->radiusSearch ((*indices_)[i], sigma_s_ * 2, k_indices, k_distances);
 
-        output.points[(*indices_)[i]].intensity = computePointWeight ((*indices_)[i], k_indices, k_distances);
+        output[(*indices_)[i]].intensity = computePointWeight ((*indices_)[i], k_indices, k_distances);
       }
     }
      
     #define PCL_INSTANTIATE_BilateralFilter(T) template class PCL_EXPORTS pcl::BilateralFilter<T>;
-
-    #endif // PCL_FILTERS_BILATERAL_H_
 
 To make :pcl:`indices_<pcl::PCLBase::indices_>` work without typing the full
 construct, we need to add a new line to *bilateral.h* that specifies the class
@@ -918,44 +900,16 @@ file, as follows:
 .. code-block:: cpp
    :linenos:
 
-    /*
-     * Software License Agreement (BSD License)
-     *
-     *  Point Cloud Library (PCL) - www.pointclouds.org
-     *  Copyright (c) 2010-2011, Willow Garage, Inc.
-     *
-     *  All rights reserved.
-     *
-     *  Redistribution and use in source and binary forms, with or without
-     *  modification, are permitted provided that the following conditions
-     *  are met:
-     *
-     *   * Redistributions of source code must retain the above copyright
-     *     notice, this list of conditions and the following disclaimer.
-     *   * Redistributions in binary form must reproduce the above
-     *     copyright notice, this list of conditions and the following
-     *     disclaimer in the documentation and/or other materials provided
-     *     with the distribution.
-     *   * Neither the name of Willow Garage, Inc. nor the names of its
-     *     contributors may be used to endorse or promote products derived
-     *     from this software without specific prior written permission.
-     *
-     *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-     *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-     *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-     *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-     *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-     *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-     *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-     *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-     *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-     *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-     *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-     *  POSSIBILITY OF SUCH DAMAGE.
-     *
-     */
+   /*
+   * SPDX-License-Identifier: BSD-3-Clause
+   *
+   *  Point Cloud Library (PCL) - www.pointclouds.org
+   *  Copyright (c) 2014-, Open Perception Inc.
+   *
+   *  All rights reserved
+   */
 
-An additional like can be inserted if additional copyright is needed (or the
+An additional line can be inserted if additional copyright is needed (or the
 original copyright can be changed):
 
 .. code-block:: cpp
@@ -983,45 +937,16 @@ class look like:
 .. code-block:: cpp
    :linenos:
 
-    /*
-     * Software License Agreement (BSD License)
-     *
-     *  Point Cloud Library (PCL) - www.pointclouds.org
-     *  Copyright (c) 2010-2011, Willow Garage, Inc.
-     *
-     *  All rights reserved.
-     *
-     *  Redistribution and use in source and binary forms, with or without
-     *  modification, are permitted provided that the following conditions
-     *  are met:
-     *
-     *   * Redistributions of source code must retain the above copyright
-     *     notice, this list of conditions and the following disclaimer.
-     *   * Redistributions in binary form must reproduce the above
-     *     copyright notice, this list of conditions and the following
-     *     disclaimer in the documentation and/or other materials provided
-     *     with the distribution.
-     *   * Neither the name of Willow Garage, Inc. nor the names of its
-     *     contributors may be used to endorse or promote products derived
-     *     from this software without specific prior written permission.
-     *
-     *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-     *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-     *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-     *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-     *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-     *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-     *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-     *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-     *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-     *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-     *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-     *  POSSIBILITY OF SUCH DAMAGE.
-     *
-     */
+   /*
+   * SPDX-License-Identifier: BSD-3-Clause
+   *
+   *  Point Cloud Library (PCL) - www.pointclouds.org
+   *  Copyright (c) 2014-, Open Perception Inc.
+   *
+   *  All rights reserved
+   */
 
-    #ifndef PCL_FILTERS_BILATERAL_H_
-    #define PCL_FILTERS_BILATERAL_H_
+    #pragma once
 
     #include <pcl/filters/filter.h>
     #include <pcl/kdtree/kdtree.h>
@@ -1061,7 +986,7 @@ class look like:
 
           /** \brief Compute the intensity average for a single point
             * \param[in] pid the point index to compute the weight for
-            * \param[in] indices the set of nearest neighor indices 
+            * \param[in] indices the set of nearest neighbor indices 
             * \param[in] distances the set of nearest neighbor distances
             * \return the intensity average at a given point index
             */
@@ -1079,7 +1004,7 @@ class look like:
 
           /** \brief Get the half size of the Gaussian bilateral filter window as set by the user. */
           double 
-          getHalfSize ()
+          getHalfSize () const
           {
             return (sigma_s_);
           }
@@ -1095,7 +1020,7 @@ class look like:
 
           /** \brief Get the value of the current standard deviation parameter of the bilateral filter. */
           double 
-          getStdDev ()
+          getStdDev () const
           {
             return (sigma_r_);
           }
@@ -1118,7 +1043,7 @@ class look like:
           inline double
           kernel (double x, double sigma)
           {
-            return (exp (- (x*x)/(2*sigma*sigma)));
+            return (std::exp (- (x*x)/(2*sigma*sigma)));
           }
 
           /** \brief The half size of the Gaussian bilateral filter window (e.g., spatial extents in Euclidean). */
@@ -1131,52 +1056,21 @@ class look like:
       };
     }
 
-    #endif // PCL_FILTERS_BILATERAL_H_
-
-And the *bilateral.hpp* like:
+And the *bilateral.hpp* likes:
 
 .. code-block:: cpp
    :linenos:
 
-    /*
-     * Software License Agreement (BSD License)
-     *
-     *  Point Cloud Library (PCL) - www.pointclouds.org
-     *  Copyright (c) 2010-2011, Willow Garage, Inc.
-     *
-     *  All rights reserved.
-     *
-     *  Redistribution and use in source and binary forms, with or without
-     *  modification, are permitted provided that the following conditions
-     *  are met:
-     *
-     *   * Redistributions of source code must retain the above copyright
-     *     notice, this list of conditions and the following disclaimer.
-     *   * Redistributions in binary form must reproduce the above
-     *     copyright notice, this list of conditions and the following
-     *     disclaimer in the documentation and/or other materials provided
-     *     with the distribution.
-     *   * Neither the name of Willow Garage, Inc. nor the names of its
-     *     contributors may be used to endorse or promote products derived
-     *     from this software without specific prior written permission.
-     *
-     *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-     *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-     *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-     *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-     *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-     *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-     *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-     *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-     *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-     *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-     *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-     *  POSSIBILITY OF SUCH DAMAGE.
-     *
-     */
+   /*
+   * SPDX-License-Identifier: BSD-3-Clause
+   *
+   *  Point Cloud Library (PCL) - www.pointclouds.org
+   *  Copyright (c) 2014-, Open Perception Inc.
+   *
+   *  All rights reserved
+   */
 
-    #ifndef PCL_FILTERS_BILATERAL_IMPL_H_
-    #define PCL_FILTERS_BILATERAL_IMPL_H_
+    #pragma once
 
     #include <pcl/filters/bilateral.h>
     #include <pcl/kdtree/kdtree_flann.h>
@@ -1191,18 +1085,18 @@ And the *bilateral.hpp* like:
       double BF = 0, W = 0;
 
       // For each neighbor
-      for (size_t n_id = 0; n_id < indices.size (); ++n_id)
+      for (std::size_t n_id = 0; n_id < indices.size (); ++n_id)
       {
         double id = indices[n_id];
         // Compute the difference in intensity
-        double intensity_dist = abs (input_->points[pid].intensity - input_->points[id].intensity);
+        double intensity_dist = std::abs ((*input_)[pid].intensity - (*input_)[id].intensity);
 
         // Compute the Gaussian intensity weights both in Euclidean and in intensity space
         double dist = std::sqrt (distances[n_id]);
         double weight = kernel (dist, sigma_s_) * kernel (intensity_dist, sigma_r_);
 
         // Calculate the bilateral filter response
-        BF += weight * input_->points[id].intensity;
+        BF += weight * (*input_)[id].intensity;
         W += weight;
       }
       return (BF / W);
@@ -1237,19 +1131,17 @@ And the *bilateral.hpp* like:
       output = *input_;
 
       // For all the indices given (equal to the entire cloud if none given)
-      for (size_t i = 0; i < indices_->size (); ++i)
+      for (std::size_t i = 0; i < indices_->size (); ++i)
       {
         // Perform a radius search to find the nearest neighbors
         tree_->radiusSearch ((*indices_)[i], sigma_s_ * 2, k_indices, k_distances);
 
         // Overwrite the intensity value with the computed average
-        output.points[(*indices_)[i]].intensity = computePointWeight ((*indices_)[i], k_indices, k_distances);
+        output[(*indices_)[i]].intensity = computePointWeight ((*indices_)[i], k_indices, k_distances);
       }
     }
      
     #define PCL_INSTANTIATE_BilateralFilter(T) template class PCL_EXPORTS pcl::BilateralFilter<T>;
-
-    #endif // PCL_FILTERS_BILATERAL_H_
 
 
 Testing the new class

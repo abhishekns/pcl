@@ -54,13 +54,6 @@ pcl::gpu::kinfuLS::RayCaster::RayCaster(int rows_arg, int cols_arg, float fx, fl
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-pcl::gpu::kinfuLS::RayCaster::~RayCaster()
-{
-
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void
 pcl::gpu::kinfuLS::RayCaster::setIntrinsics(float fx, float fy, float cx, float cy)
 {
@@ -82,7 +75,7 @@ pcl::gpu::kinfuLS::RayCaster::run(const TsdfVolume& volume, const Affine3f& came
   vertex_map_.create(rows * 3, cols);
   normal_map_.create(rows * 3, cols);
 
-  typedef Matrix<float, 3, 3, RowMajor> Matrix3f;
+  using Matrix3f = Matrix<float, 3, 3, RowMajor>;
     
   Matrix3f R = camera_pose_.linear();
   Vector3f t = camera_pose_.translation();

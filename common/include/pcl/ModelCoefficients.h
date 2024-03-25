@@ -1,6 +1,5 @@
-#ifndef PCL_MESSAGE_MODELCOEFFICIENTS_H
-#define PCL_MESSAGE_MODELCOEFFICIENTS_H
-#include <string>
+#pragma once
+
 #include <vector>
 #include <ostream>
 
@@ -11,28 +10,26 @@ namespace pcl
 {
   struct ModelCoefficients
   {
-    ModelCoefficients () : header (), values ()
-    {
-    }
+    ModelCoefficients () = default;
 
     ::pcl::PCLHeader header;
 
     std::vector<float> values;
 
   public:
-    typedef boost::shared_ptr< ::pcl::ModelCoefficients> Ptr;
-    typedef boost::shared_ptr< ::pcl::ModelCoefficients  const> ConstPtr;
+    using Ptr = shared_ptr< ::pcl::ModelCoefficients>;
+    using ConstPtr = shared_ptr<const ::pcl::ModelCoefficients>;
   }; // struct ModelCoefficients
 
-  typedef boost::shared_ptr< ::pcl::ModelCoefficients> ModelCoefficientsPtr;
-  typedef boost::shared_ptr< ::pcl::ModelCoefficients const> ModelCoefficientsConstPtr;
+  using ModelCoefficientsPtr = ModelCoefficients::Ptr;
+  using ModelCoefficientsConstPtr = ModelCoefficients::ConstPtr;
 
   inline std::ostream& operator<<(std::ostream& s, const  ::pcl::ModelCoefficients & v)
   {
     s << "header: " << std::endl;
     s << v.header;
     s << "values[]" << std::endl;
-    for (size_t i = 0; i < v.values.size (); ++i)
+    for (std::size_t i = 0; i < v.values.size (); ++i)
     {
       s << "  values[" << i << "]: ";
       s << "  " << v.values[i] << std::endl;
@@ -41,6 +38,3 @@ namespace pcl
   }
 
 } // namespace pcl
-
-#endif // PCL_MESSAGE_MODELCOEFFICIENTS_H
-

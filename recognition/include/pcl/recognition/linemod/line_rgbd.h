@@ -35,8 +35,7 @@
  *
  */
 
-#ifndef PCL_RECOGNITION_LINEMOD_LINE_RGBD
-#define PCL_RECOGNITION_LINEMOD_LINE_RGBD
+#pragma once
 
 #include <pcl/recognition/linemod.h>
 #include <pcl/recognition/color_gradient_modality.h>
@@ -49,21 +48,21 @@ namespace pcl
   struct BoundingBoxXYZ
   {
     /** \brief Constructor. */
-    BoundingBoxXYZ () : x (0.0f), y (0.0f), z (0.0f), width (0.0f), height (0.0f), depth (0.0f) {}
+    BoundingBoxXYZ () = default;
 
     /** \brief X-coordinate of the upper left front point */
-    float x;
+    float x{0.0f};
     /** \brief Y-coordinate of the upper left front point */
-    float y;
+    float y{0.0f};
     /** \brief Z-coordinate of the upper left front point */
-    float z;
+    float z{0.0f};
 
     /** \brief Width of the bounding box */
-    float width;
+    float width{0.0f};
     /** \brief Height of the bounding box */
-    float height;
+    float height{0.0f};
     /** \brief Depth of the bounding box */
-    float depth;
+    float depth{0.0f};
   };
 
   /** \brief High-level class for template matching using the LINEMOD approach based on RGB and Depth data.
@@ -78,16 +77,16 @@ namespace pcl
       struct Detection
       {
         /** \brief Constructor. */
-        Detection () : template_id (0), object_id (0), detection_id (0), response (0.0f), bounding_box () {}
+        Detection () = default;
 
         /** \brief The ID of the template. */
-        size_t template_id;
+        std::size_t template_id{0};
         /** \brief The ID of the object corresponding to the template. */
-        size_t object_id;
+        std::size_t object_id{0};
         /** \brief The ID of this detection. This is only valid for the last call of the method detect (...). */
-        size_t detection_id;
+        std::size_t detection_id{0};
         /** \brief The response of this detection. Responses are between 0 and 1, where 1 is best. */
-        float response;
+        float response{0.0f};
         /** \brief The 3D bounding box of the detection. */
         BoundingBoxXYZ bounding_box;
         /** \brief The 2D template region of the detection. */
@@ -96,23 +95,16 @@ namespace pcl
 
       /** \brief Constructor */
       LineRGBD ()
-        : intersection_volume_threshold_ (1.0f)
-        , linemod_ ()
-        , color_gradient_mod_ ()
+        : color_gradient_mod_ ()
         , surface_normal_mod_ ()
         , cloud_xyz_ ()
         , cloud_rgb_ ()
-        , template_point_clouds_ ()
-        , bounding_boxes_ ()
-        , object_ids_ ()
         , detections_ ()
       {
       }
 
       /** \brief Destructor */
-      virtual ~LineRGBD ()
-      {
-      }
+      virtual ~LineRGBD () = default;
 
       /** \brief Loads templates from a LMT (LineMod Template) file. Overrides old templates.
         *
@@ -126,10 +118,10 @@ namespace pcl
         * \return true, if the operation was successful, false otherwise.
         */
       bool
-      loadTemplates (const std::string &file_name, size_t object_id = 0);
+      loadTemplates (const std::string &file_name, std::size_t object_id = 0);
 
       bool
-      addTemplate (const SparseQuantizedMultiModTemplate & sqmmt, pcl::PointCloud<pcl::PointXYZRGBA> & cloud, size_t object_id = 0);
+      addTemplate (const SparseQuantizedMultiModTemplate & sqmmt, pcl::PointCloud<pcl::PointXYZRGBA> & cloud, std::size_t object_id = 0);
 
       /** \brief Sets the threshold for the detection responses. Responses are between 0 and 1, where 1 is a best. 
         * \param[in] threshold The threshold used to decide where a template is detected.
@@ -197,7 +189,7 @@ namespace pcl
       int 
       createAndAddTemplate (
         pcl::PointCloud<pcl::PointXYZRGBA> & cloud,
-        const size_t object_id,
+        const std::size_t object_id,
         const MaskMap & mask_xyz,
         const MaskMap & mask_rgb,
         const RegionXY & region);
@@ -209,7 +201,7 @@ namespace pcl
       void 
       detect (std::vector<typename pcl::LineRGBD<PointXYZT, PointRGBT>::Detection> & detections);
 
-      /** \brief Applies the detection process in a semi-scale-invariant manner. This is done by acutally
+      /** \brief Applies the detection process in a semi-scale-invariant manner. This is done by actually
         *        scaling the template to different sizes.
         */
       void
@@ -225,22 +217,22 @@ namespace pcl
         * \param[out] cloud The storage for the transformed points.
         */
       void
-      computeTransformedTemplatePoints (const size_t detection_id,
+      computeTransformedTemplatePoints (const std::size_t detection_id,
                                         pcl::PointCloud<pcl::PointXYZRGBA> & cloud);
 
       /** \brief Finds the indices of the points in the input cloud which correspond to the specified detection. 
         *        The detection ID refers to the last call of the method detect (...).
         * \param[in] detection_id The ID of the detection (according to the last call of the method detect (...)).
         */
-      inline std::vector<size_t>
-      findObjectPointIndices (const size_t detection_id)
+      inline std::vector<std::size_t>
+      findObjectPointIndices (const std::size_t detection_id)
       {
         if (detection_id >= detections_.size ())
           PCL_ERROR ("ERROR pcl::LineRGBD::computeTransformedTemplatePoints - detection_id is out of bounds\n");
 
         // TODO: compute transform from detection
         // TODO: transform template points
-        std::vector<size_t> vec;
+        std::vector<std::size_t> vec;
         return (vec);
       }
 
@@ -251,15 +243,15 @@ namespace pcl
         *        The detection ID refers to the last call of the method detect (...). 
         * \param[in] detection_id The ID of the detection (according to the last call of the method detect (...)).
         */
-      inline std::vector<size_t>
-      alignTemplatePoints (const size_t detection_id)
+      inline std::vector<std::size_t>
+      alignTemplatePoints (const std::size_t detection_id)
       {
         if (detection_id >= detections_.size ())
           PCL_ERROR ("ERROR pcl::LineRGBD::computeTransformedTemplatePoints - detection_id is out of bounds\n");
 
         // TODO: compute transform from detection
         // TODO: transform template points
-        std::vector<size_t> vec;
+        std::vector<std::size_t> vec;
         return (vec);
       }
 
@@ -288,7 +280,7 @@ namespace pcl
       readLTMHeader (int fd, pcl::io::TARHeader &header);
 
       /** \brief Intersection volume threshold. */
-      float intersection_volume_threshold_;
+      float intersection_volume_threshold_{1.0f};
 
       /** \brief LINEMOD instance. */
       public: pcl::LINEMOD linemod_;
@@ -304,10 +296,10 @@ namespace pcl
 
       /** \brief Point clouds corresponding to the templates. */
       pcl::PointCloud<pcl::PointXYZRGBA>::CloudVectorType template_point_clouds_;
-      /** \brief Bounding boxes corresonding to the templates. */
+      /** \brief Bounding boxes corresponding to the templates. */
       std::vector<pcl::BoundingBoxXYZ> bounding_boxes_;
       /** \brief Object IDs corresponding to the templates. */
-      std::vector<size_t> object_ids_;
+      std::vector<std::size_t> object_ids_;
 
       /** \brief Detections from last call of method detect (...). */
       std::vector<typename pcl::LineRGBD<PointXYZT, PointRGBT>::Detection> detections_; 
@@ -316,5 +308,3 @@ namespace pcl
 }
 
 #include <pcl/recognition/impl/linemod/line_rgbd.hpp>
-
-#endif  

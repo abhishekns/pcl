@@ -11,7 +11,7 @@
 int
 main (int argc, char** argv)
 {
-  if (argc == 0 || argc % 2 == 0)
+  if (argc < 5 || argc % 2 == 0) // needs at least one training cloud with class id, plus testing cloud with class id (plus name of executable)
     return (-1);
 
   unsigned int number_of_training_clouds = (argc - 3) / 2;
@@ -29,7 +29,7 @@ main (int argc, char** argv)
     if ( pcl::io::loadPCDFile <pcl::PointXYZ> (argv[i_cloud * 2 + 1], *tr_cloud) == -1 )
       return (-1);
 
-    pcl::PointCloud<pcl::Normal>::Ptr tr_normals = (new pcl::PointCloud<pcl::Normal>)->makeShared ();
+    pcl::PointCloud<pcl::Normal>::Ptr tr_normals (new pcl::PointCloud<pcl::Normal>);
     normal_estimator.setInputCloud (tr_cloud);
     normal_estimator.compute (*tr_normals);
 
@@ -52,8 +52,7 @@ main (int argc, char** argv)
   ism.setTrainingClasses (training_classes);
   ism.setSamplingSize (2.0f);
 
-  pcl::ism::ImplicitShapeModelEstimation<153, pcl::PointXYZ, pcl::Normal>::ISMModelPtr model = boost::shared_ptr<pcl::features::ISMModel>
-    (new pcl::features::ISMModel);
+  pcl::ism::ImplicitShapeModelEstimation<153, pcl::PointXYZ, pcl::Normal>::ISMModelPtr model (new pcl::features::ISMModel);
   ism.trainISM (model);
 
   std::string file ("trained_ism_model.txt");
@@ -66,11 +65,11 @@ main (int argc, char** argv)
   if ( pcl::io::loadPCDFile <pcl::PointXYZ> (argv[argc - 2], *testing_cloud) == -1 )
     return (-1);
 
-  pcl::PointCloud<pcl::Normal>::Ptr testing_normals = (new pcl::PointCloud<pcl::Normal>)->makeShared ();
+  pcl::PointCloud<pcl::Normal>::Ptr testing_normals (new pcl::PointCloud<pcl::Normal>);
   normal_estimator.setInputCloud (testing_cloud);
   normal_estimator.compute (*testing_normals);
 
-  boost::shared_ptr<pcl::features::ISMVoteList<pcl::PointXYZ> > vote_list = ism.findObjects (
+  pcl::features::ISMVoteList<pcl::PointXYZ>::Ptr vote_list = ism.findObjects (
     model,
     testing_cloud,
     testing_normals,
@@ -81,7 +80,7 @@ main (int argc, char** argv)
   std::vector<pcl::ISMPeak, Eigen::aligned_allocator<pcl::ISMPeak> > strongest_peaks;
   vote_list->findStrongestPeaks (strongest_peaks, testing_class, radius, sigma);
 
-  pcl::PointCloud <pcl::PointXYZRGB>::Ptr colored_cloud = (new pcl::PointCloud<pcl::PointXYZRGB>)->makeShared ();
+  pcl::PointCloud <pcl::PointXYZRGB>::Ptr colored_cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
   colored_cloud->height = 0;
   colored_cloud->width = 1;
 
@@ -90,19 +89,19 @@ main (int argc, char** argv)
   point.g = 255;
   point.b = 255;
 
-  for (size_t i_point = 0; i_point < testing_cloud->points.size (); i_point++)
+  for (std::size_t i_point = 0; i_point < testing_cloud->size (); i_point++)
   {
-    point.x = testing_cloud->points[i_point].x;
-    point.y = testing_cloud->points[i_point].y;
-    point.z = testing_cloud->points[i_point].z;
+    point.x = (*testing_cloud)[i_point].x;
+    point.y = (*testing_cloud)[i_point].y;
+    point.z = (*testing_cloud)[i_point].z;
     colored_cloud->points.push_back (point);
   }
-  colored_cloud->height += testing_cloud->points.size ();
+  colored_cloud->height += testing_cloud->size ();
 
   point.r = 255;
   point.g = 0;
   point.b = 0;
-  for (size_t i_vote = 0; i_vote < strongest_peaks.size (); i_vote++)
+  for (std::size_t i_vote = 0; i_vote < strongest_peaks.size (); i_vote++)
   {
     point.x = strongest_peaks[i_vote].x;
     point.y = strongest_peaks[i_vote].y;

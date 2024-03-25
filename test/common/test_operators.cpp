@@ -35,10 +35,9 @@
  *
  */
 
-#include <gtest/gtest.h>
+#include <pcl/test/gtest.h>
 #include <pcl/pcl_tests.h>
 #include <pcl/point_types.h>
-#include <pcl/common/point_operators.h>
 
 using namespace pcl;
 using namespace pcl::test;
@@ -86,6 +85,55 @@ TEST (PointOperators, PointXYZ)
   EXPECT_EQ (p2.x, scalar / 2.0f * p0.x + scalar / 2.0f * p1.x);
   EXPECT_EQ (p2.y, scalar / 2.0f * p0.y + scalar / 2.0f * p1.y);
   EXPECT_EQ (p2.z, scalar / 2.0f * p0.z + scalar / 2.0f * p1.z);
+
+  { // Addition and addition assignment
+    pcl::PointXYZ point1(1.0f, -0.5f, 2.0f), point2(4.0f, -1.5f, -1.0f);
+    float scalar1 = 2.0f;
+    auto res1 = point1 + point2;
+    EXPECT_XYZ_EQ (res1, pcl::PointXYZ(5.0f, -2.0f, 1.0f));
+    auto res2 = point1 + scalar1;
+    EXPECT_XYZ_EQ (res2, pcl::PointXYZ(3.0f, 1.5f, 4.0f));
+    auto res3 = scalar1 + point1;
+    EXPECT_XYZ_EQ (res3, pcl::PointXYZ(3.0f, 1.5f, 4.0f));
+    point1 += point2;
+    EXPECT_XYZ_EQ (point1, pcl::PointXYZ(5.0f, -2.0f, 1.0f));
+    point2 += scalar1;
+    EXPECT_XYZ_EQ (point2, pcl::PointXYZ(6.0f, 0.5f, 1.0f));
+  }
+  { // Subtraction and subtraction assignment
+    pcl::PointXYZ point1(1.0f, -0.5f, 2.0f), point2(4.0f, -1.5f, -1.0f);
+    float scalar1 = 2.0f;
+    auto res1 = point1 - point2;
+    EXPECT_XYZ_EQ (res1, pcl::PointXYZ(-3.0f, 1.0f, 3.0f));
+    auto res2 = point1 - scalar1;
+    EXPECT_XYZ_EQ (res2, pcl::PointXYZ(-1.0f, -2.5f, 0.0f));
+    auto res3 = scalar1 - point1;
+    EXPECT_XYZ_EQ (res3, pcl::PointXYZ(1.0f, 2.5f, 0.0f));
+    point1 -= point2;
+    EXPECT_XYZ_EQ (point1, pcl::PointXYZ(-3.0f, 1.0f, 3.0f));
+    point2 -= scalar1;
+    EXPECT_XYZ_EQ (point2, pcl::PointXYZ(2.0f, -3.5f, -3.0f));
+  }
+  { // Multiplication and multiplication assignment
+    pcl::PointXYZ point1(1.0f, -0.5f, 2.0f), point2(4.0f, -1.5f, -1.0f);
+    float scalar1 = 2.0f;
+    auto res2 = point1 * scalar1;
+    EXPECT_XYZ_EQ (res2, pcl::PointXYZ(2.0f, -1.0f, 4.0f));
+    auto res3 = scalar1 * point1;
+    EXPECT_XYZ_EQ (res3, pcl::PointXYZ(2.0f, -1.0f, 4.0f));
+    point2 *= scalar1;
+    EXPECT_XYZ_EQ (point2, pcl::PointXYZ(8.0f, -3.0f, -2.0f));
+  }
+  { // Division and division assignment
+    pcl::PointXYZ point1(1.0f, -0.5f, 2.0f), point2(4.0f, -2.0f, -1.0f);
+    float scalar1 = 2.0f;
+    auto res2 = point1 / scalar1;
+    EXPECT_XYZ_EQ (res2, pcl::PointXYZ(0.5f, -0.25f, 1.0f));
+    auto res3 = scalar1 / point1;
+    EXPECT_XYZ_EQ (res3, pcl::PointXYZ(2.0f, -4.0f, 1.0f));
+    point2 /= scalar1;
+    EXPECT_XYZ_EQ (point2, pcl::PointXYZ(2.0f, -1.0f, -0.5f));
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -148,9 +196,9 @@ TEST (PointOperators, PointXYZRGB)
   EXPECT_NEAR (p2.y, 0.1 * p1.y, 1e-4);
   EXPECT_NEAR (p2.z, 0.1 * p1.z, 1e-4);
   // Disabled. Doesn't make any sense
-  //EXPECT_EQ (p2.r, static_cast<pcl::uint8_t> (0.1 * p1.r));
-  //EXPECT_EQ (p2.g, static_cast<pcl::uint8_t> (0.1 * p1.g));
-  //EXPECT_EQ (p2.b, static_cast<pcl::uint8_t> (0.1 * p1.b));
+  //EXPECT_EQ (p2.r, static_cast<std::uint8_t> (0.1 * p1.r));
+  //EXPECT_EQ (p2.g, static_cast<std::uint8_t> (0.1 * p1.g));
+  //EXPECT_EQ (p2.b, static_cast<std::uint8_t> (0.1 * p1.b));
   PointXYZRGB p4 = p1 * 0.1f;
   EXPECT_EQ_VECTORS (p2.getVector3fMap (), p4.getVector3fMap ());
   // Disabled. Doesn't make any sense

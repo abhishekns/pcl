@@ -40,8 +40,7 @@
 /// @author  Yue Li and Matthew Hielsberg
 ///
 
-#ifndef MAIN_WINDOW_H_
-#define MAIN_WINDOW_H_
+#pragma once
 
 #include <QtGui>
 #include <QMainWindow>
@@ -69,12 +68,12 @@ class MainWindow : public QMainWindow
     /// @brief Constructor
     /// @param argc The number of c-strings to be expected in argv
     /// @param argv An array of c-strings.  The zero entry is expected to be
-    /// the name of the appliation.  Any additional strings will be interpreted
+    /// the name of the application.  Any additional strings will be interpreted
     /// as filenames designating point clouds to be loaded.
     MainWindow (int argc, char **argv);
 
     /// @brief Destructor
-    ~MainWindow ();
+    ~MainWindow () override;
 
     /// @brief Increase the value of the spinbox by 1.
     void
@@ -100,7 +99,7 @@ class MainWindow : public QMainWindow
     int
     getSelectedSpinBoxValue ();
 
-  private slots:
+  private Q_SLOTS:
     void
     about ();
 
@@ -241,4 +240,3 @@ class MainWindow : public QMainWindow
     /// the slider used for adjusting moving speed.
      QSlider *move_speed_slider_;
 };
-#endif //MAIN_WINDOW_H_

@@ -35,11 +35,8 @@
  *
  */
 
-#ifndef OCTREE_COMPRESSION_H
-#define OCTREE_COMPRESSION_H
+#pragma once
 
-#include <pcl/common/common.h>
-#include <pcl/common/io.h>
 #include <pcl/octree/octree2buf_base.h>
 #include <pcl/octree/octree_pointcloud.h>
 #include "entropy_range_coder.h"
@@ -48,13 +45,8 @@
 
 #include "compression_profiles.h"
 
-#include <iterator>
 #include <iostream>
 #include <vector>
-#include <string.h>
-#include <iostream>
-#include <stdio.h>
-#include <string.h>
 
 using namespace pcl::octree;
 
@@ -76,19 +68,19 @@ namespace pcl
     {
       public:
         // public typedefs
-        typedef typename OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::PointCloud PointCloud;
-        typedef typename OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::PointCloudPtr PointCloudPtr;
-        typedef typename OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::PointCloudConstPtr PointCloudConstPtr;
+        using PointCloud = typename OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::PointCloud;
+        using PointCloudPtr = typename OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::PointCloudPtr;
+        using PointCloudConstPtr = typename OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::PointCloudConstPtr;
 
         // Boost shared pointers
-        typedef boost::shared_ptr<OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT> > Ptr;
-        typedef boost::shared_ptr<const OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT> > ConstPtr;
+        using Ptr = shared_ptr<OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT> >;
+        using ConstPtr = shared_ptr<const OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeT> >;
 
-        typedef typename OctreeT::LeafNode LeafNode;
-        typedef typename OctreeT::BranchNode BranchNode;
+        using LeafNode = typename OctreeT::LeafNode;
+        using BranchNode = typename OctreeT::BranchNode;
 
-        typedef OctreePointCloudCompression<PointT, LeafT, BranchT, Octree2BufBase<LeafT, BranchT> > RealTimeStreamCompression;
-        typedef OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeBase<LeafT, BranchT> > SinglePointCloudCompressionLowMemory;
+        using RealTimeStreamCompression = OctreePointCloudCompression<PointT, LeafT, BranchT, Octree2BufBase<LeafT, BranchT> >;
+        using SinglePointCloudCompressionLowMemory = OctreePointCloudCompression<PointT, LeafT, BranchT, OctreeBase<LeafT, BranchT> >;
 
 
         /** \brief Constructor
@@ -111,30 +103,21 @@ namespace pcl
                                const unsigned char colorBitResolution_arg = 6) :
           OctreePointCloud<PointT, LeafT, BranchT, OctreeT> (octreeResolution_arg),
           output_ (PointCloudPtr ()),
-          binary_tree_data_vector_ (),
-          binary_color_tree_vector_ (),
-          point_count_data_vector_ (),
-          point_count_data_vector_iterator_ (),
           color_coder_ (),
           point_coder_ (),
-          entropy_coder_ (),
           do_voxel_grid_enDecoding_ (doVoxelGridDownDownSampling_arg), i_frame_rate_ (iFrameRate_arg),
-          i_frame_counter_ (0), frame_ID_ (0), point_count_ (0), i_frame_ (true),
-          do_color_encoding_ (doColorEncoding_arg), cloud_with_color_ (false), data_with_color_ (false),
-          point_color_offset_ (0), b_show_statistics_ (showStatistics_arg), 
-          compressed_point_data_len_ (), compressed_color_data_len_ (), selected_profile_(compressionProfile_arg),
+          
+          do_color_encoding_ (doColorEncoding_arg),  b_show_statistics_ (showStatistics_arg), 
+           selected_profile_(compressionProfile_arg),
           point_resolution_(pointResolution_arg), octree_resolution_(octreeResolution_arg),
-          color_bit_resolution_(colorBitResolution_arg),
-          object_count_(0)
+          color_bit_resolution_(colorBitResolution_arg)
         {
           initialization();
         }
 
         /** \brief Empty deconstructor. */
-        virtual
-        ~OctreePointCloudCompression ()
-        {
-        }
+        
+        ~OctreePointCloudCompression () override = default;
 
         /** \brief Initialize globals */
         void initialization () {
@@ -170,8 +153,8 @@ namespace pcl
         /** \brief Add point at index from input pointcloud dataset to octree
          * \param[in] pointIdx_arg the index representing the point in the dataset given by \a setInputCloud to be added
          */
-        virtual void
-        addPointIdx (const int pointIdx_arg)
+        void
+        addPointIdx (const uindex_t pointIdx_arg) override
         {
           ++object_count_;
           OctreePointCloud<PointT, LeafT, BranchT, OctreeT>::addPointIdx(pointIdx_arg);
@@ -208,6 +191,7 @@ namespace pcl
         /** \brief Decode point cloud from input stream
           * \param compressed_tree_data_in_arg: binary input stream containing compressed data
           * \param cloud_arg: reference to decoded point cloud
+          * \warning This function is blocking until there is data available from the input stream. If the stream never contains any data, this will hang forever!
           */
         void
         decodePointCloud (std::istream& compressed_tree_data_in_arg, PointCloudPtr &cloud_arg);
@@ -248,15 +232,15 @@ namespace pcl
           * \param leaf_arg: reference to new leaf node
           * \param key_arg: octree key of new leaf node
          */
-        virtual void
-        serializeTreeCallback (LeafT &leaf_arg, const OctreeKey& key_arg);
+        void
+        serializeTreeCallback (LeafT &leaf_arg, const OctreeKey& key_arg) override;
 
         /** \brief Decode leaf nodes information during deserialization
          * \param key_arg octree key of new leaf node
          */
         // param leaf_arg reference to new leaf node
-        virtual void
-        deserializeTreeCallback (LeafT&, const OctreeKey& key_arg);
+        void
+        deserializeTreeCallback (LeafT&, const OctreeKey& key_arg) override;
 
 
         /** \brief Pointer to output point cloud dataset. */
@@ -265,13 +249,10 @@ namespace pcl
         /** \brief Vector for storing binary tree structure */
         std::vector<char> binary_tree_data_vector_;
 
-        /** \brief Interator on binary tree structure vector */
-        std::vector<char> binary_color_tree_vector_;
-
         /** \brief Vector for storing points per voxel information  */
         std::vector<unsigned int> point_count_data_vector_;
 
-        /** \brief Interator on points per voxel vector */
+        /** \brief Iterator on points per voxel vector */
         std::vector<unsigned int>::const_iterator point_count_data_vector_iterator_;
 
         /** \brief Color coding instance */
@@ -283,22 +264,22 @@ namespace pcl
         /** \brief Static range coder instance */
         StaticRangeCoder entropy_coder_;
 
-        bool do_voxel_grid_enDecoding_;
-        uint32_t i_frame_rate_;
-        uint32_t i_frame_counter_;
-        uint32_t frame_ID_;
-        uint64_t point_count_;
-        bool i_frame_;
+        bool do_voxel_grid_enDecoding_{false};
+        std::uint32_t i_frame_rate_{0};
+        std::uint32_t i_frame_counter_{0};
+        std::uint32_t frame_ID_{0};
+        std::uint64_t point_count_{0};
+        bool i_frame_{true};
 
-        bool do_color_encoding_;
-        bool cloud_with_color_;
-        bool data_with_color_;
-        unsigned char point_color_offset_;
+        bool do_color_encoding_{false};
+        bool cloud_with_color_{false};
+        bool data_with_color_{false};
+        unsigned char point_color_offset_{0};
 
         //bool activating statistics
-        bool b_show_statistics_;
-        uint64_t compressed_point_data_len_;
-        uint64_t compressed_color_data_len_;
+        bool b_show_statistics_{false};
+        std::uint64_t compressed_point_data_len_{0};
+        std::uint64_t compressed_color_data_len_{0};
 
         // frame header identifier
         static const char* frame_header_identifier_;
@@ -308,7 +289,7 @@ namespace pcl
         const double octree_resolution_;
         const unsigned char color_bit_resolution_;
 
-        std::size_t object_count_;
+        std::size_t object_count_{0};
 
       };
 
@@ -318,7 +299,3 @@ namespace pcl
   }
 
 }
-
-
-#endif
-

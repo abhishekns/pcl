@@ -1,12 +1,13 @@
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
-#include <pcl/console/parse.h>
+#include <pcl/common/pcl_filesystem.h>
 #include <pcl/console/print.h>
 #include <pcl/io/pcd_io.h>
-#include <boost/filesystem.hpp>
+
 #include <flann/flann.h>
 #include <flann/io/hdf5.h>
 #include <fstream>
+
 
 typedef std::pair<std::string, std::vector<float> > vfh_model;
 
@@ -15,7 +16,7 @@ typedef std::pair<std::string, std::vector<float> > vfh_model;
   * \param vfh the resultant VFH model
   */
 bool
-loadHist (const boost::filesystem::path &path, vfh_model &vfh)
+loadHist (const pcl_fs::path &path, vfh_model &vfh)
 {
   int vfh_idx;
   // Load the file as a PCD
@@ -46,11 +47,11 @@ loadHist (const boost::filesystem::path &path, vfh_model &vfh)
   vfh.second.resize (308);
 
   std::vector <pcl::PCLPointField> fields;
-  pcl::getFieldIndex (point, "vfh", fields);
+  pcl::getFieldIndex<pcl::VFHSignature308> ("vfh", fields);
 
-  for (size_t i = 0; i < fields[vfh_idx].count; ++i)
+  for (std::size_t i = 0; i < fields[vfh_idx].count; ++i)
   {
-    vfh.second[i] = point.points[0].histogram[i];
+    vfh.second[i] = point[0].histogram[i];
   }
   vfh.first = path.string ();
   return (true);
@@ -63,22 +64,22 @@ loadHist (const boost::filesystem::path &path, vfh_model &vfh)
   * \param models the resultant vector of histogram models
   */
 void
-loadFeatureModels (const boost::filesystem::path &base_dir, const std::string &extension, 
+loadFeatureModels (const pcl_fs::path &base_dir, const std::string &extension, 
                    std::vector<vfh_model> &models)
 {
-  if (!boost::filesystem::exists (base_dir) && !boost::filesystem::is_directory (base_dir))
+  if (!pcl_fs::exists (base_dir) && !pcl_fs::is_directory (base_dir))
     return;
 
-  for (boost::filesystem::directory_iterator it (base_dir); it != boost::filesystem::directory_iterator (); ++it)
+  for (pcl_fs::directory_iterator it (base_dir); it != pcl_fs::directory_iterator (); ++it)
   {
-    if (boost::filesystem::is_directory (it->status ()))
+    if (pcl_fs::is_directory (it->status ()))
     {
       std::stringstream ss;
       ss << it->path ();
       pcl::console::print_highlight ("Loading %s (%lu models loaded so far).\n", ss.str ().c_str (), (unsigned long)models.size ());
       loadFeatureModels (it->path (), extension, models);
     }
-    if (boost::filesystem::is_regular_file (it->status ()) && boost::filesystem::extension (it->path ()) == extension)
+    if (pcl_fs::is_regular_file (it->status ()) && it->path ().extension ().string () == extension)
     {
       vfh_model m;
       if (loadHist (base_dir / it->path ().filename (), m))
@@ -113,15 +114,15 @@ main (int argc, char** argv)
   // Convert data into FLANN format
   flann::Matrix<float> data (new float[models.size () * models[0].second.size ()], models.size (), models[0].second.size ());
 
-  for (size_t i = 0; i < data.rows; ++i)
-    for (size_t j = 0; j < data.cols; ++j)
+  for (std::size_t i = 0; i < data.rows; ++i)
+    for (std::size_t j = 0; j < data.cols; ++j)
       data[i][j] = models[i].second[j];
 
   // Save data to disk (list of models)
   flann::save_to_file (data, training_data_h5_file_name, "training_data");
   std::ofstream fs;
   fs.open (training_data_list_file_name.c_str ());
-  for (size_t i = 0; i < models.size (); ++i)
+  for (std::size_t i = 0; i < models.size (); ++i)
     fs << models[i].first << "\n";
   fs.close ();
  

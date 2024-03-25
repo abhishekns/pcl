@@ -33,8 +33,7 @@
  *
  */
 
-#ifndef PCL_SIFT_KEYPOINT_H_
-#define PCL_SIFT_KEYPOINT_H_
+#pragma once
 
 #include <pcl/keypoints/keypoint.h>
 
@@ -94,12 +93,12 @@ namespace pcl
   class SIFTKeypoint : public Keypoint<PointInT, PointOutT>
   {
     public:
-      typedef boost::shared_ptr<SIFTKeypoint<PointInT, PointOutT> > Ptr;
-      typedef boost::shared_ptr<const SIFTKeypoint<PointInT, PointOutT> > ConstPtr;
+      using Ptr = shared_ptr<SIFTKeypoint<PointInT, PointOutT> >;
+      using ConstPtr = shared_ptr<const SIFTKeypoint<PointInT, PointOutT> >;
 
-      typedef typename Keypoint<PointInT, PointOutT>::PointCloudIn PointCloudIn;
-      typedef typename Keypoint<PointInT, PointOutT>::PointCloudOut PointCloudOut;
-      typedef typename Keypoint<PointInT, PointOutT>::KdTree KdTree;
+      using PointCloudIn = typename Keypoint<PointInT, PointOutT>::PointCloudIn;
+      using PointCloudOut = typename Keypoint<PointInT, PointOutT>::PointCloudOut;
+      using KdTree = typename Keypoint<PointInT, PointOutT>::KdTree;
 
       using Keypoint<PointInT, PointOutT>::name_;
       using Keypoint<PointInT, PointOutT>::input_;
@@ -109,9 +108,9 @@ namespace pcl
       using Keypoint<PointInT, PointOutT>::initCompute;    
 
       /** \brief Empty constructor. */
-      SIFTKeypoint () : min_scale_ (0.0), nr_octaves_ (0), nr_scales_per_octave_ (0), 
-        min_contrast_ (-std::numeric_limits<float>::max ()), scale_idx_ (-1), 
-        out_fields_ (), getFieldValue_ ()
+      SIFTKeypoint () :  
+        min_contrast_ (-std::numeric_limits<float>::max ()),  
+        getFieldValue_ ()
       {
         name_ = "SIFTKeypoint";
       }
@@ -132,14 +131,14 @@ namespace pcl
 
     protected:
       bool
-      initCompute ();
+      initCompute () override;
 
       /** \brief Detect the SIFT keypoints for a set of points given in setInputCloud () using the spatial locator in 
         * setSearchMethod ().
         * \param output the resultant cloud of keypoints
         */
       void 
-      detectKeypoints (PointCloudOut &output);
+      detectKeypoints (PointCloudOut &output) override;
 
     private:
       /** \brief Detect the SIFT keypoints for a given point cloud for a single octave.
@@ -175,24 +174,24 @@ namespace pcl
       void 
       findScaleSpaceExtrema (const PointCloudIn &input, KdTree &tree, 
                              const Eigen::MatrixXf &diff_of_gauss,
-                             std::vector<int> &extrema_indices, std::vector<int> &extrema_scales);
+                             pcl::Indices &extrema_indices, std::vector<int> &extrema_scales);
 
 
       /** \brief The standard deviation of the smallest scale in the scale space.*/
-      float min_scale_;
+      float min_scale_{0.0};
 
       /** \brief The number of octaves (i.e. doublings of scale) over which to search for keypoints.*/
-      int nr_octaves_;
+      int nr_octaves_{0};
 
       /** \brief The number of scales to be computed for each octave.*/
-      int nr_scales_per_octave_;
+      int nr_scales_per_octave_{0};
 
       /** \brief The minimum contrast required for detection.*/
       float min_contrast_;
 
       /** \brief Set to a value different than -1 if the output cloud has a "scale" field and we have to save 
         * the keypoints scales. */
-      int scale_idx_;
+      int scale_idx_{-1};
 
       /** \brief The list of fields present in the output point cloud data. */
       std::vector<pcl::PCLPointField> out_fields_;
@@ -202,5 +201,3 @@ namespace pcl
 }
 
 #include <pcl/keypoints/impl/sift_keypoint.hpp>
-
-#endif // #ifndef PCL_SIFT_KEYPOINT_H_

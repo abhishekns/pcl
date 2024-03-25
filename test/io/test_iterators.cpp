@@ -34,17 +34,13 @@
  *
  */
 
-#include <gtest/gtest.h>
+#include <pcl/test/gtest.h>
 
-#include <iostream>  
-
-#include <pcl/PCLPointCloud2.h>
-#include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 
-typedef pcl::PointXYZ Point;
-typedef pcl::PointCloud<Point> PointCloud;
+using Point = pcl::PointXYZ;
+using PointCloud = pcl::PointCloud<Point>;
 
 PointCloud cloud;
 
@@ -63,7 +59,9 @@ TEST (PCL, Iterators)
 {
   Point mean (0,0,0);
 
-  for (PointCloud::iterator it = cloud.begin(); it != cloud.end(); ++it) 
+  // Disable lint since this test is testing begin() and end()
+  // NOLINTNEXTLINE(modernize-loop-convert)
+  for (auto it = cloud.begin(); it != cloud.end(); ++it)
   {
     for (int i=0;i<3;i++) mean.data[i] += it->data[i];
   }

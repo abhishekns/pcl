@@ -38,20 +38,18 @@
  *
  */
 
-#ifndef PCL_APPS_IN_HAND_SCANNER_UTILS_H
-#define PCL_APPS_IN_HAND_SCANNER_UTILS_H
+#pragma once
 
-namespace pcl
+namespace pcl {
+namespace ihs {
+/** \brief Clamp the value to the given range. All values smaller than min are set to
+ * min and all values bigger than max are set to max.
+ */
+template <class T>
+inline T
+clamp(const T value, const T min, const T max)
 {
-  namespace ihs
-  {
-    /** \brief Clamp the value to the given range. All values smaller than min are set to min and all values bigger than max are set to max. */
-    template <class T> inline T
-    clamp (const T value, const T min, const T max)
-    {
-      return (value < min ? min : value > max ? max : value);
-    }
-  } // End namespace ihs
+  return (value < min ? min : value > max ? max : value);
+}
+} // End namespace ihs
 } // End namespace pcl
-
-#endif // PCL_APPS_IN_HAND_SCANNER_UTILS_H

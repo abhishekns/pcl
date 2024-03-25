@@ -1,15 +1,15 @@
 /*
  * Software License Agreement (BSD License)
- * 
+ *
  * Point Cloud Library (PCL) - www.pointclouds.org
  * Copyright (c) 2012-, Open Perception, Inc.
- * 
+ *
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
- * are met: 
- * 
+ * are met:
+ *
  *  * Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
  *  * Redistributions in binary form must reproduce the above
@@ -19,7 +19,7 @@
  *  * Neither the name of the copyright holder(s) nor the names of its
  *    contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
@@ -34,143 +34,98 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <ui_manual_registration.h>
+#include <pcl/common/common.h>
+#include <pcl/common/time.h>
+#include <pcl/registration/transformation_estimation_svd.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl/visualization/point_cloud_handlers.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
 
-// QT4
 #include <QMainWindow>
 #include <QMutex>
 #include <QTimer>
 
-// Boost
-#ifndef Q_MOC_RUN
-#include <boost/thread/thread.hpp>
-#endif
+using PointT = pcl::PointXYZ;
 
-// PCL
-#include <pcl/console/print.h>
-#include <pcl/console/parse.h>
-
-#include <pcl/common/common.h>
-#include <pcl/common/angles.h>
-#include <pcl/common/time.h>
-#include <pcl/common/transforms.h>
-
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-
-#include <pcl/io/pcd_grabber.h>
-#include <pcl/io/pcd_io.h>
-
-#include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/visualization/point_cloud_handlers.h>
-
-#include <pcl/registration/transformation_estimation_svd.h>
-
-typedef pcl::PointXYZRGBA PointT;
-
-// Useful macros
-#define FPS_CALC(_WHAT_) \
-do \
-{ \
-    static unsigned count = 0;\
-    static double last = pcl::getTime ();\
-    double now = pcl::getTime (); \
-    ++count; \
-    if (now - last >= 1.0) \
-    { \
-      std::cout << "Average framerate("<< _WHAT_ << "): " << double(count)/double(now - last) << " Hz" <<  std::endl; \
-      count = 0; \
-      last = now; \
-    } \
-}while(false)
-
-namespace Ui
-{
-  class MainWindow;
+namespace Ui {
+class MainWindow;
 }
 
-class ManualRegistration : public QMainWindow
-{
+class ManualRegistration : public QMainWindow {
   Q_OBJECT
-  public:
-    typedef pcl::PointCloud<PointT> Cloud;
-    typedef Cloud::Ptr CloudPtr;
-    typedef Cloud::ConstPtr CloudConstPtr;
+public:
+  using Cloud = pcl::PointCloud<PointT>;
+  using CloudPtr = Cloud::Ptr;
+  using CloudConstPtr = Cloud::ConstPtr;
 
-    ManualRegistration ();
+  PCL_MAKE_ALIGNED_OPERATOR_NEW
 
-    ~ManualRegistration ()
-    {
-    }
+  ManualRegistration(float voxel_size);
 
-    void
-    setSrcCloud (pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_src)
-    {
-      cloud_src_ = cloud_src;
-      cloud_src_present_ = true;
-    }
-    void
-    setDstCloud (pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_dst)
-    {
-      cloud_dst_ = cloud_dst;
-      cloud_dst_present_ = true;
-    }
+  ~ManualRegistration() override = default;
 
-    void
-    SourcePointPickCallback (const pcl::visualization::PointPickingEvent& event, void*);
-    void
-    DstPointPickCallback (const pcl::visualization::PointPickingEvent& event, void*);
+  void
+  setSrcCloud(pcl::PointCloud<PointT>::Ptr cloud_src)
+  {
+    cloud_src_ = std::move(cloud_src);
+    vis_src_->addPointCloud(cloud_src_, "cloud_src_");
+  }
+  void
+  setDstCloud(pcl::PointCloud<PointT>::Ptr cloud_dst)
+  {
+    cloud_dst_ = std::move(cloud_dst);
+    vis_dst_->addPointCloud(cloud_dst_, "cloud_dst_");
+  }
 
-  protected:
-    boost::shared_ptr<pcl::visualization::PCLVisualizer> vis_src_;
-    boost::shared_ptr<pcl::visualization::PCLVisualizer> vis_dst_;
+  void
+  SrcPointPickCallback(const pcl::visualization::PointPickingEvent& event, void*);
+  void
+  DstPointPickCallback(const pcl::visualization::PointPickingEvent& event, void*);
 
-    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_src_;
-    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_dst_;
+protected:
+  void
+  refreshView();
 
-    QMutex mtx_;
-    QMutex vis_mtx_;
-    Ui::MainWindow *ui_;
-    QTimer *vis_timer_;
+  pcl::visualization::PCLVisualizer::Ptr vis_src_;
+  pcl::visualization::PCLVisualizer::Ptr vis_dst_;
 
-    bool                              cloud_src_present_;
-    bool                              cloud_src_modified_;
-    bool                              cloud_dst_present_;
-    bool                              cloud_dst_modified_;
+  pcl::PointCloud<PointT>::Ptr cloud_src_;
+  pcl::PointCloud<PointT>::Ptr cloud_dst_;
 
-    bool                              src_point_selected_;
-    bool                              dst_point_selected_;
+  QMutex mtx_;
+  QMutex vis_mtx_;
+  Ui::MainWindow* ui_;
 
-    pcl::PointXYZ                     src_point_;
-    pcl::PointXYZ                     dst_point_;
+  bool src_point_selected_{false};
+  bool dst_point_selected_{false};
 
-    pcl::PointCloud<pcl::PointXYZ>    src_pc_;
-    pcl::PointCloud<pcl::PointXYZ>    dst_pc_;
+  pcl::PointXYZ src_point_;
+  pcl::PointXYZ dst_point_;
 
-    Eigen::Matrix4f                   transform_;
+  pcl::PointCloud<pcl::PointXYZ> src_pc_;
+  pcl::PointCloud<pcl::PointXYZ> dst_pc_;
 
-  public slots:
-    void 
-    confirmSrcPointPressed();
-    void 
-    confirmDstPointPressed();
-    void 
-    calculatePressed();
-    void
-    clearPressed();
-    void 
-    orthoChanged(int state);
-    void 
-    applyTransformPressed();
-    void
-    refinePressed();
-    void
-    undoPressed();
-    void
-    safePressed();
+  Eigen::Matrix4f transform_ = Eigen::Affine3f::Identity().matrix();
 
-  private slots:
-    void
-    timeoutSlot();
+  std::set<std::string> annotations_src_;
+  std::set<std::string> annotations_dst_;
 
+  const float voxel_size_;
+
+public Q_SLOTS:
+  void
+  confirmSrcPointPressed();
+  void
+  confirmDstPointPressed();
+  void
+  calculatePressed();
+  void
+  clearPressed();
+  void
+  orthoChanged(int state);
+  void
+  applyTransformPressed();
+  void
+  refinePressed();
 };

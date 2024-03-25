@@ -37,9 +37,9 @@
 #define __OPENNI_IR_IMAGE__
 
 #include <pcl/pcl_macros.h>
+#include <pcl/memory.h>
 #include "openni.h"
 #include "openni_exception.h"
-#include <pcl/io/boost.h>
 
 namespace openni_wrapper
 {
@@ -51,54 +51,52 @@ namespace openni_wrapper
 class PCL_EXPORTS IRImage
 {
 public:
-  typedef boost::shared_ptr<IRImage> Ptr;
-  typedef boost::shared_ptr<const IRImage> ConstPtr;
+  using Ptr = pcl::shared_ptr<IRImage>;
+  using ConstPtr = pcl::shared_ptr<const IRImage>;
 
-  inline IRImage (boost::shared_ptr<xn::IRMetaData> ir_meta_data) throw ();
-  inline virtual ~IRImage () throw ();
+  inline IRImage (pcl::shared_ptr<xn::IRMetaData> ir_meta_data) noexcept;
+  inline virtual ~IRImage () noexcept;
 
   void fillRaw (unsigned width, unsigned height, unsigned short* ir_buffer, unsigned line_step = 0) const;
 
-  inline unsigned getWidth () const throw ();
-  inline unsigned getHeight () const throw ();
-  inline unsigned getFrameID () const throw ();
-  inline unsigned long getTimeStamp () const throw ();
-  inline const xn::IRMetaData& getMetaData () const throw ();
+  inline unsigned getWidth () const noexcept;
+  inline unsigned getHeight () const noexcept;
+  inline unsigned getFrameID () const noexcept;
+  inline unsigned long getTimeStamp () const noexcept;
+  inline const xn::IRMetaData& getMetaData () const noexcept;
 
 protected:
-  boost::shared_ptr<xn::IRMetaData> ir_md_;
+  pcl::shared_ptr<xn::IRMetaData> ir_md_;
 };
 
-IRImage::IRImage (boost::shared_ptr<xn::IRMetaData> ir_meta_data) throw ()
-: ir_md_ (ir_meta_data)
+IRImage::IRImage (pcl::shared_ptr<xn::IRMetaData> ir_meta_data) noexcept
+: ir_md_ (std::move(ir_meta_data))
 {
 }
 
-IRImage::~IRImage () throw ()
-{
-}
+IRImage::~IRImage () noexcept = default;
 
-unsigned IRImage::getWidth () const throw ()
+unsigned IRImage::getWidth () const noexcept
 {
   return ir_md_->XRes ();
 }
 
-unsigned IRImage::getHeight () const throw ()
+unsigned IRImage::getHeight () const noexcept
 {
   return ir_md_->YRes ();
 }
 
-unsigned IRImage::getFrameID () const throw ()
+unsigned IRImage::getFrameID () const noexcept
 {
   return ir_md_->FrameID ();
 }
 
-unsigned long IRImage::getTimeStamp () const throw ()
+unsigned long IRImage::getTimeStamp () const noexcept
 {
   return static_cast<unsigned long> (ir_md_->Timestamp ());
 }
 
-const xn::IRMetaData& IRImage::getMetaData () const throw ()
+const xn::IRMetaData& IRImage::getMetaData () const noexcept
 {
 	return *ir_md_;
 }

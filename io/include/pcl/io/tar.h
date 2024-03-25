@@ -35,8 +35,7 @@
  *
  */
 
-#ifndef PCL_IO_TAR_H_
-#define PCL_IO_TAR_H_
+#pragma once
 
 #include <pcl/point_cloud.h>
 
@@ -45,7 +44,7 @@ namespace pcl
   namespace io
   {
     /** \brief A TAR file's header, as described on 
-      * http://en.wikipedia.org/wiki/Tar_%28file_format%29. 
+      * https://en.wikipedia.org/wiki/Tar_%28file_format%29.
       */
     struct TARHeader
     {
@@ -98,5 +97,3 @@ namespace pcl
     }
   }
 }
-#endif        // PCL_IO_TAR_H_
-

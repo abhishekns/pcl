@@ -37,8 +37,7 @@
  *
  */
 
-#ifndef PCL_COMMON_GENERATE_H_
-#define PCL_COMMON_GENERATE_H_
+#pragma once
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -49,7 +48,7 @@ namespace pcl
 
   namespace common
   {
-    /** \brief CloudGenerator class generates a point cloud using some randoom number generator.
+    /** \brief CloudGenerator class generates a point cloud using some random number generator.
       * Generators can be found in \file common/random.h and easily extensible.
       *  
       * \ingroup common
@@ -59,18 +58,18 @@ namespace pcl
     class CloudGenerator
     {
       public:
-      typedef typename GeneratorT::Parameters GeneratorParameters;
+      using GeneratorParameters = typename GeneratorT::Parameters;
 
       /// Default constructor
       CloudGenerator ();
 
-      /** Consttructor with single generator to ensure all X, Y and Z values are within same range
-        * \param params paramteres for X, Y and Z values generation. Uniqueness is ensured through
+      /** Constructor with single generator to ensure all X, Y and Z values are within same range
+        * \param params parameters for X, Y and Z values generation. Uniqueness is ensured through
         * seed incrementation
         */
       CloudGenerator (const GeneratorParameters& params);
 
-      /** Constructor with independant generators per axis
+      /** Constructor with independent generators per axis
         * \param x_params parameters for x values generation
         * \param y_params parameters for y values generation
         * \param z_params parameters for z values generation
@@ -80,25 +79,25 @@ namespace pcl
                       const GeneratorParameters& z_params);
 
       /** Set parameters for x, y and z values. Uniqueness is ensured through seed incrementation.
-        * \param params parameteres for X, Y and Z values generation. 
+        * \param params parameters for X, Y and Z values generation. 
         */
       void
       setParameters (const GeneratorParameters& params);
       
       /** Set parameters for x values generation
-        * \param x_params paramters for x values generation
+        * \param x_params parameters for x values generation
         */
       void
       setParametersForX (const GeneratorParameters& x_params);
 
       /** Set parameters for y values generation
-        * \param y_params paramters for y values generation
+        * \param y_params parameters for y values generation
         */
       void
       setParametersForY (const GeneratorParameters& y_params);
       
       /** Set parameters for z values generation
-        * \param z_params paramters for z values generation
+        * \param z_params parameters for z values generation
         */
       void
       setParametersForZ (const GeneratorParameters& z_params);
@@ -144,7 +143,7 @@ namespace pcl
     class CloudGenerator<pcl::PointXY, GeneratorT>
     {
       public:
-      typedef typename GeneratorT::Parameters GeneratorParameters;
+      using GeneratorParameters = typename GeneratorT::Parameters;
       
       CloudGenerator ();
       
@@ -185,5 +184,3 @@ namespace pcl
 }
 
 #include <pcl/common/impl/generate.hpp>
-
-#endif

@@ -36,7 +36,7 @@ DAMAGE.
 #include <pcl/pcl_macros.h>
 #include <math.h>
 #include <vector>
-#include "hash.h"
+#include <unordered_map>
 
 namespace pcl
 {
@@ -180,7 +180,7 @@ namespace pcl
         int addTriangle( int p1 , int p2 , int p3 );
 
       protected:
-        hash_map<long long,int> edgeMap;
+        std::unordered_map<long long,int> edgeMap;
         static long long EdgeIndex( int p1 , int p2 );
         double area(const Triangle& t);
     };
@@ -200,6 +200,8 @@ namespace pcl
     {
       public:
         std::vector<Point3D<float> > inCorePoints;
+
+        virtual ~CoredMeshData() = default;
         virtual void resetIterator( void ) = 0;
 
         virtual int addOutOfCorePoint( const Point3D<float>& p ) = 0;
@@ -231,6 +233,9 @@ namespace pcl
               value = ( p1[0] * p2[0] + p1[1] * p2[1] + p1[2] * p2[2] ) / ( p2[0] * p2[0] + p2[1] * p2[1] + p2[2] * p2[2] );
             }
         };
+
+        virtual ~CoredMeshData2() = default;
+
         std::vector< Vertex > inCorePoints;
         virtual void resetIterator( void ) = 0;
 

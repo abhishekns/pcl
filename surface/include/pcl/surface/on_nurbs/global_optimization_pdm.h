@@ -35,8 +35,7 @@
  *
  */
 
-#ifndef NURBS_OPTIMIZATION_H
-#define NURBS_OPTIMIZATION_H
+#pragma once
 
 #include <pcl/surface/on_nurbs/nurbs_tools.h>
 #include <pcl/surface/on_nurbs/nurbs_data.h>
@@ -83,6 +82,10 @@ namespace pcl
        * \param[in] data set of 3D point-cloud data to be fit.
        * \param[in] nurbs set of B-Spline surface used for fitting.        */
       GlobalOptimization (const std::vector<NurbsDataSurface*> &data, const std::vector<ON_NurbsSurface*> &nurbs);
+
+      /** \brief Default virtual destructor. */
+      virtual
+      ~GlobalOptimization() = default;
 
       /** \brief Set common boundary points two NURBS should lie on
        *  \param[in] boundary vector of boundary points.
@@ -207,5 +210,3 @@ namespace pcl
 
   }
 }
-#endif
-

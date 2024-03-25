@@ -38,13 +38,11 @@
  *
  */
 
-#ifndef PCL_FEATURES_CVFH_H_
-#define PCL_FEATURES_CVFH_H_
+#pragma once
 
 #include <pcl/features/feature.h>
 #include <pcl/features/vfh.h>
-#include <pcl/search/pcl_search.h>
-#include <pcl/common/common.h>
+#include <pcl/search/search.h> // for Search
 
 namespace pcl
 {
@@ -64,8 +62,8 @@ namespace pcl
   class CVFHEstimation : public FeatureFromNormals<PointInT, PointNT, PointOutT>
   {
     public:
-      typedef boost::shared_ptr<CVFHEstimation<PointInT, PointNT, PointOutT> > Ptr;
-      typedef boost::shared_ptr<const CVFHEstimation<PointInT, PointNT, PointOutT> > ConstPtr;
+      using Ptr = shared_ptr<CVFHEstimation<PointInT, PointNT, PointOutT> >;
+      using ConstPtr = shared_ptr<const CVFHEstimation<PointInT, PointNT, PointOutT> >;
 
       using Feature<PointInT, PointOutT>::feature_name_;
       using Feature<PointInT, PointOutT>::getClassName;
@@ -75,22 +73,16 @@ namespace pcl
       using Feature<PointInT, PointOutT>::surface_;
       using FeatureFromNormals<PointInT, PointNT, PointOutT>::normals_;
 
-      typedef typename Feature<PointInT, PointOutT>::PointCloudOut PointCloudOut;
-      typedef typename pcl::search::Search<PointNormal>::Ptr KdTreePtr;
-      typedef typename pcl::VFHEstimation<PointInT, PointNT, pcl::VFHSignature308> VFHEstimator;
+      using PointCloudOut = typename Feature<PointInT, PointOutT>::PointCloudOut;
+      using KdTreePtr = typename pcl::search::Search<PointNormal>::Ptr;
+      using VFHEstimator = pcl::VFHEstimation<PointInT, PointNT, pcl::VFHSignature308>;
 
       /** \brief Empty constructor. */
       CVFHEstimation () :
-        vpx_ (0), vpy_ (0), vpz_ (0), 
-        leaf_size_ (0.005f), 
-        normalize_bins_ (false),
-        curv_threshold_ (0.03f), 
+         
         cluster_tolerance_ (leaf_size_ * 3), 
-        eps_angle_threshold_ (0.125f), 
-        min_points_ (50),
-        radius_normals_ (leaf_size_ * 3),
-        centroids_dominant_orientations_ (),
-        dominant_normals_ ()
+        
+        radius_normals_ (leaf_size_ * 3)
       {
         search_radius_ = 0;
         k_ = 1;
@@ -106,8 +98,8 @@ namespace pcl
         * \param[in] threshold threshold value for curvature
         */
       void
-      filterNormalsWithHighCurvature (const pcl::PointCloud<PointNT> & cloud, std::vector<int> & indices_to_use, std::vector<int> &indices_out,
-                                      std::vector<int> &indices_in, float threshold);
+      filterNormalsWithHighCurvature (const pcl::PointCloud<PointNT> & cloud, pcl::Indices & indices_to_use, pcl::Indices &indices_out,
+                                      pcl::Indices &indices_in, float threshold);
 
       /** \brief Set the viewpoint.
         * \param[in] vpx the X coordinate of the viewpoint
@@ -150,8 +142,8 @@ namespace pcl
       inline void
       getCentroidClusters (std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > & centroids)
       {
-        for (size_t i = 0; i < centroids_dominant_orientations_.size (); ++i)
-          centroids.push_back (centroids_dominant_orientations_[i]);
+        centroids.insert (centroids.cend (), centroids_dominant_orientations_.cbegin (),
+                          centroids_dominant_orientations_.cend ());
       }
 
       /** \brief Get the normal centroids used to compute different CVFH descriptors
@@ -160,8 +152,8 @@ namespace pcl
       inline void
       getCentroidNormalClusters (std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > & centroids)
       {
-        for (size_t i = 0; i < dominant_normals_.size (); ++i)
-          centroids.push_back (dominant_normals_[i]);
+        for (const auto& normal: dominant_normals_)
+          centroids.push_back (normal);
       }
 
       /** \brief Sets max. Euclidean distance between points to be added to the cluster 
@@ -196,12 +188,12 @@ namespace pcl
         * \param[in] min the minimum amount of points to be set 
         */
       inline void
-      setMinPoints (size_t min)
+      setMinPoints (std::size_t min)
       {
         min_points_ = min;
       }
 
-      /** \brief Sets wether if the CVFH signatures should be normalized or not
+      /** \brief Sets whether if the CVFH signatures should be normalized or not
         * \param[in] normalize true if normalization is required, false otherwise 
         */
       inline void
@@ -220,29 +212,29 @@ namespace pcl
       /** \brief Values describing the viewpoint ("pinhole" camera model assumed). 
         * By default, the viewpoint is set to 0,0,0.
         */
-      float vpx_, vpy_, vpz_;
+      float vpx_{0.0f}, vpy_{0.0f}, vpz_{0.0f};
 
       /** \brief Size of the voxels after voxel gridding. IMPORTANT: Must match the voxel 
         * size of the training data or the normalize_bins_ flag must be set to true.
         */
-      float leaf_size_;
+      float leaf_size_{0.005f};
 
-      /** \brief Wether to normalize the signatures or not. Default: false. */
-      bool normalize_bins_;
+      /** \brief Whether to normalize the signatures or not. Default: false. */
+      bool normalize_bins_{false};
 
       /** \brief Curvature threshold for removing normals. */
-      float curv_threshold_;
+      float curv_threshold_{0.03f};
 
       /** \brief allowed Euclidean distance between points to be added to the cluster. */
       float cluster_tolerance_;
 
       /** \brief deviation of the normals between two points so they can be clustered together. */
-      float eps_angle_threshold_;
+      float eps_angle_threshold_{0.125f};
 
       /** \brief Minimum amount of points in a clustered region to be considered stable for CVFH
         * computation.
         */
-      size_t min_points_;
+      std::size_t min_points_{50};
 
       /** \brief Radius for the normals computation. */
       float radius_normals_;
@@ -255,7 +247,7 @@ namespace pcl
         * feature estimates
         */
       void
-      computeFeature (PointCloudOut &output);
+      computeFeature (PointCloudOut &output) override;
 
       /** \brief Region growing method using Euclidean distances and neighbors normals to 
         * add points to a region.
@@ -289,5 +281,3 @@ namespace pcl
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/features/impl/cvfh.hpp>
 #endif
-
-#endif  //#ifndef PCL_FEATURES_CVFH_H_

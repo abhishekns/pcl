@@ -38,40 +38,22 @@
  *
  */
 
-#ifndef PCL_IO_VTK_LIB_IO_H_
-#define PCL_IO_VTK_LIB_IO_H_
+#pragma once
 
-#include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <pcl/PolygonMesh.h>
 #include <pcl/TextureMesh.h>
 #include <pcl/pcl_macros.h>
 #include <pcl/conversions.h>
-#include <pcl/io/pcd_io.h>
 #include <pcl/range_image/range_image_planar.h>
 
 // Ignore warnings in the above headers
 #ifdef __GNUC__
 #pragma GCC system_header 
 #endif
-#include <vtkVersion.h>
+#include <vtkPolyData.h> // for vtkPolyData
 #include <vtkSmartPointer.h>
 #include <vtkStructuredGrid.h>
-#include <vtkPoints.h>
-#include <vtkPointData.h>
-#include <vtkCellArray.h>
-#include <vtkUnsignedCharArray.h>
-#include <vtkFloatArray.h>
-#include <vtkPolyDataReader.h>
-#include <vtkPolyDataWriter.h>
-#include <vtkPLYReader.h>
-#include <vtkPLYWriter.h>
-#include <vtkOBJReader.h>
-#include <vtkSTLReader.h>
-#include <vtkSTLWriter.h>
-#include <vtkPNGReader.h>
-#include <vtkImageData.h>
-#include <vtkPolyDataNormals.h>
 
 namespace pcl
 {
@@ -110,6 +92,7 @@ namespace pcl
     /** \brief Load a \ref PolygonMesh object given an input file name, based on the file extension
       * \param[in] file_name the name of the file containing the polygon data
       * \param[out] mesh the object that we want to load the data in 
+      * \return Number of points in the point cloud of the mesh.
       * \ingroup io
       */ 
     PCL_EXPORTS int
@@ -131,6 +114,7 @@ namespace pcl
     /** \brief Load a VTK file into a \ref PolygonMesh object
       * \param[in] file_name the name of the file that contains the data
       * \param[out] mesh the object that we want to load the data in 
+      * \return Number of points in the point cloud of the mesh.
       * \ingroup io
       */
     PCL_EXPORTS int
@@ -140,6 +124,7 @@ namespace pcl
     /** \brief Load a PLY file into a \ref PolygonMesh object
       * \param[in] file_name the name of the file that contains the data
       * \param[out] mesh the object that we want to load the data in 
+      * \return Number of points in the point cloud of the mesh.
       * \ingroup io
       */
     PCL_EXPORTS int
@@ -149,6 +134,7 @@ namespace pcl
     /** \brief Load an OBJ file into a \ref PolygonMesh object
       * \param[in] file_name the name of the file that contains the data
       * \param[out] mesh the object that we want to load the data in 
+      * \return Number of points in the point cloud of the mesh.
       * \ingroup io
       */
     PCL_EXPORTS int
@@ -161,6 +147,7 @@ namespace pcl
       * load the material information.
       * \param[in] file_name the name of the file that contains the data
       * \param[out] mesh the object that we want to load the data in
+      * \return Number of points in the point cloud of the mesh.
       * \ingroup io
       */
     PCL_EXPORTS int
@@ -171,6 +158,7 @@ namespace pcl
     /** \brief Load an STL file into a \ref PolygonMesh object
       * \param[in] file_name the name of the file that contains the data
       * \param[out] mesh the object that we want to load the data in 
+      * \return Number of points in the point cloud of the mesh.
       * \ingroup io
       */
     PCL_EXPORTS int
@@ -270,5 +258,3 @@ namespace pcl
 }
 
 #include <pcl/io/impl/vtk_lib_io.hpp>
-
-#endif /* PLC_IO_VTK_LIB_IO_H_ */

@@ -41,6 +41,9 @@
 #include <pcl/console/parse.h>
 #include <pcl/io/vtk_lib_io.h>
 
+#include <vtkOBJReader.h> // for vtkOBJReader
+#include <vtkPolyDataWriter.h> // for vtkPolyDataWriter
+
 using namespace pcl;
 using namespace pcl::io;
 using namespace pcl::console;
@@ -81,11 +84,7 @@ main (int argc, char** argv)
 
   // Convert to VTK and save
   vtkSmartPointer<vtkPolyDataWriter> writer = vtkSmartPointer<vtkPolyDataWriter>::New ();
-#if VTK_MAJOR_VERSION < 6
-  writer->SetInput (polydata);
-#else
   writer->SetInputData (polydata);
-#endif
   writer->SetFileName (argv[vtk_file_indices[0]]);
   writer->Write ();
 }

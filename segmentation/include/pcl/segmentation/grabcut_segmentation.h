@@ -37,13 +37,15 @@
  *
  */
 
-#ifndef PCL_SEGMENTATION_GRABCUT
-#define PCL_SEGMENTATION_GRABCUT
+#pragma once
 
+#include <deque> // for deque
+#include <map> // for map
+#include <pcl/memory.h>
 #include <pcl/point_cloud.h>
 #include <pcl/pcl_base.h>
+#include <pcl/pcl_macros.h>
 #include <pcl/point_types.h>
-#include <pcl/segmentation/boost.h>
 #include <pcl/search/search.h>
 
 namespace pcl
@@ -53,7 +55,7 @@ namespace pcl
     namespace grabcut
     {
       /** boost implementation of Boykov and Kolmogorov's maxflow algorithm doesn't support
-        * negative flows which makes it inappropriate for this conext.
+        * negative flows which makes it inappropriate for this context.
         * This implementation of Boykov and Kolmogorov's maxflow algorithm by Stephen Gould
         * <stephen.gould@anu.edu.au> in DARWIN under BSD does the trick however solwer than original
         * implementation.
@@ -61,15 +63,15 @@ namespace pcl
       class PCL_EXPORTS BoykovKolmogorov
       {
         public:
-          typedef int vertex_descriptor;
-          typedef double edge_capacity_type;
+          using vertex_descriptor = int;
+          using edge_capacity_type = double;
 
           /// construct a maxflow/mincut problem with estimated max_nodes
           BoykovKolmogorov (std::size_t max_nodes = 0);
           /// destructor
-          virtual ~BoykovKolmogorov () {}
+          virtual ~BoykovKolmogorov () = default;
           /// get number of nodes in the graph
-          size_t
+          std::size_t
           numNodes () const { return nodes_.size (); }
           /// reset all edge capacities to zero (but don't free the graph)
           void
@@ -114,11 +116,11 @@ namespace pcl
 
         protected:
           /// tree states
-          typedef enum { FREE = 0x00, SOURCE = 0x01, TARGET = 0x02 } nodestate;
+          enum nodestate { FREE = 0x00, SOURCE = 0x01, TARGET = 0x02 };
           /// capacitated edge
-          typedef std::map<int, double> capacitated_edge;
+          using capacitated_edge = std::map<int, double>;
           /// edge pair
-          typedef std::pair<capacitated_edge::iterator, capacitated_edge::iterator> edge_pair;
+          using edge_pair = std::pair<capacitated_edge::iterator, capacitated_edge::iterator>;
           /// pre-augment s-u-t and s-u-v-t paths
           void
           preAugmentPaths ();
@@ -155,7 +157,7 @@ namespace pcl
           /// nodes and their outgoing internal edges
           std::vector<capacitated_edge> nodes_;
           /// current flow value (includes constant)
-          double flow_value_;
+          double flow_value_{0.0};
           /// identifies which side of the cut a node falls
           std::vector<unsigned char> cut_;
 
@@ -185,7 +187,7 @@ namespace pcl
         float r, g, b;
       };
       /// An Image is a point cloud of Color
-      typedef pcl::PointCloud<Color> Image;
+      using Image = pcl::PointCloud<Color>;
       /** \brief Compute squared distance between two colors
        * \param[in] c1 first color
        * \param[in] c2 second color
@@ -195,12 +197,12 @@ namespace pcl
       colorDistance (const Color& c1, const Color& c2);
       /// User supplied Trimap values
       enum TrimapValue { TrimapUnknown = -1, TrimapForeground, TrimapBackground };
-      /// Grabcut derived hard segementation values
+      /// Grabcut derived hard segmentation values
       enum SegmentationValue { SegmentationForeground = 0, SegmentationBackground };
       /// Gaussian structure
       struct Gaussian
       {
-        Gaussian () {}
+        Gaussian () = default;
         /// mean of the gaussian
         Color mu;
         /// covariance matrix of the gaussian
@@ -211,9 +213,9 @@ namespace pcl
         Eigen::Matrix3f inverse;
         /// weighting of this gaussian in the GMM.
         float pi;
-        /// heighest eigenvalue of covariance matrix
+        /// highest eigenvalue of covariance matrix
         float eigenvalue;
-        /// eigenvector corresponding to the heighest eigenvector
+        /// eigenvector corresponding to the highest eigenvector
         Eigen::Vector3f eigenvector;
       };
 
@@ -225,7 +227,7 @@ namespace pcl
           /// Initialize GMM with ddesired number of gaussians.
           GMM (std::size_t K) : gaussians_ (K) {}
           /// Destructor
-          ~GMM () {}
+          ~GMM () = default;
           /// \return K
           std::size_t
           getK () const { return gaussians_.size (); }
@@ -254,12 +256,9 @@ namespace pcl
       class GaussianFitter
       {
         public:
-        GaussianFitter (float epsilon = 0.0001)
-          : sum_ (Eigen::Vector3f::Zero ())
-          , accumulator_ (Eigen::Matrix3f::Zero ())
-          , count_ (0)
-          , epsilon_ (epsilon)
-        { }
+        GaussianFitter (float epsilon = 0.0001f)
+          : epsilon_ (epsilon)
+        {}
 
         /// Add a color sample
         void
@@ -279,26 +278,27 @@ namespace pcl
 
         private:
         /// sum of r,g, and b
-        Eigen::Vector3f sum_;
+        Eigen::Vector3f sum_{Eigen::Vector3f::Zero ()};
         /// matrix of products (i.e. r*r, r*g, r*b), some values are duplicated.
-        Eigen::Matrix3f accumulator_;
+        Eigen::Matrix3f accumulator_{Eigen::Matrix3f::Zero ()};
         /// count of color samples added to the gaussian
-        uint32_t count_;
+        std::uint32_t count_{0};
         /// small value to add to covariance matrix diagonal to avoid singular values
         float epsilon_;
+        PCL_MAKE_ALIGNED_OPERATOR_NEW
       };
 
       /** Build the initial GMMs using the Orchard and Bouman color clustering algorithm */
       PCL_EXPORTS void
       buildGMMs (const Image &image,
-                 const std::vector<int>& indices,
+                 const Indices& indices,
                  const std::vector<SegmentationValue> &hardSegmentation,
                  std::vector<std::size_t> &components,
                  GMM &background_GMM, GMM &foreground_GMM);
       /** Iteratively learn GMMs using GrabCut updating algorithm */
       PCL_EXPORTS void
       learnGMMs (const Image& image,
-                 const std::vector<int>& indices,
+                 const Indices& indices,
                  const std::vector<SegmentationValue>& hard_segmentation,
                  std::vector<std::size_t>& components,
                  GMM& background_GMM, GMM& foreground_GMM);
@@ -317,26 +317,22 @@ namespace pcl
   class GrabCut : public pcl::PCLBase<PointT>
   {
     public:
-      typedef typename pcl::search::Search<PointT> KdTree;
-      typedef typename pcl::search::Search<PointT>::Ptr KdTreePtr;
-      typedef typename PCLBase<PointT>::PointCloudConstPtr PointCloudConstPtr;
-      typedef typename PCLBase<PointT>::PointCloudPtr PointCloudPtr;
+      using KdTree = pcl::search::Search<PointT>;
+      using KdTreePtr = typename KdTree::Ptr;
+      using PointCloudConstPtr = typename PCLBase<PointT>::PointCloudConstPtr;
+      using PointCloudPtr = typename PCLBase<PointT>::PointCloudPtr;
       using PCLBase<PointT>::input_;
       using PCLBase<PointT>::indices_;
       using PCLBase<PointT>::fake_indices_;
 
       /// Constructor
-      GrabCut (uint32_t K = 5, float lambda = 50.f)
-        : K_ (K)
-        , lambda_ (lambda)
-        , nb_neighbours_ (9)
-        , initialized_ (false)
-      {}
-      /// Desctructor
-      virtual ~GrabCut () {};
+      GrabCut(std::uint32_t K = 5, float lambda = 50.f) : K_(K), lambda_(lambda) {}
+
+      /// Destructor
+      ~GrabCut () override = default;
       // /// Set input cloud
       void
-      setInputCloud (const PointCloudConstPtr& cloud);
+      setInputCloud (const PointCloudConstPtr& cloud) override;
       /// Set background points, foreground points = points \ background points
       void
       setBackgroundPoints (const PointCloudConstPtr& background_points);
@@ -361,13 +357,13 @@ namespace pcl
       void
       setLambda (float lambda) { lambda_ = lambda; }
       /// \return the number of components in the GMM
-      uint32_t
+      std::uint32_t
       getK () { return (K_); }
       /** Set K parameter to user given value. Suggested value by the authors is 5
         * \param[in] K the number of components used in GMM
         */
       void
-      setK (uint32_t K) { K_ = K; }
+      setK (std::uint32_t K) { K_ = K; }
       /** \brief Provide a pointer to the search object.
         * \param tree a pointer to the spatial search object.
         */
@@ -396,16 +392,16 @@ namespace pcl
       // Storage for N-link weights, each pixel stores links to nb_neighbours
       struct NLinks
       {
-        NLinks () : nb_links (0), indices (0), dists (0), weights (0) {}
+        NLinks () = default;
 
-        int nb_links;
-        std::vector<int> indices;
-        std::vector<float> dists;
-        std::vector<float> weights;
+        int nb_links{0};
+        Indices indices{};
+        std::vector<float> dists{};
+        std::vector<float> weights{};
       };
       bool
       initCompute ();
-      typedef pcl::segmentation::grabcut::BoykovKolmogorov::vertex_descriptor vertex_descriptor;
+      using vertex_descriptor = pcl::segmentation::grabcut::BoykovKolmogorov::vertex_descriptor;
       /// Compute beta from image
       void
       computeBetaOrganized ();
@@ -442,42 +438,40 @@ namespace pcl
       inline bool
       isSource (vertex_descriptor v) { return (graph_.inSourceTree (v)); }
       /// image width
-      uint32_t width_;
+      std::uint32_t width_{0};
       /// image height
-      uint32_t height_;
+      std::uint32_t height_{0};
       // Variables used in formulas from the paper.
       /// Number of GMM components
-      uint32_t K_;
+      std::uint32_t K_;
       /// lambda = 50. This value was suggested the GrabCut paper.
       float lambda_;
       /// beta = 1/2 * average of the squared color distances between all pairs of 8-neighboring pixels.
-      float beta_;
+      float beta_{0.0f};
       /// L = a large value to force a pixel to be foreground or background
-      float L_;
+      float L_{0.0f};
       /// Pointer to the spatial search object.
-      KdTreePtr tree_;
+      KdTreePtr tree_{nullptr};
       /// Number of neighbours
-      int nb_neighbours_;
+      int nb_neighbours_{9};
       /// is segmentation initialized
-      bool initialized_;
+      bool initialized_{false};
       /// Precomputed N-link weights
-      std::vector<NLinks> n_links_;
+      std::vector<NLinks> n_links_{};
       /// Converted input
       segmentation::grabcut::Image::Ptr image_;
-      std::vector<segmentation::grabcut::TrimapValue> trimap_;
-      std::vector<std::size_t> GMM_component_;
-      std::vector<segmentation::grabcut::SegmentationValue> hard_segmentation_;
+      std::vector<segmentation::grabcut::TrimapValue> trimap_{};
+      std::vector<std::size_t> GMM_component_{};
+      std::vector<segmentation::grabcut::SegmentationValue> hard_segmentation_{};
       // Not yet implemented (this would be interpreted as alpha)
-      std::vector<float> soft_segmentation_;
+      std::vector<float> soft_segmentation_{};
       segmentation::grabcut::GMM background_GMM_, foreground_GMM_;
       // Graph part
       /// Graph for Graphcut
       pcl::segmentation::grabcut::BoykovKolmogorov graph_;
       /// Graph nodes
-      std::vector<vertex_descriptor> graph_nodes_;
+      std::vector<vertex_descriptor> graph_nodes_{};
   };
 }
 
 #include <pcl/segmentation/impl/grabcut_segmentation.hpp>
-
-#endif

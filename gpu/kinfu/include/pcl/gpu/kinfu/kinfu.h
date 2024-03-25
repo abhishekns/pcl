@@ -35,9 +35,9 @@
  *
  */
 
-#ifndef PCL_KINFU_KINFUTRACKER_HPP_
-#define PCL_KINFU_KINFUTRACKER_HPP_
+#pragma once
 
+#include <pcl/memory.h>
 #include <pcl/pcl_macros.h>
 #include <pcl/gpu/containers/device_array.h>
 #include <pcl/gpu/kinfu/pixel_rgb.h>
@@ -68,13 +68,13 @@ namespace pcl
     {
       public:
         /** \brief Pixel type for rendered image. */
-        typedef pcl::gpu::PixelRGB PixelRGB;
+        using PixelRGB = pcl::gpu::PixelRGB;
 
-        typedef DeviceArray2D<PixelRGB> View;
-        typedef DeviceArray2D<unsigned short> DepthMap;
+        using View = DeviceArray2D<PixelRGB>;
+        using DepthMap = DeviceArray2D<unsigned short>;
 
-        typedef pcl::PointXYZ PointType;
-        typedef pcl::Normal NormalType;
+        using PointType = pcl::PointXYZ;
+        using NormalType = pcl::Normal;
 
         /** \brief Constructor
           * \param[in] rows height of depth image
@@ -98,10 +98,10 @@ namespace pcl
           * \param[out] cy principal point y
           */
         void
-        getDepthIntrinsics (float& fx, float& fy, float& cx, float& cy);
+        getDepthIntrinsics (float& fx, float& fy, float& cx, float& cy) const;
         
 
-        /** \brief Sets initial camera pose relative to volume coordiante space
+        /** \brief Sets initial camera pose relative to volume coordinate space
           * \param[in] pose Initial camera pose
           */
         void
@@ -121,7 +121,7 @@ namespace pcl
         void
         setIcpCorespFilteringParams (float distThreshold, float sineOfAngle);
         
-        /** \brief Sets integration threshold. TSDF volume is integrated iff a camera movement metric exceedes the threshold value. 
+        /** \brief Sets integration threshold. TSDF volume is integrated iff a camera movement metric exceeds the threshold value. 
           * The metric represents the following: M = (rodrigues(Rotation).norm() + alpha*translation.norm())/2, where alpha = 1.f (hardcoded constant)
           * \param[in] threshold a value to compare with the metric. Suitable values are ~0.001          
           */
@@ -147,7 +147,7 @@ namespace pcl
           * \param hint
           * \return true if can render 3D view.
           */
-        bool operator() (const DepthMap& depth, Eigen::Affine3f* hint=NULL);
+        bool operator() (const DepthMap& depth, Eigen::Affine3f* hint=nullptr);
 
         /** \brief Processes next frame (both depth and color integration). Please call initColorIntegration before invpoking this.
           * \param[in] depth next depth frame with values in millimeters
@@ -164,7 +164,7 @@ namespace pcl
         getCameraPose (int time = -1) const;
 
         /** \brief Returns number of poses including initial */
-        size_t
+        std::size_t
         getNumberOfPoses () const;
 
         /** \brief Returns TSDF volume storage */
@@ -206,13 +206,13 @@ namespace pcl
         enum { LEVELS = 3 };
 
         /** \brief ICP Correspondences  map type */
-        typedef DeviceArray2D<int> CorespMap;
+        using CorespMap = DeviceArray2D<int>;
 
         /** \brief Vertex or Normal Map type */
-        typedef DeviceArray2D<float> MapArr;
+        using MapArr = DeviceArray2D<float>;
         
-        typedef Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Matrix3frm;
-        typedef Eigen::Vector3f Vector3f;
+        using Matrix3frm = Eigen::Matrix<float, 3, 3, Eigen::RowMajor>;
+        using Vector3f = Eigen::Vector3f;
 
         /** \brief Height of input depth image. */
         int rows_;
@@ -278,10 +278,10 @@ namespace pcl
         /** \brief Array of camera translations for each moment of time. */
         std::vector<Vector3f> tvecs_;
 
-        /** \brief Camera movement threshold. TSDF is integrated iff a camera movement metric exceedes some value. */
+        /** \brief Camera movement threshold. TSDF is integrated iff a camera movement metric exceeds some value. */
         float integration_metric_threshold_;
 
-        /** \brief ICP step is completelly disabled. Inly integratio now */
+        /** \brief ICP step is completely disabled. Only integration now. */
         bool disable_icp_;
         
         /** \brief Allocates all GPU internal buffers.
@@ -297,10 +297,8 @@ namespace pcl
         reset ();
 
 public:
-EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  PCL_MAKE_ALIGNED_OPERATOR_NEW
 
     };
   }
 };
-
-#endif /* PCL_KINFU_KINFUTRACKER_HPP_ */

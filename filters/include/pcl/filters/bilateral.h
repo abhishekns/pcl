@@ -37,11 +37,10 @@
  *
  */
 
-#ifndef PCL_FILTERS_BILATERAL_H_
-#define PCL_FILTERS_BILATERAL_H_
+#pragma once
 
 #include <pcl/filters/filter.h>
-#include <pcl/search/pcl_search.h>
+#include <pcl/search/search.h> // for Search
 
 namespace pcl
 {
@@ -58,39 +57,28 @@ namespace pcl
   {
     using Filter<PointT>::input_;
     using Filter<PointT>::indices_;
-    typedef typename Filter<PointT>::PointCloud PointCloud;
-    typedef typename pcl::search::Search<PointT>::Ptr KdTreePtr;
+    using PointCloud = typename Filter<PointT>::PointCloud;
+    using KdTreePtr = typename pcl::search::Search<PointT>::Ptr;
 
     public:
 
-      typedef boost::shared_ptr< BilateralFilter<PointT> > Ptr;
-      typedef boost::shared_ptr< const BilateralFilter<PointT> > ConstPtr;
- 
+      using Ptr = shared_ptr<BilateralFilter<PointT> >;
+      using ConstPtr = shared_ptr<const BilateralFilter<PointT> >;
 
       /** \brief Constructor. 
         * Sets sigma_s_ to 0 and sigma_r_ to MAXDBL
         */
-      BilateralFilter () : sigma_s_ (0), 
-                           sigma_r_ (std::numeric_limits<double>::max ()),
-                           tree_ ()
+      BilateralFilter () : tree_ ()
       {
       }
-
-
-      /** \brief Filter the input data and store the results into output
-        * \param[out] output the resultant point cloud message
-        */
-      void
-      applyFilter (PointCloud &output);
-
       /** \brief Compute the intensity average for a single point
         * \param[in] pid the point index to compute the weight for
-        * \param[in] indices the set of nearest neighor indices 
+        * \param[in] indices the set of nearest neighbor indices 
         * \param[in] distances the set of nearest neighbor distances
         * \return the intensity average at a given point index
         */
       double 
-      computePointWeight (const int pid, const std::vector<int> &indices, const std::vector<float> &distances);
+      computePointWeight (const int pid, const Indices &indices, const std::vector<float> &distances);
 
       /** \brief Set the half size of the Gaussian bilateral filter window.
         * \param[in] sigma_s the half size of the Gaussian bilateral filter window to use
@@ -123,20 +111,26 @@ namespace pcl
       setSearchMethod (const KdTreePtr &tree)
       { tree_ = tree; }
 
-    private:
+    protected:
+      /** \brief Filter the input data and store the results into output
+        * \param[out] output the resultant point cloud message
+        */
+      void
+      applyFilter (PointCloud &output) override;
 
+    private:
       /** \brief The bilateral filter Gaussian distance kernel.
         * \param[in] x the spatial distance (distance or intensity)
         * \param[in] sigma standard deviation
         */
       inline double
       kernel (double x, double sigma)
-      { return (exp (- (x*x)/(2*sigma*sigma))); }
+      { return (std::exp (- (x*x)/(2*sigma*sigma))); }
 
       /** \brief The half size of the Gaussian bilateral filter window (e.g., spatial extents in Euclidean). */
-      double sigma_s_;
+      double sigma_s_{0.0};
       /** \brief The standard deviation of the bilateral filter (e.g., standard deviation in intensity). */
-      double sigma_r_;
+      double sigma_r_{std::numeric_limits<double>::max ()};
 
       /** \brief A pointer to the spatial search object. */
       KdTreePtr tree_;
@@ -146,5 +140,3 @@ namespace pcl
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/filters/impl/bilateral.hpp>
 #endif
-
-#endif // PCL_FILTERS_BILATERAL_H_

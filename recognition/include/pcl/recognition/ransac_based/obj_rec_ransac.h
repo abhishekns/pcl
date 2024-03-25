@@ -36,8 +36,7 @@
  *
  */
 
-#ifndef PCL_RECOGNITION_OBJ_REC_RANSAC_H_
-#define PCL_RECOGNITION_OBJ_REC_RANSAC_H_
+#pragma once
 
 #include <pcl/recognition/ransac_based/hypothesis.h>
 #include <pcl/recognition/ransac_based/model_library.h>
@@ -49,8 +48,6 @@
 #include <pcl/recognition/ransac_based/orr_graph.h>
 #include <pcl/recognition/ransac_based/auxiliary.h>
 #include <pcl/recognition/ransac_based/bvh.h>
-#include <pcl/registration/transformation_estimation_svd.h>
-#include <pcl/correspondence.h>
 #include <pcl/pcl_exports.h>
 #include <pcl/point_cloud.h>
 #include <cmath>
@@ -86,10 +83,10 @@ namespace pcl
     class PCL_EXPORTS ObjRecRANSAC
     {
       public:
-        typedef ModelLibrary::PointCloudIn PointCloudIn;
-        typedef ModelLibrary::PointCloudN PointCloudN;
+        using PointCloudIn = ModelLibrary::PointCloudIn;
+        using PointCloudN = ModelLibrary::PointCloudN;
 
-        typedef BVH<Hypothesis*> BVHH;
+        using BVHH = BVH<Hypothesis *>;
 
         /** \brief This is an output item of the ObjRecRANSAC::recognize() method. It contains the recognized model, its name (the ones passed to
           * ObjRecRANSAC::addModel()), the rigid transform which aligns the model with the input scene and the match confidence which is a number
@@ -105,9 +102,9 @@ namespace pcl
               match_confidence_ (match_confidence),
               user_data_ (user_data)
             {
-              memcpy(this->rigid_transform_, rigid_transform, 12*sizeof (float));
+              std::copy(rigid_transform, rigid_transform + 12, this->rigid_transform_);
             }
-            virtual ~Output (){}
+            virtual ~Output () = default;
 
           public:
             std::string object_name_;
@@ -124,7 +121,7 @@ namespace pcl
               {
               }
 
-              virtual ~OrientedPointPair (){}
+              virtual ~OrientedPointPair () = default;
 
             public:
               const float *p1_, *n1_, *p2_, *n2_;
@@ -133,13 +130,13 @@ namespace pcl
         class HypothesisCreator
         {
           public:
-            HypothesisCreator (){}
-            virtual ~HypothesisCreator (){}
+            HypothesisCreator () = default;
+            virtual ~HypothesisCreator () = default;
 
             Hypothesis* create (const SimpleOctree<Hypothesis, HypothesisCreator, float>::Node* ) const { return new Hypothesis ();}
         };
 
-        typedef SimpleOctree<Hypothesis, HypothesisCreator, float> HypothesisOctree;
+        using HypothesisOctree = SimpleOctree<Hypothesis, HypothesisCreator, float>;
 
       public:
         /** \brief Constructor with some important parameters which can not be changed once an instance of that class is created.
@@ -227,7 +224,7 @@ namespace pcl
           * The method returns true if the model was successfully added to the model library and false otherwise (e.g., if 'object_name' is already in use).
           */
         inline bool
-        addModel (const PointCloudIn& points, const PointCloudN& normals, const std::string& object_name, void* user_data = NULL)
+        addModel (const PointCloudIn& points, const PointCloudN& normals, const std::string& object_name, void* user_data = nullptr)
         {
           return (model_library_.addModel (points, normals, object_name, frac_of_points_for_icp_refinement_, user_data));
         }
@@ -332,14 +329,14 @@ namespace pcl
         {
           // 'p_obj' is the probability that given that the first sample point belongs to an object,
           // the second sample point will belong to the same object
-          const double p_obj = 0.25f;
+          constexpr double p_obj = 0.25f;
           // old version: p = p_obj*relative_obj_size_*fraction_of_pairs_in_hash_table_;
-          const double p = p_obj*relative_obj_size_;
+          const double p = p_obj * relative_obj_size_;
 
           if ( 1.0 - p <= 0.0 )
             return 1;
 
-          return static_cast<int> (log (1.0-success_probability)/log (1.0-p) + 1.0);
+          return static_cast<int> (std::log (1.0-success_probability)/std::log (1.0-p) + 1.0);
         }
 
         inline void
@@ -457,15 +454,15 @@ namespace pcl
         float position_discretization_;
         float rotation_discretization_;
         float abs_zdist_thresh_;
-        float relative_obj_size_;
-        float visibility_;
-        float relative_num_of_illegal_pts_;
-        float intersection_fraction_;
+        float relative_obj_size_{0.05f};
+        float visibility_{0.2f};
+        float relative_num_of_illegal_pts_{0.02f};
+        float intersection_fraction_{0.03f};
         float max_coplanarity_angle_;
-        float scene_bounds_enlargement_factor_;
-        bool ignore_coplanar_opps_;
-        float frac_of_points_for_icp_refinement_;
-        bool do_icp_hypotheses_refinement_;
+        float scene_bounds_enlargement_factor_{0.25f};
+        bool ignore_coplanar_opps_{true};
+        float frac_of_points_for_icp_refinement_{0.3f};
+        bool do_icp_hypotheses_refinement_{true};
 
         ModelLibrary model_library_;
         ORROctree scene_octree_;
@@ -476,9 +473,7 @@ namespace pcl
 
         std::list<OrientedPointPair> sampled_oriented_point_pairs_;
         std::vector<Hypothesis> accepted_hypotheses_;
-        Recognition_Mode rec_mode_;
+        Recognition_Mode rec_mode_{ObjRecRANSAC::FULL_RECOGNITION};
     };
   } // namespace recognition
 } // namespace pcl
-
-#endif // PCL_RECOGNITION_OBJ_REC_RANSAC_H_

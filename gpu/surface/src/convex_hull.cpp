@@ -37,11 +37,10 @@
  */
 
 #include <pcl/gpu/surface/convex_hull.h>
-#include <pcl/gpu/utils/device/static_check.hpp>
 #include "internal.h"
 #include <pcl/exceptions.h>
 
-pcl::device::FacetStream::FacetStream(size_t buffer_size)
+pcl::device::FacetStream::FacetStream(std::size_t buffer_size)
 {
   verts_inds.create(3, buffer_size);  
   head_points.create(buffer_size);
@@ -59,27 +58,22 @@ pcl::device::FacetStream::FacetStream(size_t buffer_size)
 }
 
 bool 
-pcl::device::FacetStream::canSplit()
+pcl::device::FacetStream::canSplit() const
 {
-  return facet_count * 3 < verts_inds.cols();
+  return static_cast<Eigen::Index>(facet_count * 3) < verts_inds.cols();
 }
 
 struct pcl::gpu::PseudoConvexHull3D::Impl
 {
-    Impl(size_t buffer_size) : fs(buffer_size) {}
-    ~Impl() {};
+    Impl(std::size_t buffer_size) : fs(buffer_size) {}
     
     device::FacetStream fs;
 };
 
-pcl::gpu::PseudoConvexHull3D::PseudoConvexHull3D(size_t bsize)
+pcl::gpu::PseudoConvexHull3D::PseudoConvexHull3D(std::size_t bsize)
 {
-  pcl::gpu::Static<sizeof(pcl::device::uint64_type) == 8>::check();
-
   impl_.reset( new Impl(bsize) );
 }
-pcl::gpu::PseudoConvexHull3D::~PseudoConvexHull3D() {}
-
 
 void 
 pcl::gpu::PseudoConvexHull3D::reconstruct (const Cloud &cloud, DeviceArray2D<int>& vertexes)
@@ -90,8 +84,6 @@ pcl::gpu::PseudoConvexHull3D::reconstruct (const Cloud &cloud, DeviceArray2D<int
   device::PointStream ps(c);
 
   ps.computeInitalSimplex();
-
-  device::InitalSimplex simplex = ps.simplex;
 
   fs.setInitialFacets(ps.simplex);
   ps.initalClassify();
@@ -135,7 +127,7 @@ pcl::gpu::PseudoConvexHull3D::reconstruct (const Cloud &points, Cloud &output)
   vertexes.copyTo(buf);
    
 
-  size_t new_size = device::remove_duplicates(cont);
+  std::size_t new_size = device::remove_duplicates(cont);
   DeviceArray<int> new_cont(cont.ptr(), new_size);
   output.create(new_size);
 

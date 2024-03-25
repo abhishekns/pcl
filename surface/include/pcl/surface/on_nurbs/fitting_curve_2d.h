@@ -35,8 +35,7 @@
  *
  */
 
-#ifndef NURBS_FITTING_CURVE_2D_H
-#define NURBS_FITTING_CURVE_2D_H
+#pragma once
 
 #include <pcl/pcl_exports.h>
 #include <pcl/surface/on_nurbs/nurbs_tools.h>
@@ -93,6 +92,10 @@ namespace pcl
           * \param[in] nc B-Spline curve used for fitting.
           */
         FittingCurve2d (NurbsDataCurve2d *data, const ON_NurbsCurve &nc);
+
+        /** \brief Default virtual destructor. */
+        virtual
+        ~FittingCurve2d() = default;
 
         /** \brief Find the element in which the parameter xi lies.
           * \param[in] xi value in parameter domain of the B-Spline curve.
@@ -229,5 +232,3 @@ namespace pcl
     };
   }
 }
-
-#endif

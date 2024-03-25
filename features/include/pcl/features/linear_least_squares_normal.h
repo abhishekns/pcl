@@ -36,11 +36,8 @@
  *
  */
 
-#ifndef PCL_FEATURES_LINEAR_LEAST_SQUARES_NORMAL_H_
-#define PCL_FEATURES_LINEAR_LEAST_SQUARES_NORMAL_H_
+#pragma once
 
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
 #include <pcl/features/feature.h>
 
 namespace pcl
@@ -52,28 +49,25 @@ namespace pcl
   class LinearLeastSquaresNormalEstimation : public Feature<PointInT, PointOutT>
   {
     public:
-      typedef boost::shared_ptr<LinearLeastSquaresNormalEstimation<PointInT, PointOutT> > Ptr;
-      typedef boost::shared_ptr<const LinearLeastSquaresNormalEstimation<PointInT, PointOutT> > ConstPtr;
-      typedef typename Feature<PointInT, PointOutT>::PointCloudIn  PointCloudIn;
-      typedef typename Feature<PointInT, PointOutT>::PointCloudOut PointCloudOut;
+      using Ptr = shared_ptr<LinearLeastSquaresNormalEstimation<PointInT, PointOutT> >;
+      using ConstPtr = shared_ptr<const LinearLeastSquaresNormalEstimation<PointInT, PointOutT> >;
+      using PointCloudIn = typename Feature<PointInT, PointOutT>::PointCloudIn;
+      using PointCloudOut = typename Feature<PointInT, PointOutT>::PointCloudOut;
       using Feature<PointInT, PointOutT>::input_;
       using Feature<PointInT, PointOutT>::feature_name_;
       using Feature<PointInT, PointOutT>::tree_;
       using Feature<PointInT, PointOutT>::k_;
 
       /** \brief Constructor */
-      LinearLeastSquaresNormalEstimation () :
-          use_depth_dependent_smoothing_(false),
-          max_depth_change_factor_(1.0f),
-          normal_smoothing_size_(9.0f)
+      LinearLeastSquaresNormalEstimation ()
       {
           feature_name_ = "LinearLeastSquaresNormalEstimation";
           tree_.reset ();
           k_ = 1;
-      };
+      }
 
       /** \brief Destructor */
-      virtual ~LinearLeastSquaresNormalEstimation ();
+      ~LinearLeastSquaresNormalEstimation () override;
 
       /** \brief Computes the normal at the specified position. 
         * \param[in] pos_x x position (pixel)
@@ -115,8 +109,8 @@ namespace pcl
       /** \brief Provide a pointer to the input dataset (overwrites the PCLBase::setInputCloud method)
         * \param[in] cloud the const boost shared pointer to a PointCloud message
         */
-      virtual inline void 
-      setInputCloud (const typename PointCloudIn::ConstPtr &cloud) 
+      inline void 
+      setInputCloud (const typename PointCloudIn::ConstPtr &cloud) override 
       { 
         input_ = cloud; 
       }
@@ -126,7 +120,7 @@ namespace pcl
         * \param[out] output the resultant normals
         */
       void 
-      computeFeature (PointCloudOut &output);
+      computeFeature (PointCloudOut &output) override;
 
     private:
 
@@ -134,19 +128,16 @@ namespace pcl
       //float distance_threshold_;
 
       /** \brief Smooth data based on depth (true/false). */
-      bool use_depth_dependent_smoothing_;
+      bool use_depth_dependent_smoothing_{false};
 
       /** \brief Threshold for detecting depth discontinuities */
-      float max_depth_change_factor_;
+      float max_depth_change_factor_{1.0f};
 
       /** \brief */
-      float normal_smoothing_size_;
+      float normal_smoothing_size_{9.0f};
   };
 }
 
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/features/impl/linear_least_squares_normal.hpp>
 #endif
-
-#endif 
-

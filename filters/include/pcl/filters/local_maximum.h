@@ -39,11 +39,10 @@
  *
  */
 
-#ifndef PCL_FILTERS_LOCAL_MAXIMUM_H_
-#define PCL_FILTERS_LOCAL_MAXIMUM_H_
+#pragma once
 
 #include <pcl/filters/filter_indices.h>
-#include <pcl/search/pcl_search.h>
+#include <pcl/search/search.h> // for Search
 
 namespace pcl
 {
@@ -61,15 +60,14 @@ namespace pcl
   class LocalMaximum: public FilterIndices<PointT>
   {
     protected:
-      typedef typename FilterIndices<PointT>::PointCloud PointCloud;
-      typedef typename pcl::search::Search<PointT>::Ptr SearcherPtr;
+      using PointCloud = typename FilterIndices<PointT>::PointCloud;
+      using SearcherPtr = typename pcl::search::Search<PointT>::Ptr;
 
     public:
       /** \brief Empty constructor. */
       LocalMaximum (bool extract_removed_indices = false) :
         FilterIndices<PointT>::FilterIndices (extract_removed_indices),
-        searcher_ (),
-        radius_ (1)
+        searcher_ ()
       {
         filter_name_ = "LocalMaximum";
       }
@@ -86,6 +84,12 @@ namespace pcl
       inline float
       getRadius () const { return (radius_); }
 
+      /** \brief Provide a pointer to the search object.
+        * Calling this is optional. If not called, the search method will be chosen automatically.
+        * \param[in] searcher a pointer to the spatial search object.
+        */
+      inline void
+      setSearchMethod (const SearcherPtr &searcher) { searcher_ = searcher; }
     protected:
       using PCLBase<PointT>::input_;
       using PCLBase<PointT>::indices_;
@@ -99,13 +103,13 @@ namespace pcl
         * \param[out] output the resultant point cloud message
         */
       void
-      applyFilter (PointCloud &output);
+      applyFilter (PointCloud &output) override;
 
       /** \brief Filtered results are indexed by an indices array.
         * \param[out] indices The resultant indices.
         */
       void
-      applyFilter (std::vector<int> &indices)
+      applyFilter (Indices &indices) override
       {
         applyFilterIndices (indices);
       }
@@ -114,20 +118,17 @@ namespace pcl
         * \param[out] indices The resultant indices.
         */
       void
-      applyFilterIndices (std::vector<int> &indices);
+      applyFilterIndices (Indices &indices);
 
     private:
       /** \brief A pointer to the spatial search object. */
       SearcherPtr searcher_;
 
       /** \brief The radius to use to determine if a point is the local max. */
-      float radius_;
+      float radius_{1.0f};
   };
 }
 
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/filters/impl/local_maximum.hpp>
 #endif
-
-#endif  //#ifndef PCL_FILTERS_LOCAL_MAXIMUM_H_
-

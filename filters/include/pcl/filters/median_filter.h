@@ -37,9 +37,7 @@
  *
  */
 
-
-#ifndef PCL_FILTERS_MEDIAN_FILTER_H_
-#define PCL_FILTERS_MEDIAN_FILTER_H_
+#pragma once
 
 #include <pcl/filters/filter.h>
 
@@ -62,14 +60,11 @@ namespace pcl
   class MedianFilter : public pcl::Filter<PointT>
   {
       using pcl::Filter<PointT>::input_;
-      typedef typename pcl::Filter<PointT>::PointCloud PointCloud;
+      using PointCloud = typename pcl::Filter<PointT>::PointCloud;
 
     public:
       /** \brief Empty constructor. */
-      MedianFilter ()
-        : window_size_ (5)
-        , max_allowed_movement_ (std::numeric_limits<float>::max ())
-      { }
+      MedianFilter () = default;
 
       /** \brief Set the window size of the filter.
         * \param[in] window_size the new window size
@@ -103,11 +98,11 @@ namespace pcl
         * \param[out] output the result point cloud
         */
       void
-      applyFilter (PointCloud &output);
+      applyFilter (PointCloud &output) override;
 
     protected:
-      int window_size_;
-      float max_allowed_movement_;
+      int window_size_{5};
+      float max_allowed_movement_{std::numeric_limits<float>::max ()};
   };
 }
 
@@ -116,4 +111,3 @@ namespace pcl
 #else
 #define PCL_INSTANTIATE_MedianFilter(T) template class PCL_EXPORTS pcl::MedianFilter<T>;
 #endif
-#endif /* PCL_FILTERS_MEDIAN_FILTER_H_ */

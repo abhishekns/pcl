@@ -4,7 +4,7 @@
  *  Point Cloud Library (PCL) - www.pointclouds.org
  *  Copyright (c) 2010-2011, Willow Garage, Inc.
  *
- *  All rights reserved. 
+ *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -35,49 +35,17 @@
  *
  */
 
-#ifndef PCL_RECOGNITION_POINT_TYPES
-#define PCL_RECOGNITION_POINT_TYPES
+#pragma once
 
+#include <pcl/memory.h>
 #include <pcl/pcl_base.h>
+#include <pcl/pcl_macros.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
 
 namespace pcl
 {
-
-  /** \brief A point structure for representing RGB color
-    * \ingroup common
-    */
-  //struct EIGEN_ALIGN16 PointRGB
-  //{
-  //  union
-  //  {
-  //    union
-  //    {
-  //      struct
-  //      {
-  //        uint8_t b;
-  //        uint8_t g;
-  //        uint8_t r;
-  //        uint8_t _unused;
-  //      };
-  //      float rgb;
-  //    };
-  //    uint32_t rgba;
-  //  };
-
-  //  inline PointRGB ()
-  //  {}
-
-  //  inline PointRGB (const uint8_t b, const uint8_t g, const uint8_t r)
-  //    : b (b), g (g), r (r), _unused (0)
-  //  {}
-
-  //  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  //};
-
-
   /** \brief A point structure representing Euclidean xyz coordinates, and the intensity value.
     * \ingroup common
     */
@@ -94,9 +62,9 @@ namespace pcl
       };
       float data[4];
     };
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    PCL_MAKE_ALIGNED_OPERATOR_NEW
 
-    inline bool operator< (const GradientXY & rhs)
+    inline bool operator< (const GradientXY & rhs) const
     {
       return (magnitude > rhs.magnitude);
     }
@@ -108,5 +76,3 @@ namespace pcl
   }
 
 }
-
-#endif

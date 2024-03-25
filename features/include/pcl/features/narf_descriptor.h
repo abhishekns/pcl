@@ -35,15 +35,11 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef PCL_NARF_DESCRIPTOR_H_
-#define PCL_NARF_DESCRIPTOR_H_
+#pragma once
 
 #include <pcl/point_types.h>
 #include <pcl/features/feature.h>
 
-#if defined BUILD_Maintainer && defined __GNUC__ && __GNUC__ == 4 && __GNUC_MINOR__ > 3
-#pragma GCC diagnostic ignored "-Weffc++"
-#endif
 namespace pcl
 {
   // Forward declarations
@@ -59,29 +55,29 @@ namespace pcl
   class PCL_EXPORTS NarfDescriptor : public Feature<PointWithRange,Narf36>
   {
     public:
-      typedef boost::shared_ptr<NarfDescriptor> Ptr;
-      typedef boost::shared_ptr<const NarfDescriptor> ConstPtr;
+      using Ptr = shared_ptr<NarfDescriptor>;
+      using ConstPtr = shared_ptr<const NarfDescriptor>;
       // =====TYPEDEFS=====
-      typedef Feature<PointWithRange,Narf36> BaseClass;
+      using BaseClass = Feature<PointWithRange,Narf36>;
       
       // =====STRUCTS/CLASSES=====
       struct Parameters
       {
-        Parameters() : support_size(-1.0f), rotation_invariant(true) {}
-        float support_size;
-        bool rotation_invariant;
+        Parameters() = default;
+        float support_size{-1.0f};
+        bool rotation_invariant{true};
       };
       
       // =====CONSTRUCTOR & DESTRUCTOR=====
       /** Constructor */
-      NarfDescriptor (const RangeImage* range_image=NULL, const std::vector<int>* indices=NULL);
+      NarfDescriptor (const RangeImage* range_image=nullptr, const pcl::Indices* indices=nullptr);
       /** Destructor */
-      virtual ~NarfDescriptor();
+      ~NarfDescriptor() override;
       
       // =====METHODS=====
       //! Set input data
       void 
-      setRangeImage (const RangeImage* range_image, const std::vector<int>* indices=NULL);
+      setRangeImage (const RangeImage* range_image, const pcl::Indices* indices=nullptr);
       
       //! Overwrite the compute function of the base class
       void 
@@ -94,18 +90,13 @@ namespace pcl
       
     protected:
       // =====PROTECTED MEMBER VARIABLES=====
-      const RangeImage* range_image_;
+      const RangeImage* range_image_{};
       Parameters parameters_;
       
       // =====PROTECTED METHODS=====
       /** Implementation of abstract derived function */
-      virtual void 
-      computeFeature (PointCloudOut& output);
+      void 
+      computeFeature (PointCloudOut& output) override;
   };
 
 }  // namespace end
-#if defined BUILD_Maintainer && defined __GNUC__ && __GNUC__ == 4 && __GNUC_MINOR__ > 3
-#pragma GCC diagnostic warning "-Weffc++"
-#endif
-
-#endif  //#ifndef PCL_NARF_DESCRIPTOR_H_

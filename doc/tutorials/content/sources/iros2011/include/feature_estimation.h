@@ -1,9 +1,8 @@
-#ifndef FEATURE_ESTIMATION_H
-#define FEATURE_ESTIMATION_H
+#pragma once
 
 #include "typedefs.h"
 
-#include <pcl/io/io.h>
+#include <pcl/common/io.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/keypoints/sift_keypoint.h>
 #include <pcl/features/fpfh.h>
@@ -108,5 +107,3 @@ computeFeatures (const PointCloudPtr & input)
 
   return (features);
 }
-
-#endif

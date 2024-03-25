@@ -36,8 +36,7 @@
  *
  */
 
-#ifndef PCL_VISUALIZATION_KEYBOARD_EVENT_H_
-#define	PCL_VISUALIZATION_KEYBOARD_EVENT_H_
+#pragma once
 
 #include <string>
 
@@ -49,11 +48,11 @@ namespace pcl
     class KeyboardEvent
     {
       public:
-        /** \brief bit patter for the ALT key*/
+        /** \brief bit pattern for the ALT key*/
         static const unsigned int Alt   = 1;
-        /** \brief bit patter for the Control key*/
+        /** \brief bit pattern for the Control key*/
         static const unsigned int Ctrl  = 2;
-        /** \brief bit patter for the Shift key*/
+        /** \brief bit pattern for the Shift key*/
         static const unsigned int Shift = 4;
 
         /** \brief Constructor
@@ -112,7 +111,7 @@ namespace pcl
       protected:
 
         bool action_;
-        unsigned int modifiers_;
+        unsigned int modifiers_{0};
         unsigned char key_code_;
         std::string key_sym_;
     };
@@ -120,8 +119,8 @@ namespace pcl
     KeyboardEvent::KeyboardEvent (bool action, const std::string& key_sym, unsigned char key, 
                                   bool alt, bool ctrl, bool shift)
       : action_ (action)
-      , modifiers_ (0)
-      , key_code_(key)
+      , 
+       key_code_(key)
       , key_sym_ (key_sym)
     {
       if (alt)
@@ -177,6 +176,3 @@ namespace pcl
     }  
   } // namespace visualization
 } // namespace pcl
-
-#endif	/* PCL_VISUALIZATION_KEYBOARD_EVENT_H_ */
-

@@ -2,6 +2,11 @@
 #include <pcl/apps/cloud_composer/point_selectors/manipulation_event.h>
 #include <pcl/apps/cloud_composer/project_model.h>
 
+#include <QDebug>
+
+
+#include <vtkObjectFactory.h> // For vtkStandardNewMacro
+#include <vtkTransform.h>
 
 namespace pcl
 {
@@ -12,17 +17,11 @@ namespace pcl
 }
 
 pcl::cloud_composer::ClickTrackballStyleInteractor::ClickTrackballStyleInteractor ()
-  : vtkInteractorStyleTrackballActor ()
 {
   manipulation_complete_event_ = interactor_events::MANIPULATION_COMPLETE_EVENT;
   start_matrix_= vtkSmartPointer<vtkMatrix4x4>::New ();
   end_matrix_ = vtkSmartPointer<vtkMatrix4x4>::New ();
   transform_ = vtkSmartPointer<vtkTransform>::New ();
-}
-
-pcl::cloud_composer::ClickTrackballStyleInteractor::~ClickTrackballStyleInteractor ()
-{
-  
 }
 
 void
@@ -54,7 +53,6 @@ pcl::cloud_composer::ClickTrackballStyleInteractor::OnLeftButtonUp ()
   vtkSmartPointer<vtkActor> selected_actor = vtkActor::SafeDownCast(this->InteractionProp);
   if (selected_actor)
   {
-    ManipulationEvent* manip_event = new ManipulationEvent ();
     //Fetch the actor we manipulated
     
     selected_actor->GetMatrix (end_matrix_);
@@ -72,6 +70,7 @@ pcl::cloud_composer::ClickTrackballStyleInteractor::OnLeftButtonUp ()
     }
     if ( !manipulated_id.isEmpty() )
     {
+      ManipulationEvent* manip_event = new ManipulationEvent ();
       manip_event->addManipulation (manipulated_id, start_matrix_, end_matrix_);
       this->InvokeEvent (this->manipulation_complete_event_, manip_event);
     }
@@ -89,7 +88,6 @@ pcl::cloud_composer::ClickTrackballStyleInteractor::OnRightButtonUp ()
   vtkSmartPointer<vtkActor> selected_actor = vtkActor::SafeDownCast(this->InteractionProp);
   if (selected_actor)
   {
-    ManipulationEvent* manip_event = new ManipulationEvent ();
     //Fetch the actor we manipulated
     
     selected_actor->GetMatrix (end_matrix_);
@@ -107,6 +105,7 @@ pcl::cloud_composer::ClickTrackballStyleInteractor::OnRightButtonUp ()
     }
     if ( !manipulated_id.isEmpty() )
     {
+      ManipulationEvent* manip_event = new ManipulationEvent ();
       manip_event->addManipulation (manipulated_id, start_matrix_, end_matrix_);
       this->InvokeEvent (this->manipulation_complete_event_, manip_event);
     }

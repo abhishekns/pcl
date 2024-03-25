@@ -35,9 +35,9 @@
  *
  */
 
-#ifndef PCL_KINFU_KINFUTRACKER_HPP_
-#define PCL_KINFU_KINFUTRACKER_HPP_
+#pragma once
 
+#include <pcl/memory.h>
 #include <pcl/pcl_macros.h>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
@@ -73,13 +73,13 @@ namespace pcl
         public:
 
           /** \brief Pixel type for rendered image. */
-          typedef pcl::gpu::kinfuLS::PixelRGB PixelRGB;
+          using PixelRGB = pcl::gpu::kinfuLS::PixelRGB;
 
-          typedef DeviceArray2D<PixelRGB> View;
-          typedef DeviceArray2D<unsigned short> DepthMap;
+          using View = DeviceArray2D<PixelRGB>;
+          using DepthMap = DeviceArray2D<unsigned short>;
 
-          typedef pcl::PointXYZ PointType;
-          typedef pcl::Normal NormalType;
+          using PointType = pcl::PointXYZ;
+          using NormalType = pcl::Normal;
 
           void 
           performLastScan (){perform_last_scan_ = true; PCL_WARN ("Kinfu will exit after next shift\n");}
@@ -105,7 +105,7 @@ namespace pcl
           void
           setDepthIntrinsics (float fx, float fy, float cx = -1, float cy = -1);
 
-          /** \brief Sets initial camera pose relative to volume coordiante space
+          /** \brief Sets initial camera pose relative to volume coordinate space
             * \param[in] pose Initial camera pose
             */
           void
@@ -125,7 +125,7 @@ namespace pcl
           void
           setIcpCorespFilteringParams (float distThreshold, float sineOfAngle);
           
-          /** \brief Sets integration threshold. TSDF volume is integrated iff a camera movement metric exceedes the threshold value. 
+          /** \brief Sets integration threshold. TSDF volume is integrated iff a camera movement metric exceeds the threshold value. 
             * The metric represents the following: M = (rodrigues(Rotation).norm() + alpha*translation.norm())/2, where alpha = 1.f (hardcoded constant)
             * \param[in] threshold a value to compare with the metric. Suitable values are ~0.001          
             */
@@ -170,7 +170,7 @@ namespace pcl
           getLastEstimatedPose () const;
 
           /** \brief Returns number of poses including initial */
-          size_t
+          std::size_t
           getNumberOfPoses () const;
 
           /** \brief Returns TSDF volume storage */
@@ -255,13 +255,13 @@ namespace pcl
           enum { LEVELS = 3 };
 
           /** \brief ICP Correspondences  map type */
-          typedef DeviceArray2D<int> CorespMap;
+          using CorespMap = DeviceArray2D<int>;
 
           /** \brief Vertex or Normal Map type */
-          typedef DeviceArray2D<float> MapArr;
+          using MapArr = DeviceArray2D<float>;
           
-          typedef Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Matrix3frm;
-          typedef Eigen::Vector3f Vector3f;
+          using Matrix3frm = Eigen::Matrix<float, 3, 3, Eigen::RowMajor>;
+          using Vector3f = Eigen::Vector3f;
           
           /** \brief helper function that converts transforms from host to device types
             * \param[in] transformIn1 first transform to convert
@@ -300,7 +300,7 @@ namespace pcl
                                          pcl::device::kinfuLS::Mat33& transform_out, float3& translation_out);
           
           /** \brief helper function that pre-process a raw detph map the kinect fusion algorithm.
-            * The raw depth map is first blured, eventually truncated, and downsampled for each pyramid level.
+            * The raw depth map is first blurred, eventually truncated, and downsampled for each pyramid level.
             * Then, vertex and normal maps are computed for each pyramid level.
             * \param[in] depth_raw the raw depth map to process
             * \param[in] cam_intrinsics intrinsics of the camera used to acquire the depth map
@@ -421,7 +421,7 @@ namespace pcl
           /** \brief Array of camera translations for each moment of time. */
           std::vector<Vector3f> tvecs_;
 
-          /** \brief Camera movement threshold. TSDF is integrated iff a camera movement metric exceedes some value. */
+          /** \brief Camera movement threshold. TSDF is integrated iff a camera movement metric exceeds some value. */
           float integration_metric_threshold_;          
                   
           /** \brief When set to true, KinFu will extract the whole world and mesh it. */
@@ -452,11 +452,9 @@ namespace pcl
           bool has_shifted_;
           
         public:
-          EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+          PCL_MAKE_ALIGNED_OPERATOR_NEW
 
       };
     }
   }
 };
-
-#endif /* PCL_KINFU_KINFUTRACKER_HPP_ */

@@ -26,12 +26,14 @@ main (int argc, char** argv)
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered (new pcl::PointCloud<pcl::PointXYZ>);
   pcl::PCDWriter writer;
   reader.read (argv[1], *cloud_filtered);
+  pcl::Indices unused;
+  pcl::removeNaNFromPointCloud(*cloud_filtered, *cloud_filtered, unused);
 
 /////////////////////////////////////////////
 /// CPU VERSION
 /////////////////////////////////////////////
 
-  std::cout << "INFO: PointCloud_filtered still has " << cloud_filtered->points.size() << " Points " << std::endl;
+  std::cout << "INFO: PointCloud_filtered still has " << cloud_filtered->size() << " Points " << std::endl;
   clock_t tStart = clock();
   // Creating the KdTree object for the search method of the extraction
   pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
@@ -49,16 +51,16 @@ main (int argc, char** argv)
   printf("CPU Time taken: %.2fs\n", (double)(clock() - tStart)/CLOCKS_PER_SEC);
 
   int j = 0;
-  for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
+  for (const pcl::PointIndices& cluster: cluster_indices)
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster (new pcl::PointCloud<pcl::PointXYZ>);
-    for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit)
-      cloud_cluster->points.push_back (cloud_filtered->points[*pit]); //*
-    cloud_cluster->width = cloud_cluster->points.size ();
+    for (const auto& index : (cluster.indices))
+      cloud_cluster->push_back ((*cloud_filtered)[index]); //*
+    cloud_cluster->width = cloud_cluster->size ();
     cloud_cluster->height = 1;
     cloud_cluster->is_dense = true;
 
-    std::cout << "PointCloud representing the Cluster: " << cloud_cluster->points.size () << " data points." << std::endl;
+    std::cout << "PointCloud representing the Cluster: " << cloud_cluster->size () << " data points." << std::endl;
     std::stringstream ss;
     ss << "cloud_cluster_" << j << ".pcd";
     writer.write<pcl::PointXYZ> (ss.str (), *cloud_cluster, false); //*
@@ -81,7 +83,7 @@ main (int argc, char** argv)
   octree_device->build();
 
   std::vector<pcl::PointIndices> cluster_indices_gpu;
-  pcl::gpu::EuclideanClusterExtraction gec;
+  pcl::gpu::EuclideanClusterExtraction<pcl::PointXYZ> gec;
   gec.setClusterTolerance (0.02); // 2cm
   gec.setMinClusterSize (100);
   gec.setMaxClusterSize (25000);
@@ -94,16 +96,16 @@ main (int argc, char** argv)
   std::cout << "INFO: stopped with the GPU version" << std::endl;
 
   j = 0;
-  for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices_gpu.begin (); it != cluster_indices_gpu.end (); ++it)
+  for (const pcl::PointIndices& cluster : cluster_indices_gpu)
   {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_cluster_gpu (new pcl::PointCloud<pcl::PointXYZ>);
-    for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit)
-      cloud_cluster_gpu->points.push_back (cloud_filtered->points[*pit]); //*
-    cloud_cluster_gpu->width = cloud_cluster_gpu->points.size ();
+    for (const auto& index : (cluster.indices))
+      cloud_cluster_gpu->push_back ((*cloud_filtered)[index]); //*
+    cloud_cluster_gpu->width = cloud_cluster_gpu->size ();
     cloud_cluster_gpu->height = 1;
     cloud_cluster_gpu->is_dense = true;
 
-    std::cout << "PointCloud representing the Cluster: " << cloud_cluster_gpu->points.size () << " data points." << std::endl;
+    std::cout << "PointCloud representing the Cluster: " << cloud_cluster_gpu->size () << " data points." << std::endl;
     std::stringstream ss;
     ss << "gpu_cloud_cluster_" << j << ".pcd";
     writer.write<pcl::PointXYZ> (ss.str (), *cloud_cluster_gpu, false); //*

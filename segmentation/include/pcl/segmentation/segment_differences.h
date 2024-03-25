@@ -35,28 +35,28 @@
  *
  */
 
-#ifndef PCL_SEGMENT_DIFFERENCES_H_
-#define PCL_SEGMENT_DIFFERENCES_H_
+#pragma once
 
 #include <pcl/pcl_base.h>
-#include <pcl/search/pcl_search.h>
+#include <pcl/pcl_macros.h>
+#include <pcl/search/search.h> // for Search
 
 namespace pcl
 {
   ////////////////////////////////////////////////////////////////////////////////////////////
   /** \brief Obtain the difference between two aligned point clouds as another point cloud, given a distance threshold.
     * \param src the input point cloud source
-    * \param tgt the input point cloud target we need to obtain the difference against
     * \param threshold the distance threshold (tolerance) for point correspondences. (e.g., check if f a point p1 from 
     * src has a correspondence > threshold than a point p2 from tgt)
-    * \param tree the spatial locator (e.g., kd-tree) used for nearest neighbors searching built over \a tgt
+    * \param tree the spatial locator (e.g., kd-tree) used for nearest neighbors searching built over the target cloud
     * \param output the resultant output point cloud difference
     * \ingroup segmentation
     */
   template <typename PointT> 
   void getPointCloudDifference (
-      const pcl::PointCloud<PointT> &src, const pcl::PointCloud<PointT> &tgt, 
-      double threshold, const boost::shared_ptr<pcl::search::Search<PointT> > &tree,
+      const pcl::PointCloud<PointT> &src,
+      double threshold,
+      const typename pcl::search::Search<PointT>::Ptr &tree,
       pcl::PointCloud<PointT> &output);
 
   ////////////////////////////////////////////////////////////////////////////////////////////
@@ -71,23 +71,21 @@ namespace pcl
   template <typename PointT>
   class SegmentDifferences: public PCLBase<PointT>
   {
-    typedef PCLBase<PointT> BasePCLBase;
+    using BasePCLBase = PCLBase<PointT>;
 
     public:
-      typedef pcl::PointCloud<PointT> PointCloud;
-      typedef typename PointCloud::Ptr PointCloudPtr;
-      typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+      using PointCloud = pcl::PointCloud<PointT>;
+      using PointCloudPtr = typename PointCloud::Ptr;
+      using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
-      typedef typename pcl::search::Search<PointT> KdTree;
-      typedef typename pcl::search::Search<PointT>::Ptr KdTreePtr;
+      using KdTree = pcl::search::Search<PointT>;
+      using KdTreePtr = typename KdTree::Ptr;
 
-      typedef PointIndices::Ptr PointIndicesPtr;
-      typedef PointIndices::ConstPtr PointIndicesConstPtr;
+      using PointIndicesPtr = PointIndices::Ptr;
+      using PointIndicesConstPtr = PointIndices::ConstPtr;
 
       /** \brief Empty constructor. */
-      SegmentDifferences () : 
-        tree_ (), target_ (), distance_threshold_ (0)
-      {};
+      SegmentDifferences () = default;
 
       /** \brief Provide a pointer to the target dataset against which we
         * compare the input cloud given in setInputCloud
@@ -139,15 +137,15 @@ namespace pcl
       using BasePCLBase::deinitCompute;
 
       /** \brief A pointer to the spatial search object. */
-      KdTreePtr tree_;
+      KdTreePtr tree_{nullptr};
 
       /** \brief The input target point cloud dataset. */
-      PointCloudConstPtr target_;
+      PointCloudConstPtr target_{nullptr};
 
       /** \brief The distance tolerance (squared) as a measure in the L2
         * Euclidean space between corresponding points. 
         */
-      double distance_threshold_;
+      double distance_threshold_{0.0};
 
       /** \brief Class getName method. */
       virtual std::string 
@@ -158,5 +156,3 @@ namespace pcl
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/segmentation/impl/segment_differences.hpp>
 #endif
-
-#endif  //#ifndef PCL_SEGMENT_DIFFERENCES_H_

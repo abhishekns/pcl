@@ -34,11 +34,10 @@
  *
  */
 
+#pragma once
+
 #include <pcl/pcl_config.h>
 #ifdef HAVE_OPENNI
-
-#ifndef __OPENNI_EXCEPTION__
-#define __OPENNI_EXCEPTION__
 
 #include <cstdarg>
 #include <cstdio>
@@ -47,7 +46,7 @@
 //#include <pcl/pcl_macros.h> <-- because current header is included in NVCC-compiled code and contains <Eigen/Core>. Consider <pcl/pcl_exports.h>
 
 
-//fom <pcl/pcl_macros.h>
+//from <pcl/pcl_macros.h>
 #if defined _WIN32 && defined _MSC_VER && !defined __PRETTY_FUNCTION__
   #define __PRETTY_FUNCTION__ __FUNCTION__  
 #endif
@@ -76,40 +75,40 @@ namespace openni_wrapper
      * @param[in] line_number the line number where this exception was created.
      * @param[in] message the message of the exception
      */
-    OpenNIException (const std::string& function_name, const std::string& file_name, unsigned line_number, const std::string& message) throw ();
+    OpenNIException (const std::string& function_name, const std::string& file_name, unsigned line_number, const std::string& message) noexcept;
 
     /**
      * @brief virtual Destructor that never throws an exception
      */
-    virtual ~OpenNIException () throw ();
+    ~OpenNIException () noexcept override;
 
     /**
      * @brief Assignment operator to allow copying the message of another exception variable.
      * @param[in] exception left hand side
      * @return
      */
-    OpenNIException & operator= (const OpenNIException& exception) throw ();
+    OpenNIException & operator= (const OpenNIException& exception) noexcept;
 
     /**
      * @brief virtual method, derived from std::exception
      * @return the message of the exception.
      */
-    virtual const char* what () const throw ();
+    const char* what () const noexcept override;
 
     /**
      * @return the function name in which the exception was created.
      */
-    const std::string& getFunctionName () const throw ();
+    const std::string& getFunctionName () const noexcept;
 
     /**
      * @return the filename in which the exception was created.
      */
-    const std::string& getFileName () const throw ();
+    const std::string& getFileName () const noexcept;
 
     /**
      * @return the line number where the exception was created.
      */
-    unsigned getLineNumber () const throw ();
+    unsigned getLineNumber () const noexcept;
   protected:
     std::string function_name_;
     std::string file_name_;
@@ -133,8 +132,8 @@ namespace openni_wrapper
     va_list args;
     va_start (args, format);
     vsprintf (msg, format, args);
+    va_end (args);
     throw OpenNIException (function_name, file_name, line_number, msg);
   }
 } // namespace openni_camera
-#endif
 #endif

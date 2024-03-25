@@ -45,7 +45,7 @@ using std::cerr;
 void 
 pcl::visualization::FloatImageUtils::getColorForFloat (float value, unsigned char& r, unsigned char& g, unsigned char& b) 
 {
-  if (pcl_isinf (value)) 
+  if (std::isinf (value)) 
   {
     if (value > 0.0f) 
     {
@@ -55,7 +55,7 @@ pcl::visualization::FloatImageUtils::getColorForFloat (float value, unsigned cha
     r = 150;  g = 200;  b = 150;  // -INFINITY
     return;
   }
-  if (!pcl_isfinite (value)) 
+  if (!std::isfinite (value)) 
   {
     r = 200;  g = 150;  b = 150;  // -INFINITY
     return;
@@ -110,7 +110,7 @@ pcl::visualization::FloatImageUtils::getColorForFloat (float value, unsigned cha
 void 
 pcl::visualization::FloatImageUtils::getColorForAngle (float value, unsigned char& r, unsigned char& g, unsigned char& b) 
 {
-  if (pcl_isinf (value)) 
+  if (std::isinf (value)) 
   {
     if (value > 0.0f) 
     {
@@ -120,7 +120,7 @@ pcl::visualization::FloatImageUtils::getColorForAngle (float value, unsigned cha
     r = 150;  g = 200;  b = 150;  // -INFINITY
     return;
   }
-  if (!pcl_isfinite (value)) 
+  if (!std::isfinite (value)) 
   {
     r = 200;  g = 150;  b = 150;  // -INFINITY
     return;
@@ -145,7 +145,7 @@ pcl::visualization::FloatImageUtils::getColorForAngle (float value, unsigned cha
   {  // green -> black
     g = static_cast<unsigned char> (255-pcl_lrint(255*(value-M_PI/2.0f)/(float(M_PI)/2.0f)));
   }
-  //cout << 180.0f*value/M_PI<<"deg => "<<(int)r<<", "<<(int)g<<", "<<(int)b<<"\n";
+  //std::cout << 180.0f*value/M_PI<<"deg => "<<(int)r<<", "<<(int)g<<", "<<(int)b<<"\n";
 }
 
 void 
@@ -159,14 +159,14 @@ pcl::visualization::FloatImageUtils::getVisualImage (const float* float_image, i
 {
   //MEASURE_FUNCTION_TIME;
   
-  //cout << "Image is of size "<<width<<"x"<<height<<"\n";
+  //std::cout << "Image is of size "<<width<<"x"<<height<<"\n";
   int size = width*height;
   int arraySize = 3 * size;
-  unsigned char* data = new unsigned char[arraySize];
+  auto* data = new unsigned char[arraySize];
   unsigned char* dataPtr = data;
   
-  bool recalculateMinValue = pcl_isinf (min_value),
-       recalculateMaxValue = pcl_isinf (max_value);
+  bool recalculateMinValue = std::isinf (min_value),
+       recalculateMaxValue = std::isinf (max_value);
   if (recalculateMinValue) min_value = std::numeric_limits<float>::infinity ();
   if (recalculateMaxValue) max_value = -std::numeric_limits<float>::infinity ();
   
@@ -175,12 +175,12 @@ pcl::visualization::FloatImageUtils::getVisualImage (const float* float_image, i
     for (int i=0; i<size; ++i) 
     {
       float value = float_image[i];
-      if (!pcl_isfinite(value)) continue;
+      if (!std::isfinite(value)) continue;
       if (recalculateMinValue)  min_value = (std::min)(min_value, value);
       if (recalculateMaxValue)  max_value = (std::max)(max_value, value);
     }
   }
-  //cout << "min_value is "<<min_value<<" and max_value is "<<max_value<<".\n";
+  //std::cout << "min_value is "<<min_value<<" and max_value is "<<max_value<<".\n";
   float factor = 1.0f / (max_value-min_value), offset = -min_value;
   
   for (int i=0; i<size; ++i) 
@@ -188,7 +188,7 @@ pcl::visualization::FloatImageUtils::getVisualImage (const float* float_image, i
     unsigned char& r=*(dataPtr++), & g=*(dataPtr++), & b=*(dataPtr++);
     float value = float_image[i];
     
-    if (!pcl_isfinite(value)) 
+    if (!std::isfinite(value)) 
     {
       getColorForFloat(value, r, g, b);
       continue;
@@ -206,7 +206,7 @@ pcl::visualization::FloatImageUtils::getVisualImage (const float* float_image, i
     {
       getColorForFloat(value, r, g, b);
     }
-    //cout << "Setting pixel "<<i<<" to "<<(int)r<<", "<<(int)g<<", "<<(int)b<<".\n";
+    //std::cout << "Setting pixel "<<i<<" to "<<(int)r<<", "<<(int)g<<", "<<(int)b<<".\n";
   }
   
   return data;
@@ -219,13 +219,13 @@ pcl::visualization::FloatImageUtils::getVisualImage (const unsigned short* short
 {
   //MEASURE_FUNCTION_TIME;
   
-  //cout << "Image is of size "<<width<<"x"<<height<<"\n";
+  //std::cout << "Image is of size "<<width<<"x"<<height<<"\n";
   int size = width*height;
   int arraySize = 3 * size;
-  unsigned char* data = new unsigned char[arraySize];
+  auto* data = new unsigned char[arraySize];
   unsigned char* dataPtr = data;
   
-  float factor = 1.0f / float (max_value - min_value), offset = float (-min_value);
+  float factor = 1.0f / static_cast<float>(max_value - min_value), offset = static_cast<float>(-min_value);
   
   for (int i=0; i<size; ++i) 
   {
@@ -244,7 +244,7 @@ pcl::visualization::FloatImageUtils::getVisualImage (const unsigned short* short
     {
       getColorForFloat(value, r, g, b);
     }
-    //cout << "Setting pixel "<<i<<" to "<<(int)r<<", "<<(int)g<<", "<<(int)b<<".\n";
+    //std::cout << "Setting pixel "<<i<<" to "<<(int)r<<", "<<(int)g<<", "<<(int)b<<".\n";
   }
   
   return data;
@@ -255,7 +255,7 @@ pcl::visualization::FloatImageUtils::getVisualAngleImage (const float* angle_ima
 {
   int size = width*height;
   int arraySize = 3 * size;
-  unsigned char* data = new unsigned char[arraySize];
+  auto* data = new unsigned char[arraySize];
   unsigned char* dataPtr = data;
   
   for (int i=0; i<size; ++i) 
@@ -274,7 +274,7 @@ pcl::visualization::FloatImageUtils::getVisualHalfAngleImage (const float* angle
 {
   int size = width*height;
   int arraySize = 3 * size;
-  unsigned char* data = new unsigned char[arraySize];
+  auto* data = new unsigned char[arraySize];
   unsigned char* dataPtr = data;
   
   for (int i=0; i<size; ++i) 

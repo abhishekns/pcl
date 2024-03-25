@@ -37,7 +37,7 @@
  *
  */
 
-#include <gtest/gtest.h>
+#include <pcl/test/gtest.h>
 #include <pcl/point_cloud.h>
 #include <pcl/features/feature.h>
 #include <pcl/io/pcd_io.h>
@@ -45,12 +45,11 @@
 
 using namespace pcl;
 using namespace pcl::io;
-using namespace std;
 
-typedef search::KdTree<PointXYZ>::Ptr KdTreePtr;
+using KdTreePtr = search::KdTree<PointXYZ>::Ptr;
 
 PointCloud<PointXYZ> cloud;
-vector<int> indices;
+pcl::Indices indices;
 KdTreePtr tree;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -86,7 +85,8 @@ TEST (PCL, BaseFeature)
 
   // computeCovarianceMatrix (indices)
   Eigen::Matrix3f covariance_matrix;
-  computeCovarianceMatrix (cloud, indices, centroid3, covariance_matrix);
+  auto result = computeCovarianceMatrix (cloud, indices, centroid3, covariance_matrix);
+  ASSERT_GT (result, 0);
   EXPECT_NEAR (covariance_matrix (0, 0), 0.710046, 1e-4);
   EXPECT_NEAR (covariance_matrix (0, 1), -0.234843, 1e-4);
   EXPECT_NEAR (covariance_matrix (0, 2), 0.0704933, 1e-4);
@@ -98,7 +98,8 @@ TEST (PCL, BaseFeature)
   EXPECT_NEAR (covariance_matrix (2, 2), 0.195448, 1e-4);
 
   // computeCovarianceMatrix
-  computeCovarianceMatrix (cloud, centroid3, covariance_matrix);
+  result = computeCovarianceMatrix (cloud, centroid3, covariance_matrix);
+  ASSERT_GT (result, 0);
   EXPECT_NEAR (covariance_matrix (0, 0), 0.710046, 1e-4);
   EXPECT_NEAR (covariance_matrix (0, 1), -0.234843, 1e-4);
   EXPECT_NEAR (covariance_matrix (0, 2), 0.0704933, 1e-4);
@@ -110,7 +111,8 @@ TEST (PCL, BaseFeature)
   EXPECT_NEAR (covariance_matrix (2, 2), 0.195448, 1e-4);
 
   // computeCovarianceMatrixNormalized (indices)
-  computeCovarianceMatrixNormalized (cloud, indices, centroid3, covariance_matrix);
+  result = computeCovarianceMatrixNormalized (cloud, indices, centroid3, covariance_matrix);
+  ASSERT_GT (result, 0);
   EXPECT_NEAR (covariance_matrix (0, 0), 1.7930e-03, 1e-5);
   EXPECT_NEAR (covariance_matrix (0, 1), -5.9304e-04, 1e-5);
   EXPECT_NEAR (covariance_matrix (0, 2), 1.7801e-04, 1e-5);
@@ -122,7 +124,8 @@ TEST (PCL, BaseFeature)
   EXPECT_NEAR (covariance_matrix (2, 2), 4.9356e-04, 1e-5);
 
   // computeCovarianceMatrixNormalized
-  computeCovarianceMatrixNormalized (cloud, centroid3, covariance_matrix);
+  result = computeCovarianceMatrixNormalized (cloud, centroid3, covariance_matrix);
+  ASSERT_GT (result, 0);
   EXPECT_NEAR (covariance_matrix (0, 0), 1.7930e-03, 1e-5);
   EXPECT_NEAR (covariance_matrix (0, 1), -5.9304e-04, 1e-5);
   EXPECT_NEAR (covariance_matrix (0, 2), 1.7801e-04, 1e-5);
@@ -137,18 +140,18 @@ TEST (PCL, BaseFeature)
   Eigen::Vector4f plane_parameters;
   float curvature;
   solvePlaneParameters (covariance_matrix, centroid3, plane_parameters, curvature);
-  EXPECT_NEAR (fabs (plane_parameters[0]), 0.035592, 1e-4);
-  EXPECT_NEAR (fabs (plane_parameters[1]), 0.369596, 1e-4);
-  EXPECT_NEAR (fabs (plane_parameters[2]), 0.928511, 1e-4);
-  EXPECT_NEAR (fabs (plane_parameters[3]), 0.0622552, 1e-4);
+  EXPECT_NEAR (std::abs (plane_parameters[0]), 0.035592, 1e-4);
+  EXPECT_NEAR (std::abs (plane_parameters[1]), 0.369596, 1e-4);
+  EXPECT_NEAR (std::abs (plane_parameters[2]), 0.928511, 1e-4);
+  EXPECT_NEAR (std::abs (plane_parameters[3]), 0.0622552, 1e-4);
   EXPECT_NEAR (curvature, 0.0693136, 1e-4);
 
   // solvePlaneParameters
   float nx, ny, nz;
   solvePlaneParameters (covariance_matrix, nx, ny, nz, curvature);
-  EXPECT_NEAR (fabs (nx), 0.035592, 1e-4);
-  EXPECT_NEAR (fabs (ny), 0.369596, 1e-4);
-  EXPECT_NEAR (fabs (nz), 0.928511, 1e-4);
+  EXPECT_NEAR (std::abs (nx), 0.035592, 1e-4);
+  EXPECT_NEAR (std::abs (ny), 0.369596, 1e-4);
+  EXPECT_NEAR (std::abs (nz), 0.928511, 1e-4);
   EXPECT_NEAR (curvature, 0.0693136, 1e-4);
 }
 
@@ -168,8 +171,8 @@ main (int argc, char** argv)
     return (-1);
   }
 
-  indices.resize (cloud.points.size ());
-  for (size_t i = 0; i < indices.size (); ++i)
+  indices.resize (cloud.size ());
+  for (std::size_t i = 0; i < indices.size (); ++i)
     indices[i] = static_cast<int> (i);
 
   tree.reset (new search::KdTree<PointXYZ> (false));

@@ -35,9 +35,10 @@
  *
  */
 
-#ifndef PCL_FILTERS_NORMAL_REFINEMENT_H_
-#define PCL_FILTERS_NORMAL_REFINEMENT_H_
+#pragma once
 
+#include <pcl/pcl_macros.h>
+#include <pcl/common/utils.h>
 #include <pcl/filters/filter.h>
 
 namespace pcl
@@ -52,17 +53,22 @@ namespace pcl
    * \ingroup filters
    */
   template <typename NormalT> inline std::vector<float>
-  assignNormalWeights (const PointCloud<NormalT>&,
-                       int,
-                       const std::vector<int>& k_indices,
+  assignNormalWeights (const PointCloud<NormalT>& cloud,
+                       index_t index,
+                       const Indices& k_indices,
                        const std::vector<float>& k_sqr_distances)
   {
+    pcl::utils::ignore(cloud, index);
     // Check inputs
     if (k_indices.size () != k_sqr_distances.size ())
       PCL_ERROR("[pcl::assignNormalWeights] inequal size of neighbor indices and distances!\n");
     
     // TODO: For now we use uniform weights
-    return (std::vector<float> (k_indices.size (), 1.0f));
+    // Disable check for braced-initialization,
+    // since the compiler doesn't seem to recognize that
+    // {k_indices.size (), 1.0f} is selecting the vector(size_type count, const T&) constructor
+    // NOLINTNEXTLINE(modernize-return-braced-init-list)
+    return std::vector<float> (k_indices.size (), 1.0f);
   }
   
   /** \brief Refine an indexed point based on its neighbors, this function only writes to the normal_* fields
@@ -80,7 +86,7 @@ namespace pcl
   template <typename NormalT> inline bool
   refineNormal (const PointCloud<NormalT>& cloud,
                 int index,
-                const std::vector<int>& k_indices,
+                const Indices& k_indices,
                 const std::vector<float>& k_sqr_distances,
                 NormalT& point)
   {
@@ -103,12 +109,12 @@ namespace pcl
     float nx = 0.0f;
     float ny = 0.0f;
     float nz = 0.0f;
-    for (unsigned int i = 0; i < k_indices.size (); ++i) {
+    for (std::size_t i = 0; i < k_indices.size (); ++i) {
       // Neighbor
       const NormalT& pointi = cloud[k_indices[i]];
       
       // Accumulate if not NaN
-      if (pcl_isfinite (pointi.normal_x) && pcl_isfinite (pointi.normal_y) && pcl_isfinite (pointi.normal_z))
+      if (std::isfinite (pointi.normal_x) && std::isfinite (pointi.normal_y) && std::isfinite (pointi.normal_z))
       {
         const float& weighti = weights[i];
         nx += weighti * pointi.normal_x;
@@ -118,8 +124,8 @@ namespace pcl
     }
     
     // Normalize if norm valid and non-zero
-    const float norm = sqrtf (nx * nx + ny * ny + nz * nz);
-    if (pcl_isfinite (norm) && norm > std::numeric_limits<float>::epsilon ())
+    const float norm = std::sqrt (nx * nx + ny * ny + nz * nz);
+    if (std::isfinite (norm) && norm > std::numeric_limits<float>::epsilon ())
     {
       point.normal_x = nx / norm;
       point.normal_y = ny / norm;
@@ -155,13 +161,13 @@ namespace pcl
     * 
     * // Search parameters
     * const int k = 5;
-    * std::vector<std::vector<int> > k_indices;
+    * std::vector<Indices > k_indices;
     * std::vector<std::vector<float> > k_sqr_distances;
     * 
     * // Run search
     * pcl::search::KdTree<pcl::PointXYZRGB> search;
     * search.setInputCloud (cloud.makeShared ());
-    * search.nearestKSearch (cloud, std::vector<int> (), k, k_indices, k_sqr_distances);
+    * search.nearestKSearch (cloud, Indices (), k, k_indices, k_sqr_distances);
     * 
     * // Use search results for normal estimation
     * pcl::NormalEstimation<PointT, NormalT> ne;
@@ -191,9 +197,9 @@ namespace pcl
     using Filter<NormalT>::filter_name_;
     using Filter<NormalT>::getClassName;
 
-    typedef typename Filter<NormalT>::PointCloud PointCloud;
-    typedef typename PointCloud::Ptr PointCloudPtr;
-    typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+    using PointCloud = typename Filter<NormalT>::PointCloud;
+    using PointCloudPtr = typename PointCloud::Ptr;
+    using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
     public:
       /** \brief Empty constructor, sets default convergence parameters
@@ -210,7 +216,7 @@ namespace pcl
        * @param k_indices indices of neighboring points
        * @param k_sqr_distances squared distances to the neighboring points
        */
-      NormalRefinement (const std::vector< std::vector<int> >& k_indices, const std::vector< std::vector<float> >& k_sqr_distances) :
+      NormalRefinement (const std::vector< Indices >& k_indices, const std::vector< std::vector<float> >& k_sqr_distances) :
         Filter<NormalT>::Filter ()
       {
         filter_name_ = "NormalRefinement";
@@ -224,7 +230,7 @@ namespace pcl
        * @param k_sqr_distances squared distances to the neighboring points
        */
       inline void
-      setCorrespondences (const std::vector< std::vector<int> >& k_indices, const std::vector< std::vector<float> >& k_sqr_distances)
+      setCorrespondences (const std::vector< Indices >& k_indices, const std::vector< std::vector<float> >& k_sqr_distances)
       {
         k_indices_ = k_indices;
         k_sqr_distances_ = k_sqr_distances;
@@ -235,7 +241,7 @@ namespace pcl
        * @param k_sqr_distances squared distances to the neighboring points
        */
       inline void
-      getCorrespondences (std::vector< std::vector<int> >& k_indices, std::vector< std::vector<float> >& k_sqr_distances)
+      getCorrespondences (std::vector< Indices >& k_indices, std::vector< std::vector<float> >& k_sqr_distances)
       {
         k_indices.assign (k_indices_.begin (), k_indices_.end ());
         k_sqr_distances.assign (k_sqr_distances_.begin (), k_sqr_distances_.end ());
@@ -282,11 +288,11 @@ namespace pcl
         * \param output the resultant point cloud message
         */
       void
-      applyFilter (PointCloud &output);
+      applyFilter (PointCloud &output) override;
       
     private:
       /** \brief indices of neighboring points */
-      std::vector< std::vector<int> > k_indices_;
+      std::vector< Indices > k_indices_;
       
       /** \brief squared distances to the neighboring points */
       std::vector< std::vector<float> > k_sqr_distances_;
@@ -304,5 +310,3 @@ namespace pcl
 #else
 #define PCL_INSTANTIATE_NormalRefinement(T) template class PCL_EXPORTS pcl::NormalRefinement<T>;
 #endif
-
-#endif 

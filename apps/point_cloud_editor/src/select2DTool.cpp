@@ -48,14 +48,13 @@ const float Select2DTool::DEFAULT_TOOL_DISPLAY_COLOR_GREEN_ = 1.0f;
 const float Select2DTool::DEFAULT_TOOL_DISPLAY_COLOR_BLUE_ = 1.0f;
 
 
-Select2DTool::Select2DTool (SelectionPtr selection_ptr, CloudPtr cloud_ptr)
-  : selection_ptr_(selection_ptr), cloud_ptr_(cloud_ptr), display_box_(false)
+Select2DTool::Select2DTool (SelectionPtr selection_ptr, CloudPtr cloud_ptr, std::function<void(GLint*,GLfloat*)> get_viewport_and_projection_mat)
+  : selection_ptr_(std::move(selection_ptr)), cloud_ptr_(std::move(cloud_ptr)), display_box_(false), get_viewport_and_projection_mat_(get_viewport_and_projection_mat)
 {
 }
 
 Select2DTool::~Select2DTool ()
-{
-}
+= default;
 
 void
 Select2DTool::start (int x, int y, BitMask, BitMask)
@@ -89,14 +88,13 @@ Select2DTool::end (int x, int y, BitMask modifiers, BitMask)
     return;
 
   GLint viewport[4];
-  glGetIntegerv(GL_VIEWPORT,viewport);
   IndexVector indices;
   GLfloat project[16];
-  glGetFloatv(GL_PROJECTION_MATRIX, project);
+  get_viewport_and_projection_mat_(viewport, project);
 
   Point3DVector ptsvec;
   cloud_ptr_->getDisplaySpacePoints(ptsvec);
-  for(unsigned int i = 0; i < ptsvec.size(); ++i)
+  for(std::size_t i = 0; i < ptsvec.size(); ++i)
   {
     Point3D pt = ptsvec[i];
     if (isInSelectBox(pt, project, viewport))
@@ -196,8 +194,8 @@ Select2DTool::drawRubberBand (GLint* viewport) const
 void
 Select2DTool::highlightPoints (GLint* viewport) const
 {
-  double width = abs(origin_x_ - final_x_);
-  double height = abs(origin_y_ - final_y_);
+  double width = std::abs(origin_x_ - final_x_);
+  double height = std::abs(origin_y_ - final_y_);
   glPushAttrib(GL_SCISSOR_BIT);
   {
     glEnable(GL_SCISSOR_TEST);

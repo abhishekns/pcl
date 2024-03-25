@@ -43,7 +43,7 @@
 #include <pcl/console/print.h>
 #include <pcl/console/parse.h>
 #include <pcl/console/time.h>
-#include <pcl/common/transforms.h>
+#include <pcl/visualization/vtk/vtkRenderWindowInteractorFix.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/filters/voxel_grid_occlusion_estimation.h>
 #include <vtkCubeSource.h>
@@ -56,8 +56,8 @@ using namespace pcl;
 using namespace pcl::io;
 using namespace pcl::console;
 
-typedef PointXYZ PointT;
-typedef PointCloud<PointT> CloudT;
+using PointT = PointXYZ;
+using CloudT = PointCloud<PointT>;
 
 float default_leaf_size = 0.01f;
 
@@ -69,7 +69,7 @@ createDataSetFromVTKPoints (vtkPoints *points)
   // Iterate through the points                                                          
                              
   for (vtkIdType i = 0; i < points->GetNumberOfPoints (); i++)
-    verts->InsertNextCell ((vtkIdType)1, &i);
+    verts->InsertNextCell (static_cast<vtkIdType>(1), &i);
   data->SetPoints (points);
   data->SetVerts (verts);
   return data;
@@ -80,6 +80,7 @@ getCuboid (double minX, double maxX, double minY, double maxY, double minZ, doub
 {
   vtkSmartPointer < vtkCubeSource > cube = vtkSmartPointer<vtkCubeSource>::New ();
   cube->SetBounds (minX, maxX, minY, maxY, minZ, maxZ);
+  cube->Update ();
   return cube->GetOutput ();
 }
 
@@ -90,31 +91,22 @@ getVoxelActors (pcl::PointCloud<pcl::PointXYZ>& voxelCenters,
 {
   vtkSmartPointer < vtkAppendPolyData > treeWireframe = vtkSmartPointer<vtkAppendPolyData>::New ();
   
-  size_t i;
   double s = voxelSideLen/2.0;
   
-  for (i = 0; i < voxelCenters.points.size (); i++)
+  for (const auto &point : voxelCenters.points)
   {
-    double x = voxelCenters.points[i].x;
-    double y = voxelCenters.points[i].y;
-    double z = voxelCenters.points[i].z;
+    double x = point.x;
+    double y = point.y;
+    double z = point.z;
     
-#if VTK_MAJOR_VERSION < 6
-    treeWireframe->AddInput (getCuboid (x - s, x + s, y - s, y + s, z - s, z + s));
-#else
     treeWireframe->AddInputData (getCuboid (x - s, x + s, y - s, y + s, z - s, z + s));
-#endif
-
   }
+  treeWireframe->Update ();
 
   vtkSmartPointer < vtkLODActor > treeActor = vtkSmartPointer<vtkLODActor>::New ();
   
   vtkSmartPointer < vtkDataSetMapper > mapper = vtkSmartPointer<vtkDataSetMapper>::New ();
-#if VTK_MAJOR_VERSION < 6
-  mapper->SetInput (treeWireframe->GetOutput ());
-#else
   mapper->SetInputData (treeWireframe->GetOutput ());
-#endif
 
   treeActor->SetMapper (mapper);
   
@@ -129,20 +121,13 @@ displayBoundingBox (Eigen::Vector3f& min_b, Eigen::Vector3f& max_b,
                     vtkSmartPointer<vtkActorCollection> coll)
 {
   vtkSmartPointer < vtkAppendPolyData > treeWireframe = vtkSmartPointer<vtkAppendPolyData>::New ();
-#if VTK_MAJOR_VERSION < 6
-  treeWireframe->AddInput (getCuboid (min_b[0], max_b[0], min_b[1], max_b[1], min_b[2], max_b[2]));
-#else
   treeWireframe->AddInputData (getCuboid (min_b[0], max_b[0], min_b[1], max_b[1], min_b[2], max_b[2]));
-#endif
+  treeWireframe->Update();
 
   vtkSmartPointer < vtkActor > treeActor = vtkSmartPointer<vtkActor>::New ();
 
   vtkSmartPointer < vtkDataSetMapper > mapper = vtkSmartPointer<vtkDataSetMapper>::New ();
-#if VTK_MAJOR_VERSION < 6
-  mapper->SetInput (treeWireframe->GetOutput ());
-#else
   mapper->SetInputData (treeWireframe->GetOutput ());
-#endif
   treeActor->SetMapper (mapper);
 
   treeActor->GetProperty ()->SetRepresentationToWireframe ();
@@ -220,41 +205,43 @@ int main (int argc, char** argv)
   std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i> > occluded_voxels;
   vg.occlusionEstimationAll (occluded_voxels);
 
-  print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms : "); print_value ("%d", (int)occluded_voxels.size ()); print_info (" occluded voxels]\n");
+  print_info ("[done, "); print_value ("%g", tt.toc ()); print_info (" ms : "); print_value ("%d", static_cast<int>(occluded_voxels.size ())); print_info (" occluded voxels]\n");
   
   CloudT::Ptr occ_centroids (new CloudT);
-  occ_centroids->width = static_cast<int> (occluded_voxels.size ());
+  occ_centroids->width = occluded_voxels.size ();
   occ_centroids->height = 1;
   occ_centroids->is_dense = false;
   occ_centroids->points.resize (occluded_voxels.size ());
-  for (size_t i = 0; i < occluded_voxels.size (); ++i)
+  for (std::size_t i = 0; i < occluded_voxels.size (); ++i)
   {
     Eigen::Vector4f xyz = vg.getCentroidCoordinate (occluded_voxels[i]);
     PointT point;
     point.x = xyz[0];
     point.y = xyz[1];
     point.z = xyz[2];
-    occ_centroids->points[i] = point;
+    (*occ_centroids)[i] = point;
   }
 
+  // we use the filtered cloud because it contains exactly one point per occupied voxel (avoids drawing the same voxel box multiple times)
+  CloudT filtered_cloud = vg.getFilteredPointCloud();
   CloudT::Ptr cloud_centroids (new CloudT);
-  cloud_centroids->width = static_cast<int> (input_cloud->points.size ());
+  cloud_centroids->width = filtered_cloud.size ();
   cloud_centroids->height = 1;
   cloud_centroids->is_dense = false;
-  cloud_centroids->points.resize (input_cloud->points.size ());
+  cloud_centroids->points.resize (filtered_cloud.size ());
 
-  for (size_t i = 0; i < input_cloud->points.size (); ++i)
+  for (std::size_t i = 0; i < filtered_cloud.size (); ++i)
   {
-    float x = input_cloud->points[i].x;
-    float y = input_cloud->points[i].y;
-    float z = input_cloud->points[i].z;
+    float x = filtered_cloud[i].x;
+    float y = filtered_cloud[i].y;
+    float z = filtered_cloud[i].z;
     Eigen::Vector3i c = vg.getGridCoordinates (x, y, z);
     Eigen::Vector4f xyz = vg.getCentroidCoordinate (c);
     PointT point;
     point.x = xyz[0];
     point.y = xyz[1];
     point.z = xyz[2];
-    cloud_centroids->points[i] = point;
+    (*cloud_centroids)[i] = point;
   }
 
   // visualization
@@ -273,7 +260,7 @@ int main (int argc, char** argv)
     vtkSmartPointer<vtkRenderWindow>::New();
   renderWindow->AddRenderer (renderer);  
   vtkSmartPointer<vtkRenderWindowInteractor> renderWindowInteractor = 
-    vtkSmartPointer<vtkRenderWindowInteractor>::New();
+    vtkSmartPointer<vtkRenderWindowInteractor>::Take (vtkRenderWindowInteractorFixNew ());
   renderWindowInteractor->SetRenderWindow (renderWindow);
 
   // Add the actors to the renderer, set the background and size
@@ -283,7 +270,7 @@ int main (int argc, char** argv)
   vtkActor* a;
   coll->InitTraversal ();
   a = coll->GetNextActor ();
-  while(a!=0)
+  while(a!=nullptr)
     {
       renderer->AddActor (a);
       a = coll->GetNextActor ();

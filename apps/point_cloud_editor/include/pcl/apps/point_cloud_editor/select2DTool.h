@@ -38,23 +38,30 @@
 /// functionalities to enable 2D selection.
 /// @author  Yue Li and Matthew Hielsberg
 
-#ifndef SELECT_2D_TOOL_H_
-#define SELECT_2D_TOOL_H_
+#pragma once
 
-#include <qgl.h>
+#include <qopengl.h>
 #include <pcl/apps/point_cloud_editor/toolInterface.h>
 #include <pcl/apps/point_cloud_editor/localTypes.h>
+
+#include <pcl/memory.h>  // for pcl::shared_ptr
+
+class Selection;
 
 class Select2DTool : public ToolInterface
 {
   public:
+    /// The type for shared pointer pointing to a selection buffer
+    using SelectionPtr = pcl::shared_ptr<Selection>;
+
     /// @brief Constructor
     /// @param selection_ptr a shared pointer pointing to the selection object.
     /// @param cloud_ptr a shared pointer pointing to the cloud object.
-    Select2DTool (SelectionPtr selection_ptr, CloudPtr cloud_ptr);
+    /// @param get_viewport_and_projection_mat a function that can be used to get the viewport and the projection matrix
+    Select2DTool (SelectionPtr selection_ptr, CloudPtr cloud_ptr, std::function<void(GLint*,GLfloat*)> get_viewport_and_projection_mat);
 
     /// @brief Destructor
-    ~Select2DTool ();
+    ~Select2DTool () override;
   
     /// @brief Initializes the selection tool with the initial mouse screen
     /// coordinates and key modifiers. The passed coordinates are used for
@@ -65,7 +72,7 @@ class Select2DTool : public ToolInterface
     /// modifiers: 1. shift key, 2. ctrl key, 3. no modifier is pressed. Note
     /// that the ctrl key may be evaluated as the command key in OSX.
     void
-    start (int x, int y, BitMask modifiers, BitMask mouseButton);
+    start (int x, int y, BitMask modifiers, BitMask mouseButton) override;
 
     /// @brief Update the selection tool from the current mouse screen
     /// coordinates and key modifiers.
@@ -75,7 +82,7 @@ class Select2DTool : public ToolInterface
     /// @param y the y value of the mouse screen coordinates.
     /// @param modifiers the key modifier.
     void
-    update (int x, int y, BitMask modifiers, BitMask mouseButton);
+    update (int x, int y, BitMask modifiers, BitMask mouseButton) override;
 
     /// @brief Update the coordinates of the lower right corner of the rubber
     /// band and process the points in the rubber band.
@@ -88,7 +95,7 @@ class Select2DTool : public ToolInterface
     /// @param y the y value of the mouse screen coordinates.
     /// @param modifiers the key modifier.
     void
-    end (int x, int y, BitMask modifiers, BitMask mouseButton);
+    end (int x, int y, BitMask modifiers, BitMask mouseButton) override;
 
     /// @brief Checks whether a point is inside the selection region.
     /// @param pt the point to be checked against the selection region.
@@ -101,7 +108,7 @@ class Select2DTool : public ToolInterface
     /// @brief Draws the rubber band as well as any highlighted points during
     /// the 'update' phase (i.e. before the selection is made by a call to end).
     void
-    draw () const;
+    draw () const override;
 
     /// The default size in pixels of the rubberband tool outline
     static const float DEFAULT_TOOL_DISPLAY_SIZE_;
@@ -128,7 +135,7 @@ class Select2DTool : public ToolInterface
 
     /// @brief highlight all the points in the rubber band.
     /// @detail draw the cloud using a stencil buffer. During this time, the
-    /// points that are highlighted will not be recorded by the selecion object.
+    /// points that are highlighted will not be recorded by the selection object.
     /// @param viewport the viewport obtained from GL
     void
     highlightPoints (GLint* viewport) const;
@@ -148,5 +155,6 @@ class Select2DTool : public ToolInterface
     /// switch for selection box rendering
     bool display_box_;
 
+    /// function to get the viewport and the projection matrix (initialized by ctor)
+    std::function<void(GLint*,GLfloat*)> get_viewport_and_projection_mat_;
 };
-#endif // SELECT_2D_TOOL_H_

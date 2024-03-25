@@ -3,7 +3,7 @@
  *
  *  Point Cloud Library (PCL) - www.pointclouds.org
  *  Copyright (c) 2010-2012, Willow Garage, Inc.
- *  
+ *
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -37,15 +37,14 @@
  *
  */
 
-#ifndef PCL_RECOGNITION_GEOMETRIC_CONSISTENCY_H_
-#define PCL_RECOGNITION_GEOMETRIC_CONSISTENCY_H_
+#pragma once
 
 #include <pcl/recognition/cg/correspondence_grouping.h>
 #include <pcl/point_cloud.h>
 
 namespace pcl
 {
- 
+
   /** \brief Class implementing a 3D correspondence grouping enforcing geometric consistency among feature correspondences
     *
     * \author Federico Tombari, Tommaso Cavallari, Aitor Aldoma
@@ -55,22 +54,17 @@ namespace pcl
   class GeometricConsistencyGrouping : public CorrespondenceGrouping<PointModelT, PointSceneT>
   {
     public:
-      typedef pcl::PointCloud<PointModelT> PointCloud;
-      typedef typename PointCloud::Ptr PointCloudPtr;
-      typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+      using PointCloud = pcl::PointCloud<PointModelT>;
+      using PointCloudPtr = typename PointCloud::Ptr;
+      using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
-      typedef typename pcl::CorrespondenceGrouping<PointModelT, PointSceneT>::SceneCloudConstPtr SceneCloudConstPtr;
+      using SceneCloudConstPtr = typename pcl::CorrespondenceGrouping<PointModelT, PointSceneT>::SceneCloudConstPtr;
 
       /** \brief Constructor */
-      GeometricConsistencyGrouping () 
-        : gc_threshold_ (3)
-        , gc_size_ (1.0)
-        , found_transformations_ ()
-      {}
+      GeometricConsistencyGrouping () = default;
 
-      
       /** \brief Sets the minimum cluster size
-        * \param[in] threshold the minimum cluster size 
+        * \param[in] threshold the minimum cluster size
         */
       inline void
       setGCThreshold (int threshold)
@@ -79,7 +73,7 @@ namespace pcl
       }
 
       /** \brief Gets the minimum cluster size.
-        * 
+        *
         * \return the minimum cluster size used by GC.
         */
       inline int
@@ -89,7 +83,7 @@ namespace pcl
       }
 
       /** \brief Sets the consensus set resolution. This should be in metric units.
-        * 
+        *
         * \param[in] gc_size consensus set resolution.
         */
       inline void
@@ -99,7 +93,7 @@ namespace pcl
       }
 
       /** \brief Gets the consensus set resolution.
-        * 
+        *
         * \return the consensus set resolution.
         */
       inline double
@@ -109,7 +103,7 @@ namespace pcl
       }
 
       /** \brief The main function, recognizes instances of the model into the scene set by the user.
-        * 
+        *
         * \param[out] transformations a vector containing one transformation matrix for each instance of the model recognized into the scene.
         *
         * \return true if the recognition had been successful or false if errors have occurred.
@@ -118,7 +112,7 @@ namespace pcl
       recognize (std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > &transformations);
 
       /** \brief The main function, recognizes instances of the model into the scene set by the user.
-        * 
+        *
         * \param[out] transformations a vector containing one transformation matrix for each instance of the model recognized into the scene.
         * \param[out] clustered_corrs a vector containing the correspondences for each instance of the model found within the input data (the same output of clusterCorrespondences).
         *
@@ -133,26 +127,24 @@ namespace pcl
       using CorrespondenceGrouping<PointModelT, PointSceneT>::model_scene_corrs_;
 
       /** \brief Minimum cluster size. It shouldn't be less than 3, since at least 3 correspondences are needed to compute the 6DOF pose */
-      int gc_threshold_;
+      int gc_threshold_{3};
 
       /** \brief Resolution of the consensus set used to cluster correspondences together*/
-      double gc_size_;
+      double gc_size_{1.0};
 
       /** \brief Transformations found by clusterCorrespondences method. */
       std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > found_transformations_;
 
       /** \brief Cluster the input correspondences in order to distinguish between different instances of the model into the scene.
-        * 
+        *
         * \param[out] model_instances a vector containing the clustered correspondences for each model found on the scene.
         * \return true if the clustering had been successful or false if errors have occurred.
-        */ 
+        */
       void
-      clusterCorrespondences (std::vector<Correspondences> &model_instances);
+      clusterCorrespondences (std::vector<Correspondences> &model_instances) override;
   };
 }
 
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/recognition/impl/cg/geometric_consistency.hpp>
 #endif
-
-#endif // PCL_RECOGNITION_GEOMETRIC_CONSISTENCY_H_

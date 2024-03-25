@@ -37,36 +37,43 @@
 /// @details Tool for selecting and deselecting individual points in the cloud.
 /// @author  Yue Li and Matthew Hielsberg
 
-#ifndef SELECT_1D_TOOL_H
-#define SELECT_1D_TOOL_H
+#pragma once
 
 #include <pcl/apps/point_cloud_editor/toolInterface.h>
 #include <pcl/apps/point_cloud_editor/localTypes.h>
 
+#include <pcl/memory.h>  // for pcl::shared_ptr
+
+#include <cassert>
+
+class Selection;
+
 class Select1DTool : public ToolInterface
 {
   public:
+    /// The type for shared pointer pointing to a selection buffer
+    using SelectionPtr = pcl::shared_ptr<Selection>;
+
     /// @brief Constructor
     /// @param selection_ptr a shared pointer pointing to the selection object.
     /// @param cloud_ptr a shared pointer pointing to the cloud object.
     Select1DTool (SelectionPtr selection_ptr, CloudPtr cloud_ptr);
 
     /// @brief Destructor
-    ~Select1DTool ()
+    ~Select1DTool () override
+    = default;
+  
+    /// @brief Does nothing for 1D selection.
+    /// @sa end
+    void
+    start (int, int, BitMask, BitMask) override
     {
     }
   
     /// @brief Does nothing for 1D selection.
     /// @sa end
     void
-    start (int, int, BitMask, BitMask)
-    {
-    }
-  
-    /// @brief Does nothing for 1D selection.
-    /// @sa end
-    void
-    update (int, int, BitMask, BitMask)
+    update (int, int, BitMask, BitMask) override
     {
     }
 
@@ -86,11 +93,11 @@ class Select1DTool : public ToolInterface
     /// @param buttons The state of the mouse buttons.  All interaction with
     /// this tool requires the LEFT mouse button.  All others are ignored.
     void
-    end (int x, int y, BitMask modifiers, BitMask buttons);
+    end (int x, int y, BitMask modifiers, BitMask buttons) override;
 
     /// @brief This function does nothing.
     void
-    draw () const
+    draw () const override
     {
     }
 
@@ -107,4 +114,3 @@ class Select1DTool : public ToolInterface
     /// a shared pointer pointing to the cloud object
     CloudPtr cloud_ptr_;
 };
-#endif // SELECT_1D_TOOL_H

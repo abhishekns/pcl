@@ -37,8 +37,7 @@
  * $Id$
  */
 
-#ifndef PCL_SEARCH_KDTREE_H_
-#define PCL_SEARCH_KDTREE_H_
+#pragma once
 
 #include <pcl/search/search.h>
 #include <pcl/kdtree/kdtree_flann.h>
@@ -62,11 +61,8 @@ namespace pcl
     class KdTree: public Search<PointT>
     {
       public:
-        typedef typename Search<PointT>::PointCloud PointCloud;
-        typedef typename Search<PointT>::PointCloudConstPtr PointCloudConstPtr;
-
-        typedef boost::shared_ptr<std::vector<int> > IndicesPtr;
-        typedef boost::shared_ptr<const std::vector<int> > IndicesConstPtr;
+        using PointCloud = typename Search<PointT>::PointCloud;
+        using PointCloudConstPtr = typename Search<PointT>::PointCloudConstPtr;
 
         using pcl::search::Search<PointT>::indices_;
         using pcl::search::Search<PointT>::input_;
@@ -76,12 +72,12 @@ namespace pcl
         using pcl::search::Search<PointT>::radiusSearch;
         using pcl::search::Search<PointT>::sorted_results_;
 
-        typedef boost::shared_ptr<KdTree<PointT, Tree> > Ptr;
-        typedef boost::shared_ptr<const KdTree<PointT, Tree> > ConstPtr;
+        using Ptr = shared_ptr<KdTree<PointT, Tree> >;
+        using ConstPtr = shared_ptr<const KdTree<PointT, Tree> >;
 
-        typedef boost::shared_ptr<Tree> KdTreePtr;
-        typedef boost::shared_ptr<const Tree> KdTreeConstPtr;
-        typedef boost::shared_ptr<const PointRepresentation<PointT> > PointRepresentationConstPtr;
+        using KdTreePtr = typename Tree::Ptr;
+        using KdTreeConstPtr = typename Tree::ConstPtr;
+        using PointRepresentationConstPtr = typename PointRepresentation<PointT>::ConstPtr;
 
         /** \brief Constructor for KdTree. 
           *
@@ -93,10 +89,8 @@ namespace pcl
         KdTree (bool sorted = true); 
 
         /** \brief Destructor for KdTree. */
-        virtual
-        ~KdTree ()
-        {
-        }
+        
+        ~KdTree () override = default;
 
         /** \brief Provide a pointer to the point representation to use to convert points into k-D vectors. 
           * \param[in] point_representation the const boost shared pointer to a PointRepresentation
@@ -115,7 +109,7 @@ namespace pcl
           * \param[in] sorted_results set to true if the radius search results should be sorted
           */
         void 
-        setSortedResults (bool sorted_results);
+        setSortedResults (bool sorted_results) override;
         
         /** \brief Set the search epsilon precision (error bound) for nearest neighbors searches.
           * \param[in] eps precision (error bound) for nearest neighbors searches
@@ -134,9 +128,9 @@ namespace pcl
           * \param[in] cloud the const boost shared pointer to a PointCloud message
           * \param[in] indices the point indices subset that is to be used from \a cloud 
           */
-        void
+        bool
         setInputCloud (const PointCloudConstPtr& cloud, 
-                       const IndicesConstPtr& indices = IndicesConstPtr ());
+                       const IndicesConstPtr& indices = IndicesConstPtr ()) override;
 
         /** \brief Search for the k-nearest neighbors for the given query point.
           * \param[in] point the given query point
@@ -148,8 +142,8 @@ namespace pcl
           */
         int
         nearestKSearch (const PointT &point, int k, 
-                        std::vector<int> &k_indices, 
-                        std::vector<float> &k_sqr_distances) const;
+                        Indices &k_indices,
+                        std::vector<float> &k_sqr_distances) const override;
 
         /** \brief Search for all the nearest neighbors of the query point in a given radius.
           * \param[in] point the given query point
@@ -163,9 +157,9 @@ namespace pcl
           */
         int
         radiusSearch (const PointT& point, double radius, 
-                      std::vector<int> &k_indices, 
+                      Indices &k_indices,
                       std::vector<float> &k_sqr_distances,
-                      unsigned int max_nn = 0) const;
+                      unsigned int max_nn = 0) const override;
       protected:
         /** \brief A pointer to the internal KdTree object. */
         KdTreePtr tree_;
@@ -178,6 +172,3 @@ namespace pcl
 #else
 #define PCL_INSTANTIATE_KdTree(T) template class PCL_EXPORTS pcl::search::KdTree<T>;
 #endif
-
-#endif    // PCL_SEARCH_KDTREE_H_
-

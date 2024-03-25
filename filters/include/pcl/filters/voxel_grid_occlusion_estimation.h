@@ -38,8 +38,7 @@
  *
  */
 
-#ifndef PCL_FILTERS_VOXEL_GRID_OCCLUSION_ESTIMATION_H_
-#define PCL_FILTERS_VOXEL_GRID_OCCLUSION_ESTIMATION_H_
+#pragma once
 
 #include <pcl/filters/voxel_grid.h>
 
@@ -48,7 +47,15 @@ namespace pcl
   /** \brief VoxelGrid to estimate occluded space in the scene.
     * The ray traversal algorithm is implemented by the work of 
     * 'John Amanatides and Andrew Woo, A Fast Voxel Traversal Algorithm for Ray Tracing'
-    *
+    * Example code:
+    * \code
+    * pcl::VoxelGridOcclusionEstimation<pcl::PointXYZ> vg;
+    * vg.setInputCloud (input_cloud);
+    * vg.setLeafSize (leaf_x, leaf_y, leaf_z);
+    * vg.initializeVoxelGrid ();
+    * std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i> > occluded_voxels;
+    * vg.occlusionEstimationAll (occluded_voxels);
+    * \endcode
     * \author Christian Potthast
     * \ingroup filters
     */
@@ -62,11 +69,14 @@ namespace pcl
       using VoxelGrid<PointT>::leaf_size_;
       using VoxelGrid<PointT>::inverse_leaf_size_;
 
-      typedef typename Filter<PointT>::PointCloud PointCloud;
-      typedef typename PointCloud::Ptr PointCloudPtr;
-      typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+      using PointCloud = typename Filter<PointT>::PointCloud;
+      using PointCloudPtr = typename PointCloud::Ptr;
+      using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
     public:
+
+      PCL_MAKE_ALIGNED_OPERATOR_NEW
+
       /** \brief Empty constructor. */
       VoxelGridOcclusionEstimation ()
       {
@@ -75,9 +85,7 @@ namespace pcl
       }
 
       /** \brief Destructor. */
-      virtual ~VoxelGridOcclusionEstimation ()
-      {
-      }
+      ~VoxelGridOcclusionEstimation () override = default;
 
       /** \brief Initialize the voxel grid, needs to be called first
         * Builts the voxel grid and computes additional values for
@@ -113,7 +121,7 @@ namespace pcl
                            const Eigen::Vector3i& in_target_voxel);
 
       /** \brief Computes the voxel coordinates (i, j, k) of all occluded
-        * voxels in the voxel gird.
+        * voxels in the voxel grid.
         * \param[out] occluded_voxels the coordinates (i, j, k) of all occluded voxels
         * \return 0 upon success and -1 if an error occurs
         */
@@ -148,9 +156,9 @@ namespace pcl
       getCentroidCoordinate (const Eigen::Vector3i& ijk)
       {
         int i,j,k;
-        i = ((b_min_[0] < 0) ? (abs (min_b_[0]) + ijk[0]) : (ijk[0] - min_b_[0]));
-        j = ((b_min_[1] < 0) ? (abs (min_b_[1]) + ijk[1]) : (ijk[1] - min_b_[1]));
-        k = ((b_min_[2] < 0) ? (abs (min_b_[2]) + ijk[2]) : (ijk[2] - min_b_[2]));
+        i = ((b_min_[0] < 0) ? (std::abs (min_b_[0]) + ijk[0]) : (ijk[0] - min_b_[0]));
+        j = ((b_min_[1] < 0) ? (std::abs (min_b_[1]) + ijk[1]) : (ijk[1] - min_b_[1]));
+        k = ((b_min_[2] < 0) ? (std::abs (min_b_[2]) + ijk[2]) : (ijk[2] - min_b_[2]));
 
         Eigen::Vector4f xyz;
         xyz[0] = b_min_[0] + (leaf_size_[0] * 0.5f) + (static_cast<float> (i) * leaf_size_[0]);
@@ -179,7 +187,7 @@ namespace pcl
                           const Eigen::Vector4f& direction);
 
       /** \brief Returns the state of the target voxel (0 = visible, 1 = occupied)
-        * unsing a ray traversal algorithm.
+        * using a ray traversal algorithm.
         * \param[in] target_voxel The target voxel in the voxel grid with coordinate (i, j, k).
         * \param[in] origin The sensor origin.
         * \param[in] direction The sensor orientation
@@ -193,7 +201,7 @@ namespace pcl
                     const float t_min);
 
       /** \brief Returns the state of the target voxel (0 = visible, 1 = occupied) and
-        * the voxels penetrated by the ray unsing a ray traversal algorithm.
+        * the voxels penetrated by the ray using a ray traversal algorithm.
         * \param[out] out_ray The voxels penetrated by the ray in (i, j, k) coordinates
         * \param[in] target_voxel The target voxel in the voxel grid with coordinate (i, j, k).
         * \param[in] origin The sensor origin.
@@ -208,18 +216,17 @@ namespace pcl
                     const Eigen::Vector4f& direction,
                     const float t_min);
 
-      /** \brief Returns a rounded value. 
+      /** \brief Returns a value rounded to the nearest integer
         * \param[in] d
         * \return rounded value
         */
       inline float
       round (float d)
       {
-        return static_cast<float> (floor (d + 0.5f));
+        return static_cast<float> (std::floor (d + 0.5f));
       }
 
-      // We use round here instead of floor due to some numerical issues.
-      /** \brief Returns the corresponding (i,j,k) coordinates in the grid of point (x,y,z). 
+      /** \brief Returns the corresponding (i,j,k) coordinates in the grid of point (x,y,z).
         * \param[in] x the X point coordinate to get the (i, j, k) index at
         * \param[in] y the Y point coordinate to get the (i, j, k) index at
         * \param[in] z the Z point coordinate to get the (i, j, k) index at
@@ -227,9 +234,9 @@ namespace pcl
       inline Eigen::Vector3i
       getGridCoordinatesRound (float x, float y, float z) 
       {
-        return Eigen::Vector3i (static_cast<int> (round (x * inverse_leaf_size_[0])), 
-                                static_cast<int> (round (y * inverse_leaf_size_[1])), 
-                                static_cast<int> (round (z * inverse_leaf_size_[2])));
+        return {static_cast<int> (round (x * inverse_leaf_size_[0])),
+                                static_cast<int> (round (y * inverse_leaf_size_[1])),
+                                static_cast<int> (round (z * inverse_leaf_size_[2]))};
       }
 
       // initialization flag
@@ -249,5 +256,3 @@ namespace pcl
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/filters/impl/voxel_grid_occlusion_estimation.hpp>
 #endif
-
-#endif  //#ifndef PCL_FILTERS_VOXEL_GRID_OCCLUSION_ESTIMATION_H_

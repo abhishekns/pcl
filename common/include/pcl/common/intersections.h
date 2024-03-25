@@ -35,8 +35,7 @@
  *
  */
 
-#ifndef PCL_INTERSECTIONS_H_
-#define PCL_INTERSECTIONS_H_
+#pragma once
 
 #include <pcl/ModelCoefficients.h>
 #include <pcl/common/common.h>
@@ -82,7 +81,7 @@ namespace pcl
     * \note Described in: "Intersection of Two Planes, John Krumm, Microsoft Research, Redmond, WA, USA"
     * \param[in] plane_a coefficients of plane A and plane B in the form ax + by + cz + d = 0
     * \param[in] plane_b coefficients of line where line.tail<3>() = direction vector and
-    * line.head<3>() the point on the line clossest to (0, 0, 0)
+    * line.head<3>() the point on the line closest to (0, 0, 0)
     * \param[out] line the intersected line to be filled
     * \param[in] angular_tolerance tolerance in radians
     * \return true if succeeded/planes aren't parallel
@@ -112,7 +111,7 @@ namespace pcl
   }
 
   /** \brief Determine the point of intersection of three non-parallel planes by solving the equations.
-    * \note If using nearly parralel planes you can lower the determinant_tolerance value. This can
+    * \note If using nearly parallel planes you can lower the determinant_tolerance value. This can
     * lead to inconsistent results.
     * If the three planes intersects in a line the point will be anywhere on the line.
     * \param[in] plane_a are the coefficients of the first plane in the form ax + by + cz + d = 0
@@ -156,5 +155,3 @@ namespace pcl
 /*@}*/
 
 #include <pcl/common/impl/intersections.hpp>
-
-#endif  //#ifndef PCL_INTERSECTIONS_H_

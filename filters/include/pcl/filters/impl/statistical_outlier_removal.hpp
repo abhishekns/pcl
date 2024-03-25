@@ -41,36 +41,12 @@
 #define PCL_FILTERS_IMPL_STATISTICAL_OUTLIER_REMOVAL_H_
 
 #include <pcl/filters/statistical_outlier_removal.h>
-#include <pcl/common/io.h>
+#include <pcl/search/organized.h> // for OrganizedNeighbor
+#include <pcl/search/kdtree.h> // for KdTree
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 template <typename PointT> void
-pcl::StatisticalOutlierRemoval<PointT>::applyFilter (PointCloud &output)
-{
-  std::vector<int> indices;
-  if (keep_organized_)
-  {
-    bool temp = extract_removed_indices_;
-    extract_removed_indices_ = true;
-    applyFilterIndices (indices);
-    extract_removed_indices_ = temp;
-
-    output = *input_;
-    for (int rii = 0; rii < static_cast<int> (removed_indices_->size ()); ++rii)  // rii = removed indices iterator
-      output.points[(*removed_indices_)[rii]].x = output.points[(*removed_indices_)[rii]].y = output.points[(*removed_indices_)[rii]].z = user_filter_value_;
-    if (!pcl_isfinite (user_filter_value_))
-      output.is_dense = false;
-  }
-  else
-  {
-    applyFilterIndices (indices);
-    copyPointCloud (*input_, indices, output);
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-template <typename PointT> void
-pcl::StatisticalOutlierRemoval<PointT>::applyFilterIndices (std::vector<int> &indices)
+pcl::StatisticalOutlierRemoval<PointT>::applyFilterIndices (Indices &indices)
 {
   // Initialize the search class
   if (!searcher_)
@@ -80,11 +56,18 @@ pcl::StatisticalOutlierRemoval<PointT>::applyFilterIndices (std::vector<int> &in
     else
       searcher_.reset (new pcl::search::KdTree<PointT> (false));
   }
-  searcher_->setInputCloud (input_);
+  if (!searcher_->setInputCloud (input_))
+  {
+    PCL_ERROR ("[pcl::%s::applyFilter] Error when initializing search method!\n", getClassName ().c_str ());
+    indices.clear ();
+    removed_indices_->clear ();
+    return;
+  }
 
   // The arrays to be used
-  std::vector<int> nn_indices (mean_k_);
-  std::vector<float> nn_dists (mean_k_);
+  const int searcher_k = mean_k_ + 1;  // Find one more, since results include the query point.
+  Indices nn_indices (searcher_k);
+  std::vector<float> nn_dists (searcher_k);
   std::vector<float> distances (indices_->size ());
   indices.resize (indices_->size ());
   removed_indices_->resize (indices_->size ());
@@ -94,36 +77,36 @@ pcl::StatisticalOutlierRemoval<PointT>::applyFilterIndices (std::vector<int> &in
   int valid_distances = 0;
   for (int iii = 0; iii < static_cast<int> (indices_->size ()); ++iii)  // iii = input indices iterator
   {
-    if (!pcl_isfinite (input_->points[(*indices_)[iii]].x) ||
-        !pcl_isfinite (input_->points[(*indices_)[iii]].y) ||
-        !pcl_isfinite (input_->points[(*indices_)[iii]].z))
+    if (!std::isfinite ((*input_)[(*indices_)[iii]].x) ||
+        !std::isfinite ((*input_)[(*indices_)[iii]].y) ||
+        !std::isfinite ((*input_)[(*indices_)[iii]].z))
     {
       distances[iii] = 0.0;
       continue;
     }
 
     // Perform the nearest k search
-    if (searcher_->nearestKSearch ((*indices_)[iii], mean_k_ + 1, nn_indices, nn_dists) == 0)
+    if (searcher_->nearestKSearch ((*indices_)[iii], searcher_k, nn_indices, nn_dists) == 0)
     {
       distances[iii] = 0.0;
       PCL_WARN ("[pcl::%s::applyFilter] Searching for the closest %d neighbors failed.\n", getClassName ().c_str (), mean_k_);
       continue;
     }
 
-    // Calculate the mean distance to its neighbors
+    // Calculate the mean distance to its neighbors.
     double dist_sum = 0.0;
-    for (int k = 1; k < mean_k_ + 1; ++k)  // k = 0 is the query point
-      dist_sum += sqrt (nn_dists[k]);
-    distances[iii] = static_cast<float> (dist_sum / mean_k_);
+    for (std::size_t k = 1; k < nn_dists.size(); ++k) // k = 0 is the query point
+      dist_sum += sqrt(nn_dists[k]);
+    distances[iii] = static_cast<float>(dist_sum / (nn_dists.size() - 1));
     valid_distances++;
   }
 
   // Estimate the mean and the standard deviation of the distance vector
   double sum = 0, sq_sum = 0;
-  for (size_t i = 0; i < distances.size (); ++i)
+  for (const float &distance : distances)
   {
-    sum += distances[i];
-    sq_sum += distances[i] * distances[i];
+    sum += distance;
+    sq_sum += distance * distance;
   }
   double mean = sum / static_cast<double>(valid_distances);
   double variance = (sq_sum - sum * sum / static_cast<double>(valid_distances)) / (static_cast<double>(valid_distances) - 1);

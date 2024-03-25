@@ -294,7 +294,7 @@ namespace pcl
             int old_label = old_labels[i][j];
             int new_label = new_labels[i][j];
 
-            //if there is a neigboring element with a smaller label, update the equivalence tree of the processed element
+            //if there is a neighboring element with a smaller label, update the equivalence tree of the processed element
 		    //(the tree is always flattened in this stage so there is no need to use findRoot to find the root)
             if (new_label < old_label)
             {
@@ -360,28 +360,6 @@ namespace pcl
 {
   namespace device
   {   
-
-//// Register modifier for pointer-types (for inlining PTX assembly)
-//#if defined(_WIN64) || defined(__LP64__)	
-//	// 64-bit register modifier for inlined asm
-//	#define _ASM_PTR_ "l"
-//#else	
-//	// 32-bit register modifier for inlined asm
-//	#define _ASM_PTR_ "r"
-//#endif
-//    struct GlobalLoad
-//    {        
-//        static __device__ __forceinline__ void CG(int &val, int* ptr)
-//        {
-//          #if (__CUDA_ARCH__ >= 200)
-//            asm("ld.global.cg.s32 %0, [%1];" : "=r"(reinterpret_cast<int&>(val)) : _ASM_PTR_(ptr));
-//          #else
-//            val = *ptr;
-//          #endif
-//        }
-//    };
-//#undef _ASM_PTR_
-
     __device__ __forceinline__ int findRoot(const PtrStepSz<int>& comps, int label)
     {                       
         for(;;)

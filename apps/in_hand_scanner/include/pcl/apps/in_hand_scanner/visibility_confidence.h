@@ -38,53 +38,45 @@
  *
  */
 
-#ifndef PCL_APPS_IN_HAND_SCANNER_VISIBILITY_CONFIDENCE_H
-#define PCL_APPS_IN_HAND_SCANNER_VISIBILITY_CONFIDENCE_H
+#pragma once
 
-#include <stdint.h>
-
+#include <pcl/memory.h>
 #include <pcl/pcl_exports.h>
-#include <pcl/apps/in_hand_scanner/eigen.h>
+#include <pcl/pcl_macros.h>
 
-namespace pcl
-{
-  namespace ihs
-  {
-    // - Frequency 3 Icosahedron where each vertex corresponds to a viewing direction
-    // - First vertex aligned to z-axis
-    // - Removed vertices with z < 0.3
-    // -> 31 directions, fitting nicely into a 32 bit integer
-    // -> Very oblique angles are not considered
-    class PCL_EXPORTS Dome
-    {
-      public:
+#include <cstdint>
 
-        static const int num_directions = 31;
-        typedef Eigen::Matrix <float, 4, num_directions> Vertices;
+namespace pcl {
+namespace ihs {
+// - Frequency 3 Icosahedron where each vertex corresponds to a viewing direction
+// - First vertex aligned to z-axis
+// - Removed vertices with z < 0.3
+// -> 31 directions, fitting nicely into a 32 bit integer
+// -> Very oblique angles are not considered
+class PCL_EXPORTS Dome {
+public:
+  static const int num_directions = 31;
+  using Vertices = Eigen::Matrix<float, 4, num_directions>;
 
-        Dome ();
+  Dome();
 
-        Vertices
-        getVertices () const;
+  Vertices
+  getVertices() const;
 
-      private:
+private:
+  Vertices vertices_;
 
-        Vertices vertices_;
+public:
+  PCL_MAKE_ALIGNED_OPERATOR_NEW
+};
 
-      public:
+PCL_EXPORTS void
+addDirection(const Eigen::Vector4f& normal,
+             const Eigen::Vector4f& direction,
+             std::uint32_t& directions);
 
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    };
+PCL_EXPORTS unsigned int
+countDirections(const std::uint32_t directions);
 
-    PCL_EXPORTS void
-    addDirection (const Eigen::Vector4f& normal,
-                  const Eigen::Vector4f& direction,
-                  uint32_t&              directions);
-
-    PCL_EXPORTS unsigned int
-    countDirections (const uint32_t directions);
-
-  } // End namespace ihs
+} // End namespace ihs
 } // End namespace pcl
-
-#endif // PCL_APPS_IN_HAND_SCANNER_VISIBILITY_CONFIDENCE_H

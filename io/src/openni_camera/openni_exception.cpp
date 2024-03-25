@@ -43,7 +43,7 @@
 namespace openni_wrapper
 {
 
-OpenNIException::OpenNIException (const std::string& function_name, const std::string& file_name, unsigned line_number, const std::string& message) throw ()
+OpenNIException::OpenNIException (const std::string& function_name, const std::string& file_name, unsigned line_number, const std::string& message) noexcept
 : function_name_ (function_name)
 , file_name_ (file_name)
 , line_number_ (line_number)
@@ -54,32 +54,30 @@ OpenNIException::OpenNIException (const std::string& function_name, const std::s
   message_long_ = sstream.str();
 }
 
-OpenNIException::~OpenNIException () throw ()
-{
-}
+OpenNIException::~OpenNIException () noexcept = default;
 
-OpenNIException& OpenNIException::operator = (const OpenNIException& exception) throw ()
+OpenNIException& OpenNIException::operator = (const OpenNIException& exception) noexcept
 {
   message_ = exception.message_;
   return *this;
 }
 
-const char* OpenNIException::what () const throw ()
+const char* OpenNIException::what () const noexcept
 {
   return message_long_.c_str();
 }
 
-const std::string& OpenNIException::getFunctionName () const throw ()
+const std::string& OpenNIException::getFunctionName () const noexcept
 {
   return function_name_;
 }
 
-const std::string& OpenNIException::getFileName () const throw ()
+const std::string& OpenNIException::getFileName () const noexcept
 {
   return file_name_;
 }
 
-unsigned OpenNIException::getLineNumber () const throw ()
+unsigned OpenNIException::getLineNumber () const noexcept
 {
   return line_number_;
 }

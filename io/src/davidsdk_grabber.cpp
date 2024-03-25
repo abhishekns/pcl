@@ -68,7 +68,7 @@ pcl::DavidSDKGrabber::DavidSDKGrabber () :
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-pcl::DavidSDKGrabber::~DavidSDKGrabber () throw ()
+pcl::DavidSDKGrabber::~DavidSDKGrabber () noexcept
 {
   try
   {
@@ -89,7 +89,7 @@ pcl::DavidSDKGrabber::~DavidSDKGrabber () throw ()
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 david::ServerInfo
 pcl::DavidSDKGrabber::connect (const std::string &address,
-                               uint16_t port)
+                               std::uint16_t port)
 {
   david::ServerInfo server_info;
 
@@ -137,7 +137,7 @@ pcl::DavidSDKGrabber::start ()
 
   frequency_.reset ();
   running_ = true;
-  grabber_thread_ = boost::thread (&pcl::DavidSDKGrabber::processGrabbing, this);
+  grabber_thread_ = std::thread (&pcl::DavidSDKGrabber::processGrabbing, this);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -281,12 +281,12 @@ pcl::DavidSDKGrabber::grabSingleCloud (pcl::PointCloud<pcl::PointXYZ> &cloud)
     pcl::PolygonMesh mesh;
     if (file_format_ == "obj")
     {
-      if (pcl::io::loadPolygonFileOBJ (local_path_ + "scan." + file_format_, mesh) == 0)
+      if (pcl::io::loadOBJFile (local_path_ + "scan." + file_format_, mesh) == 0)
         return (false);
     }
     else if (file_format_ == "ply")
     {
-      if (pcl::io::loadPolygonFilePLY (local_path_ + "scan." + file_format_, mesh) == 0)
+      if (pcl::io::loadPLYFile (local_path_ + "scan." + file_format_, mesh) == 0)
         return (false);
     }
     else if (file_format_ == "stl")
@@ -323,12 +323,12 @@ pcl::DavidSDKGrabber::grabSingleMesh (pcl::PolygonMesh &mesh)
 
     if (file_format_ == "obj")
     {
-      if (pcl::io::loadPolygonFileOBJ (local_path_ + "scan." + file_format_, mesh) == 0)
+      if (pcl::io::loadOBJFile (local_path_ + "scan." + file_format_, mesh) == 0)
         return (false);
     }
     else if (file_format_ == "ply")
     {
-      if (pcl::io::loadPolygonFilePLY (local_path_ + "scan." + file_format_, mesh) == 0)
+      if (pcl::io::loadPLYFile (local_path_ + "scan." + file_format_, mesh) == 0)
         return (false);
     }
     else if (file_format_ == "stl")
@@ -352,7 +352,7 @@ pcl::DavidSDKGrabber::grabSingleMesh (pcl::PolygonMesh &mesh)
 float
 pcl::DavidSDKGrabber::getFramesPerSecond () const
 {
-  boost::mutex::scoped_lock lock (fps_mutex_);
+  std::lock_guard<std::mutex> lock (fps_mutex_);
   return (frequency_.getFrequency ());
 }
 
@@ -371,7 +371,7 @@ pcl::DavidSDKGrabber::processGrabbing ()
       {
         pcl::PolygonMesh::Ptr mesh;
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
-        boost::shared_ptr<pcl::PCLImage> image;
+        pcl::PCLImage::Ptr image;
 
         fps_mutex_.lock ();
         frequency_.event ();
@@ -383,8 +383,8 @@ pcl::DavidSDKGrabber::processGrabbing ()
           image.reset (new pcl::PCLImage);
           int width, height;
           david_.sls ().GetLiveImage (image->data, width, height);
-          image->width = (uint32_t) width;
-          image->height = (uint32_t) height;
+          image->width = (std::uint32_t) width;
+          image->height = (std::uint32_t) height;
           image->encoding = "CV_8UC1";
         }
 
@@ -400,12 +400,12 @@ pcl::DavidSDKGrabber::processGrabbing ()
 
           if (file_format_ == "obj")
           {
-            if (pcl::io::loadPolygonFileOBJ (local_path_ + "scan." + file_format_, *mesh) == 0)
+            if (pcl::io::loadOBJFile (local_path_ + "scan." + file_format_, *mesh) == 0)
               return;
           }
           else if (file_format_ == "ply")
           {
-            if (pcl::io::loadPolygonFilePLY (local_path_ + "scan." + file_format_, *mesh) == 0)
+            if (pcl::io::loadPLYFile (local_path_ + "scan." + file_format_, *mesh) == 0)
               return;
           }
           else if (file_format_ == "stl")

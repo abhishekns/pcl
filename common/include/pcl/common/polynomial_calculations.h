@@ -33,8 +33,7 @@
  *
  */
 
-#ifndef PCL_POLYNOMIAL_CALCULATIONS_H_
-#define PCL_POLYNOMIAL_CALCULATIONS_H_
+#pragma once
 
 #include <pcl/common/eigen.h>
 #include <pcl/common/bivariate_polynomial.h>
@@ -50,36 +49,32 @@ namespace pcl
   class PolynomialCalculationsT 
   {
     public:
-      // =====CONSTRUCTOR & DESTRUCTOR=====
-      PolynomialCalculationsT ();
-      ~PolynomialCalculationsT ();
-      
       // =====PUBLIC STRUCTS=====
       //! Parameters used in this class
       struct Parameters
       {
-        Parameters () : zero_value (), sqr_zero_value () { setZeroValue (1e-6);}
+        Parameters () { setZeroValue (1e-6);}
         //! Set zero_value
         void
         setZeroValue (real new_zero_value);
 
-        real zero_value;       //!< Every value below this is considered to be zero
-        real sqr_zero_value;   //!< sqr of the above
+        real zero_value = {};       //!< Every value below this is considered to be zero
+        real sqr_zero_value = {};   //!< sqr of the above
       };
       
       // =====PUBLIC METHODS=====
       /** Solves an equation of the form ax^4 + bx^3 + cx^2 +dx + e = 0
-       *  See http://en.wikipedia.org/wiki/Quartic_equation#Summary_of_Ferrari.27s_method */
+       *  See https://en.wikipedia.org/wiki/Quartic_equation#Summary_of_Ferrari.27s_method */
       inline void
       solveQuarticEquation (real a, real b, real c, real d, real e, std::vector<real>& roots) const;
 
       /** Solves an equation of the form ax^3 + bx^2 + cx + d = 0
-       *  See http://en.wikipedia.org/wiki/Cubic_equation */
+       *  See https://en.wikipedia.org/wiki/Cubic_equation */
       inline void
       solveCubicEquation (real a, real b, real c, real d, std::vector<real>& roots) const;
 
       /** Solves an equation of the form ax^2 + bx + c = 0
-       *  See http://en.wikipedia.org/wiki/Quadratic_equation */
+       *  See https://en.wikipedia.org/wiki/Quadratic_equation */
       inline void
       solveQuadraticEquation (real a, real b, real c, std::vector<real>& roots) const;
 
@@ -107,29 +102,27 @@ namespace pcl
       
     protected:  
       // =====PROTECTED METHODS=====
-      //! check if fabs(d)<zeroValue
+      //! check if std::abs(d)<zeroValue
       inline bool
       isNearlyZero (real d) const 
       { 
-        return (fabs (d) < parameters_.zero_value);
+        return (std::abs (d) < parameters_.zero_value);
       }
       
-      //! check if sqrt(fabs(d))<zeroValue
+      //! check if sqrt(std::abs(d))<zeroValue
       inline bool
       sqrtIsNearlyZero (real d) const 
       { 
-        return (fabs (d) < parameters_.sqr_zero_value);
+        return (std::abs (d) < parameters_.sqr_zero_value);
       }
       
       // =====PROTECTED MEMBERS=====
       Parameters parameters_;
   };
 
-  typedef PolynomialCalculationsT<double> PolynomialCalculationsd;
-  typedef PolynomialCalculationsT<float>  PolynomialCalculations;
+  using PolynomialCalculationsd = PolynomialCalculationsT<double>;
+  using PolynomialCalculations = PolynomialCalculationsT<float>;
 
 }  // end namespace
 
 #include <pcl/common/impl/polynomial_calculations.hpp>
-
-#endif

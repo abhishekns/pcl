@@ -2602,7 +2602,8 @@ int ON_4fPoint::MaximumCoordinateIndex() const
 {
   const float* a = &x;
   int i = ( fabs(y) > fabs(x) ) ? 1 : 0;
-  if (fabs(z) > fabs(a[i])) i = 2; if (fabs(w) > fabs(a[i])) i = 3;
+  if (fabs(z) > fabs(a[i])) i = 2;
+  if (fabs(w) > fabs(a[i])) i = 3;
   return i;
 }
 
@@ -3679,8 +3680,8 @@ ON_2dPoint::ON_2dPoint(const ON_3fPoint& p)
 ON_2dPoint::ON_2dPoint(const ON_4fPoint& h)
 {
   const double w = (h.w != 1.0f && h.w != 0.0f) ? 1.0/((double)h.w) : 1.0;
-  x *= w*h.x;
-  y *= w*h.y;
+  x = w*h.x;
+  y = w*h.y;
 }
 
 ON_2dPoint::ON_2dPoint(const ON_2fVector& v)
@@ -4898,7 +4899,8 @@ int ON_4dPoint::MaximumCoordinateIndex() const
 {
   const double* a = &x;
   int i = ( fabs(y) > fabs(x) ) ? 1 : 0;
-  if (fabs(z) > fabs(a[i])) i = 2; if (fabs(w) > fabs(a[i])) i = 3;
+  if (fabs(z) > fabs(a[i])) i = 2;
+  if (fabs(w) > fabs(a[i])) i = 3;
   return i;
 }
 
@@ -4912,7 +4914,8 @@ int ON_4dPoint::MinimumCoordinateIndex() const
 {
   const double* a = &x;
   int i = ( fabs(y) < fabs(x) ) ? 1 : 0;
-  if (fabs(z) < fabs(a[i])) i = 2; if (fabs(w) < fabs(a[i])) i = 3;
+  if (fabs(z) < fabs(a[i])) i = 2;
+  if (fabs(w) < fabs(a[i])) i = 3;
   return i;
 }
 

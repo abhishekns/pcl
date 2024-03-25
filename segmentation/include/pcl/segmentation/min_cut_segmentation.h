@@ -36,17 +36,17 @@
  *
  */
 
-#ifndef PCL_MIN_CUT_SEGMENTATION_H_
-#define PCL_MIN_CUT_SEGMENTATION_H_
+#pragma once
 
-#include <pcl/segmentation/boost.h>
-#if (BOOST_VERSION >= 104400)
+#include <pcl/memory.h>
 #include <pcl/pcl_base.h>
+#include <pcl/pcl_macros.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/search/search.h>
 #include <string>
 #include <set>
+#include <boost/graph/adjacency_list.hpp> // for adjacency_list
 
 namespace pcl
 {
@@ -54,16 +54,17 @@ namespace pcl
     * The description can be found in the article:
     * "Min-Cut Based Segmentation of Point Clouds"
     * \author: Aleksey Golovinskiy and Thomas Funkhouser.
+    * \ingroup segmentation
     */
   template <typename PointT>
   class PCL_EXPORTS MinCutSegmentation : public pcl::PCLBase<PointT>
   {
     public:
 
-      typedef pcl::search::Search <PointT> KdTree;
-      typedef typename KdTree::Ptr KdTreePtr;
-      typedef pcl::PointCloud< PointT > PointCloud;
-      typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+      using KdTree = pcl::search::Search<PointT>;
+      using KdTreePtr = typename KdTree::Ptr;
+      using PointCloud = pcl::PointCloud<PointT>;
+      using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
       using PCLBase <PointT>::input_;
       using PCLBase <PointT>::indices_;
@@ -72,35 +73,37 @@ namespace pcl
 
     public:
 
-      typedef boost::adjacency_list_traits< boost::vecS, boost::vecS, boost::directedS > Traits;
+      using Traits = boost::adjacency_list_traits< boost::vecS, boost::vecS, boost::directedS >;
 
-      typedef boost::adjacency_list< boost::vecS, boost::vecS, boost::directedS,
-                                     boost::property< boost::vertex_name_t, std::string,
-                                       boost::property< boost::vertex_index_t, long,
-                                         boost::property< boost::vertex_color_t, boost::default_color_type,
-                                           boost::property< boost::vertex_distance_t, long,
-                                             boost::property< boost::vertex_predecessor_t, Traits::edge_descriptor > > > > >,
-                                     boost::property< boost::edge_capacity_t, double,
-                                       boost::property< boost::edge_residual_capacity_t, double,
-                                         boost::property< boost::edge_reverse_t, Traits::edge_descriptor > > > > mGraph;
+      using mGraph = boost::adjacency_list< boost::vecS, boost::vecS, boost::directedS,
+                                            boost::property< boost::vertex_name_t, std::string,
+                                              boost::property< boost::vertex_index_t, long,
+                                                boost::property< boost::vertex_color_t, boost::default_color_type,
+                                                  boost::property< boost::vertex_distance_t, long,
+                                                    boost::property< boost::vertex_predecessor_t, Traits::edge_descriptor > > > > >,
+                                            boost::property< boost::edge_capacity_t, double,
+                                              boost::property< boost::edge_residual_capacity_t, double,
+                                                boost::property< boost::edge_reverse_t, Traits::edge_descriptor > > > >;
 
-      typedef boost::property_map< mGraph, boost::edge_capacity_t >::type CapacityMap;
+      using CapacityMap = boost::property_map< mGraph, boost::edge_capacity_t >::type;
 
-      typedef boost::property_map< mGraph, boost::edge_reverse_t>::type ReverseEdgeMap;
+      using ReverseEdgeMap = boost::property_map< mGraph, boost::edge_reverse_t>::type;
 
-      typedef Traits::vertex_descriptor VertexDescriptor;
+      using VertexDescriptor = Traits::vertex_descriptor;
 
-      typedef boost::graph_traits< mGraph >::edge_descriptor EdgeDescriptor;
+      using EdgeDescriptor = boost::graph_traits<mGraph>::edge_descriptor;
 
-      typedef boost::graph_traits< mGraph >::out_edge_iterator OutEdgeIterator;
+      using OutEdgeIterator = boost::graph_traits<mGraph>::out_edge_iterator;
 
-      typedef boost::graph_traits< mGraph >::vertex_iterator VertexIterator;
+      using VertexIterator = boost::graph_traits<mGraph>::vertex_iterator;
 
-      typedef boost::property_map< mGraph, boost::edge_residual_capacity_t >::type ResidualCapacityMap;
+      using ResidualCapacityMap = boost::property_map< mGraph, boost::edge_residual_capacity_t >::type;
 
-      typedef boost::property_map< mGraph, boost::vertex_index_t >::type IndexMap;
+      using IndexMap = boost::property_map< mGraph, boost::vertex_index_t >::type;
 
-      typedef boost::graph_traits< mGraph >::in_edge_iterator InEdgeIterator;
+      using InEdgeIterator = boost::graph_traits<mGraph>::in_edge_iterator;
+
+      using mGraphPtr = shared_ptr<mGraph>;
 
     public:
 
@@ -108,14 +111,14 @@ namespace pcl
       MinCutSegmentation ();
 
       /** \brief Destructor that frees memory. */
-      virtual
-      ~MinCutSegmentation ();
+
+      ~MinCutSegmentation () override;
 
       /** \brief This method simply sets the input point cloud.
         * \param[in] cloud the const boost shared pointer to a PointCloud
         */
-      virtual void
-      setInputCloud (const PointCloudConstPtr &cloud);
+      void
+      setInputCloud (const PointCloudConstPtr &cloud) override;
 
       /** \brief Returns normalization value for binary potentials. For more information see the article. */
       double
@@ -155,7 +158,7 @@ namespace pcl
 
       /** \brief Allows to set search method for finding KNN.
         * The graph is build such way that it contains the edges that connect point and its KNN.
-        * \param[in] search search method that will be used for finding KNN.
+        * \param[in] tree search method that will be used for finding KNN.
         */
       void
       setSearchMethod (const KdTreePtr& tree);
@@ -165,7 +168,7 @@ namespace pcl
       getNumberOfNeighbours () const;
 
       /** \brief Allows to set the number of neighbours to find.
-        * \param[in] number_of_neighbours new number of neighbours
+        * \param[in] neighbour_number new number of neighbours
         */
       void
       setNumberOfNeighbours (unsigned int neighbour_number);
@@ -203,7 +206,7 @@ namespace pcl
       getMaxFlow () const;
 
       /** \brief Returns the graph that was build for finding the minimum cut. */
-      typename boost::shared_ptr<typename pcl::MinCutSegmentation<PointT>::mGraph>
+      mGraphPtr
       getGraph () const;
 
       /** \brief Returns the colored cloud. Points that belong to the object have the same color. */
@@ -258,73 +261,70 @@ namespace pcl
     protected:
 
       /** \brief Stores the sigma coefficient. It is used for finding smooth costs. More information can be found in the article. */
-      double inverse_sigma_;
+      double inverse_sigma_{16.0};
 
       /** \brief Signalizes if the binary potentials are valid. */
-      bool binary_potentials_are_valid_;
+      bool binary_potentials_are_valid_{false};
 
       /** \brief Used for comparison of the floating point numbers. */
-      double epsilon_;
+      double epsilon_{0.0001};
 
       /** \brief Stores the distance to the background. */
-      double radius_;
+      double radius_{16.0};
 
       /** \brief Signalizes if the unary potentials are valid. */
-      bool unary_potentials_are_valid_;
+      bool unary_potentials_are_valid_{false};
 
       /** \brief Stores the weight for every edge that comes from source point. */
-      double source_weight_;
+      double source_weight_{0.8};
 
       /** \brief Stores the search method that will be used for finding K nearest neighbors. Neighbours are used for building the graph. */
-      KdTreePtr search_;
+      KdTreePtr search_{nullptr};
 
       /** \brief Stores the number of neighbors to find. */
-      unsigned int number_of_neighbours_;
+      unsigned int number_of_neighbours_{14};
 
       /** \brief Signalizes if the graph is valid. */
-      bool graph_is_valid_;
+      bool graph_is_valid_{false};
 
       /** \brief Stores the points that are known to be in the foreground. */
-      std::vector<PointT, Eigen::aligned_allocator<PointT> > foreground_points_;
+      std::vector<PointT, Eigen::aligned_allocator<PointT> > foreground_points_{};
 
       /** \brief Stores the points that are known to be in the background. */
-      std::vector<PointT, Eigen::aligned_allocator<PointT> > background_points_;
+      std::vector<PointT, Eigen::aligned_allocator<PointT> > background_points_{};
 
       /** \brief After the segmentation it will contain the segments. */
-      std::vector <pcl::PointIndices> clusters_;
+      std::vector <pcl::PointIndices> clusters_{};
 
       /** \brief Stores the graph for finding the maximum flow. */
-      boost::shared_ptr<mGraph> graph_;
+      mGraphPtr graph_{nullptr};
 
       /** \brief Stores the capacity of every edge in the graph. */
-      boost::shared_ptr<CapacityMap> capacity_;
+      std::shared_ptr<CapacityMap> capacity_{nullptr};
 
       /** \brief Stores reverse edges for every edge in the graph. */
-      boost::shared_ptr<ReverseEdgeMap> reverse_edges_;
+      std::shared_ptr<ReverseEdgeMap> reverse_edges_{nullptr};
 
       /** \brief Stores the vertices of the graph. */
-      std::vector< VertexDescriptor > vertices_;
+      std::vector< VertexDescriptor > vertices_{};
 
       /** \brief Stores the information about the edges that were added to the graph. It is used to avoid the duplicate edges. */
-      std::vector< std::set<int> > edge_marker_;
+      std::vector< std::set<int> > edge_marker_{};
 
       /** \brief Stores the vertex that serves as source. */
-      VertexDescriptor source_;
+      VertexDescriptor source_{};
 
       /** \brief Stores the vertex that serves as sink. */
-      VertexDescriptor sink_;
+      VertexDescriptor sink_{};
 
       /** \brief Stores the maximum flow value that was calculated during the segmentation. */
-      double max_flow_;
+      double max_flow_{0.0};
 
     public:
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+      PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
 }
 
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/segmentation/impl/min_cut_segmentation.hpp>
-#endif
-
-#endif
 #endif

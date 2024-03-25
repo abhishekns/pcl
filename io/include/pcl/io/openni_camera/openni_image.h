@@ -33,16 +33,16 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  */
-#include <pcl/pcl_config.h>
-#ifdef HAVE_OPENNI
 
-#ifndef __OPENNI_IMAGE__
-#define __OPENNI_IMAGE__
+#pragma once
+ 
+#include <pcl/pcl_config.h>
+#include <pcl/memory.h>
+#ifdef HAVE_OPENNI
 
 #include <pcl/pcl_exports.h>
 #include "openni.h"
 #include "openni_exception.h"
-#include <pcl/io/boost.h>
 
 namespace openni_wrapper
 {
@@ -58,28 +58,28 @@ namespace openni_wrapper
   class PCL_EXPORTS Image
   {
   public:
-    typedef boost::shared_ptr<Image> Ptr;
-    typedef boost::shared_ptr<const Image> ConstPtr;
+    using Ptr = pcl::shared_ptr<Image>;
+    using ConstPtr = pcl::shared_ptr<const Image>;
 
-    typedef enum
+    enum Encoding
     {
       BAYER_GRBG,
       YUV422,
       RGB
-    } Encoding;
+    };
 
     /**
      * @author Suat Gedikli
      * @brief Constructor
      * @param[in] image_meta_data the actual image data from the OpenNI driver
      */
-    inline Image (boost::shared_ptr<xn::ImageMetaData> image_meta_data) throw ();
+    inline Image (pcl::shared_ptr<xn::ImageMetaData> image_meta_data) noexcept;
 
     /**
      * @author Suat Gedikli
      * @brief virtual Destructor that never throws an exception.
      */
-    inline virtual ~Image () throw ();
+    inline virtual ~Image () noexcept;
 
     /**
      * @author Suat Gedikli
@@ -116,7 +116,7 @@ namespace openni_wrapper
      * @param[in,out] rgb_buffer
      */
     inline void
-    fillRaw (unsigned char* rgb_buffer) const throw ()
+    fillRaw (unsigned char* rgb_buffer) const noexcept
     {
       memcpy (rgb_buffer, image_md_->Data (), image_md_->DataSize ());
     }
@@ -136,74 +136,73 @@ namespace openni_wrapper
      * @author Suat Gedikli
      * @return width of the image
      */
-    inline unsigned getWidth () const throw ();
+    inline unsigned getWidth () const noexcept;
 
     /**
      * @author Suat Gedikli
      * @return height of the image
      */
-    inline unsigned getHeight () const throw ();
+    inline unsigned getHeight () const noexcept;
 
     /**
      * @author Suat Gedikli
      * @return frame id of the image.
      * @note frame ids are ascending, but not necessarily synch'ed with other streams
      */
-    inline unsigned getFrameID () const throw ();
+    inline unsigned getFrameID () const noexcept;
 
     /**
      * @author Suat Gedikli
      * @return the time stamp of the image
      * @note the time value is not synche'ed with the system time
      */
-    inline unsigned long getTimeStamp () const throw ();
+    inline unsigned long getTimeStamp () const noexcept;
 
     /**
      * @author Suat Gedikli
      * @return the actual data in native OpenNI format.
      */
-    inline const xn::ImageMetaData& getMetaData () const throw ();
+    inline const xn::ImageMetaData& getMetaData () const noexcept;
 
   protected:
-    boost::shared_ptr<xn::ImageMetaData> image_md_;
+    pcl::shared_ptr<xn::ImageMetaData> image_md_;
   } ;
 
-  Image::Image (boost::shared_ptr<xn::ImageMetaData> image_meta_data) throw ()
-  : image_md_ (image_meta_data)
+  Image::Image (pcl::shared_ptr<xn::ImageMetaData> image_meta_data) noexcept
+  : image_md_ (std::move(image_meta_data))
   {
   }
 
-  Image::~Image () throw () { }
+  Image::~Image () noexcept = default;
 
   unsigned
-  Image::getWidth () const throw ()
+  Image::getWidth () const noexcept
   {
     return image_md_->XRes ();
   }
 
   unsigned
-  Image::getHeight () const throw ()
+  Image::getHeight () const noexcept
   {
     return image_md_->YRes ();
   }
 
   unsigned
-  Image::getFrameID () const throw ()
+  Image::getFrameID () const noexcept
   {
     return image_md_->FrameID ();
   }
 
   unsigned long
-  Image::getTimeStamp () const throw ()
+  Image::getTimeStamp () const noexcept
   {
     return static_cast<unsigned long> (image_md_->Timestamp ());
   }
 
   const xn::ImageMetaData&
-  Image::getMetaData () const throw ()
+  Image::getMetaData () const noexcept
   {
     return *image_md_;
   }
 } // namespace
 #endif
-#endif //__OPENNI_IMAGE__

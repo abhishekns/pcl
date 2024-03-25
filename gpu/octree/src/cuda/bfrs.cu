@@ -43,9 +43,6 @@
 
 #include "cuda.h"
 
-using namespace std;
-using namespace thrust;
-
 namespace pcl
 {    
     namespace device
@@ -72,27 +69,20 @@ namespace pcl
     }
 }
 
-#if defined(CUDA_VERSION) && CUDA_VERSION == 4000
-    //workaround of bug in Thrust
-    typedef thrust::counting_iterator<int, thrust::use_default, thrust::use_default, thrust::use_default> It;
-    template<> struct thrust::iterator_difference<It> { typedef int type; };
-#endif
-
-
 void pcl::device::bruteForceRadiusSearch(const OctreeImpl::PointCloud& cloud, const OctreeImpl::PointType& query, float radius, DeviceArray<int>& result, DeviceArray<int>& buffer)
 {   
-    typedef OctreeImpl::PointType PointType;
+    using PointType = OctreeImpl::PointType;
 
     if (buffer.size() < cloud.size())
         buffer.create(cloud.size());
 
     InSphere cond(query.x, query.y, query.z, radius);
 
-    device_ptr<const PointType> cloud_ptr((const PointType*)cloud.ptr());
-    device_ptr<int> res_ptr(buffer.ptr());
+    thrust::device_ptr<const PointType> cloud_ptr((const PointType*)cloud.ptr());
+    thrust::device_ptr<int> res_ptr(buffer.ptr());
     
-    counting_iterator<int> first(0);
-    counting_iterator<int> last = first + cloud.size();
+    thrust::counting_iterator<int> first(0);
+    thrust::counting_iterator<int> last = first + cloud.size();
     
     //main bottle neck is a kernel call overhead/allocs
     //work time for 871k points ~0.8ms

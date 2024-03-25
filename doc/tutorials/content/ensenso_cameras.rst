@@ -37,12 +37,43 @@ Compile and install PCL.
 Using the example
 =================
 
-The `pcl_ensenso_viewer <https://github.com/PointCloudLibrary/pcl/blob/master/visualization/tools/ensenso_viewer.cpp>`_ example shows how to
-display a point cloud grabbed from an Ensenso device using the `EnsensoGrabber <http://docs.pointclouds.org/trunk/classpcl_1_1_ensenso_grabber.html>`_ class.
+The `pcl_ensenso_viewer <https://github.com/PointCloudLibrary/pcl/blob/master/tools/ensenso_viewer.cpp>`_ example shows how to
+display a point cloud grabbed from an Ensenso device using the `EnsensoGrabber <https://pointclouds.org/documentation/classpcl_1_1_ensenso_grabber.html>`_ class.
 
 Note that this program opens the TCP port of the nxLib tree, this allows you to open the nxLib tree with the nxTreeEdit program (port 24000).
 The capture parameters (exposure, gain etc..) are set to default values.
 If you have performed and stored an extrinsic calibration it will be temporary reset.
+
+If you are using an Ensenso X device you have to calibrate the device before trying to run the PCL driver. If you don't you will get an error like this:
+
+.. code-block:: cpp
+
+  Initialising nxLib
+  Opening Ensenso stereo camera id = 0
+  openDevice: NxLib error ExecutionFailed (17) occurred while accessing item /Execute.
+
+  {
+          "ErrorSymbol": "InvalidCalibrationData",
+          "ErrorText": "Stereo camera calibration data is corrupted or not supported yet by the current software version.",
+          "Execute": {
+                  "Command": "Open",
+                  "Parameters": {
+                          "AllowFirmwareUpload": null,
+                          "Cameras": "171197",
+                          "FirmwareUpload": {
+                                  "Camera": null,
+                                  "Projector": null
+                          },
+                          "LoadCalibration": null,
+                          "Projector": null,
+                          "Threads": null
+                  }
+          },
+          "Time": 8902,
+          "TimeExecute": 8901,
+          "TimeFinalize": 0.03477,
+          "TimePrepare": 0.01185
+  }
 
 .. code-block:: cpp
 
@@ -83,7 +114,7 @@ Extrinsic calibration
 
 If you want to perform extrinsic calibration of the sensor, please first make sure your EnsensoSDK version is greater than 1.3.
 A fully automated extrinsic calibration ROS package is available to help you calibrate the sensor mounted on a robot arm, 
-the package can be found in the `Institut Maupertuis repository <https://github.com/InstitutMaupertuis/ensenso_extrinsic_calibration>`_.
+the package can be found in the `Institut Maupertuis repository <https://gitlab.com/InstitutMaupertuis/ensenso_extrinsic_calibration>`_.
 
 The following video shows the automatic calibration procedure on a Fanuc R1000iA 80f industrial robot:
 

@@ -35,40 +35,94 @@
  *
  */
 
-#include <gtest/gtest.h>
+#include <pcl/test/gtest.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/registration/correspondence_estimation_normal_shooting.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/kdtree/kdtree.h>
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-TEST (CorrespondenceEstimation, CorrespondenceEstimationNormalShooting)
-{
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1 (new pcl::PointCloud<pcl::PointXYZ> ());
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud2 (new pcl::PointCloud<pcl::PointXYZ> ());
+#include <utility>
 
-  // Defining two parallel planes differing only by the y co-ordinate
-  for (float i = 0.0f; i < 10.0f; i += 0.2f)
+namespace
+{
+
+template <typename PointT>
+PointT makeRandomPoint()
+{
+  return PointT{};
+}
+
+template <>
+pcl::PointXYZ makeRandomPoint()
+{
+  return {static_cast<float>(rand()), static_cast<float>(rand()), static_cast<float>(rand())};
+}
+
+template <>
+pcl::PointXYZI makeRandomPoint()
+{
+  return {static_cast<float>(rand()), static_cast<float>(rand()), static_cast<float>(rand()), static_cast<float>(rand())};
+}
+
+template <typename PointT, typename... Args>
+PointT makePointWithParams(Args... args)
+{
+  return PointT{ args... };
+}
+
+template <>
+pcl::PointXYZ makePointWithParams(float x, float y, float z)
+{
+  return {x, y, z};
+}
+
+template <>
+pcl::PointXYZI makePointWithParams(float x, float y, float z)
+{
+  return {x, y, z, static_cast<float>(rand())};
+}
+
+}
+
+template <typename T>
+class CorrespondenceEstimationTestSuite : public ::testing::Test { };
+
+using PointTypesForCorrespondenceEstimationTest = 
+  ::testing::Types<std::pair<pcl::PointXYZ, pcl::PointXYZ>, std::pair<pcl::PointXYZ, pcl::PointXYZI>>;
+
+TYPED_TEST_SUITE(CorrespondenceEstimationTestSuite, PointTypesForCorrespondenceEstimationTest);
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+TYPED_TEST(CorrespondenceEstimationTestSuite, CorrespondenceEstimationNormalShooting)
+{
+  using PointSource = typename TypeParam::first_type;
+  using PointTarget = typename TypeParam::second_type;
+
+  auto cloud1 (pcl::make_shared<pcl::PointCloud<PointSource>> ());
+  auto cloud2 (pcl::make_shared<pcl::PointCloud<PointTarget>> ());
+
+  // Defining two parallel planes differing only by the y coordinate
+  for (std::size_t i = 0; i < 50; ++i)
   {
-    for (float z = 0.0f; z < 5.0f; z += 0.2f)
+    for (std::size_t j = 0; j < 25; ++j)
     {
-      cloud1->points.push_back (pcl::PointXYZ (i, 0, z));
-      cloud2->points.push_back (pcl::PointXYZ (i, 2, z)); // Ideally this should be the corresponding point to the point defined in the previous line
+      cloud1->push_back(makePointWithParams<PointSource>(i * 0.2f, 0.f, j * 0.2f));
+      cloud2->push_back(makePointWithParams<PointTarget>(i * 0.2f, 2.f, j * 0.2f)); // Ideally this should be the corresponding point to the point defined in the previous line
     }
   }
         
-  pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
+  pcl::NormalEstimation<PointSource, pcl::Normal> ne;
   ne.setInputCloud (cloud1); 
 
-  pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ> ());
+  auto tree (pcl::make_shared<pcl::search::KdTree<PointSource>> ());
   ne.setSearchMethod (tree);
 
-  pcl::PointCloud<pcl::Normal>::Ptr cloud1_normals (new pcl::PointCloud<pcl::Normal>);
+  auto cloud1_normals (pcl::make_shared<pcl::PointCloud<pcl::Normal>> ());
   ne.setKSearch (5);
   ne.compute (*cloud1_normals); // All normals are perpendicular to the plane defined
 
-  pcl::CorrespondencesPtr corr (new pcl::Correspondences);
-  pcl::registration::CorrespondenceEstimationNormalShooting <pcl::PointXYZ, pcl::PointXYZ, pcl::Normal> ce;
+  auto corr (pcl::make_shared<pcl::Correspondences> ());
+  pcl::registration::CorrespondenceEstimationNormalShooting <PointSource, PointTarget, pcl::Normal> ce;
   ce.setInputSource (cloud1);
   ce.setKSearch (10);
   ce.setSourceNormals (cloud1_normals);
@@ -76,30 +130,32 @@ TEST (CorrespondenceEstimation, CorrespondenceEstimationNormalShooting)
   ce.determineCorrespondences (*corr);
 
   // Based on the data defined, the correspondence indices should be 1 <-> 1 , 2 <-> 2 , 3 <-> 3 etc.
-  for (unsigned int i = 0; i < corr->size (); i++)
+  for (std::size_t i = 0; i < corr->size (); i++)
   {
     EXPECT_EQ ((*corr)[i].index_query, (*corr)[i].index_match);
   }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////
-TEST (CorrespondenceEstimation, CorrespondenceEstimationSetSearchMethod)
+TYPED_TEST (CorrespondenceEstimationTestSuite, CorrespondenceEstimationSetSearchMethod)
 {
+  using PointSource = typename TypeParam::first_type;
+  using PointTarget = typename TypeParam::second_type;
   // Generating 3 random clouds
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1 (new pcl::PointCloud<pcl::PointXYZ> ());
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud2 (new pcl::PointCloud<pcl::PointXYZ> ());
-  for ( size_t i = 0; i < 50; i++ )
+  auto cloud1 (pcl::make_shared<pcl::PointCloud<PointSource>> ());
+  auto cloud2 (pcl::make_shared<pcl::PointCloud<PointTarget>> ());
+  for (std::size_t i = 0; i < 50; i++)
   {
-    cloud1->points.push_back(pcl::PointXYZ(float (rand()), float (rand()), float (rand())));
-    cloud2->points.push_back(pcl::PointXYZ(float (rand()), float (rand()), float (rand())));
+    cloud1->push_back(makeRandomPoint<PointSource>());
+    cloud2->push_back(makeRandomPoint<PointTarget>());
   }
   // Build a KdTree for each
-  pcl::search::KdTree<pcl::PointXYZ>::Ptr tree1 (new pcl::search::KdTree<pcl::PointXYZ> ());
+  auto tree1 (pcl::make_shared<pcl::search::KdTree<PointSource>> ());
   tree1->setInputCloud (cloud1);
-  pcl::search::KdTree<pcl::PointXYZ>::Ptr tree2 (new pcl::search::KdTree<pcl::PointXYZ> ());
+  auto tree2 (pcl::make_shared<pcl::search::KdTree<PointTarget>> ());
   tree2->setInputCloud (cloud2);
   // Compute correspondences
-  pcl::registration::CorrespondenceEstimation<pcl::PointXYZ, pcl::PointXYZ, double> ce;
+  pcl::registration::CorrespondenceEstimation<PointSource, PointTarget, double> ce;
   ce.setInputSource (cloud1);
   ce.setInputTarget (cloud2);
   pcl::Correspondences corr_orig;
@@ -111,7 +167,7 @@ TEST (CorrespondenceEstimation, CorrespondenceEstimationSetSearchMethod)
   ce.determineCorrespondences (corr_cached);
   // Ensure they're the same
   EXPECT_EQ(corr_orig.size(), corr_cached.size());
-  for(size_t i = 0; i < corr_orig.size(); i++)
+  for(std::size_t i = 0; i < corr_orig.size(); i++)
   {
     EXPECT_EQ(corr_orig[i].index_query, corr_cached[i].index_query);
     EXPECT_EQ(corr_orig[i].index_match, corr_cached[i].index_match);

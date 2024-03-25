@@ -37,31 +37,32 @@
  *  $Id$
  */
 
-#ifndef PCL_PFHRGB_H_
-#define PCL_PFHRGB_H_
+#pragma once
 
 #include <pcl/features/feature.h>
-#include <pcl/features/pfh_tools.h>
 
 namespace pcl
 {
+  /** \brief Similar to the Point Feature Histogram descriptor, but also takes color into account. See also \ref PFHEstimation
+    * \ingroup features
+    */
   template <typename PointInT, typename PointNT, typename PointOutT = pcl::PFHRGBSignature250>
   class PFHRGBEstimation : public FeatureFromNormals<PointInT, PointNT, PointOutT>
   {
     public:
-      typedef boost::shared_ptr<PFHRGBEstimation<PointInT, PointNT, PointOutT> > Ptr;
-      typedef boost::shared_ptr<const PFHRGBEstimation<PointInT, PointNT, PointOutT> > ConstPtr;
+      using Ptr = shared_ptr<PFHRGBEstimation<PointInT, PointNT, PointOutT> >;
+      using ConstPtr = shared_ptr<const PFHRGBEstimation<PointInT, PointNT, PointOutT> >;
       using PCLBase<PointInT>::indices_;
       using Feature<PointInT, PointOutT>::feature_name_;
       using Feature<PointInT, PointOutT>::surface_;
       using Feature<PointInT, PointOutT>::k_;
       using Feature<PointInT, PointOutT>::search_parameter_;
       using FeatureFromNormals<PointInT, PointNT, PointOutT>::normals_;
-      typedef typename Feature<PointInT, PointOutT>::PointCloudOut PointCloudOut;
+      using PointCloudOut = typename Feature<PointInT, PointOutT>::PointCloudOut;
 
 
       PFHRGBEstimation ()
-        : nr_subdiv_ (5), pfhrgb_histogram_ (), pfhrgb_tuple_ (), d_pi_ (1.0f / (2.0f * static_cast<float> (M_PI)))
+        :  d_pi_ (1.0f / (2.0f * static_cast<float> (M_PI)))
       {
         feature_name_ = "PFHRGBEstimation";
       }
@@ -73,15 +74,15 @@ namespace pcl
 
       void
       computePointPFHRGBSignature (const pcl::PointCloud<PointInT> &cloud, const pcl::PointCloud<PointNT> &normals,
-                                   const std::vector<int> &indices, int nr_split, Eigen::VectorXf &pfhrgb_histogram);
+                                   const pcl::Indices &indices, int nr_split, Eigen::VectorXf &pfhrgb_histogram);
 
     protected:
       void
-      computeFeature (PointCloudOut &output);
+      computeFeature (PointCloudOut &output) override;
 
     private:
       /** \brief The number of subdivisions for each angular feature interval. */
-      int nr_subdiv_;
+      int nr_subdiv_{5};
 
       /** \brief Placeholder for a point's PFHRGB signature. */
       Eigen::VectorXf pfhrgb_histogram_;
@@ -100,5 +101,3 @@ namespace pcl
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/features/impl/pfhrgb.hpp>
 #endif
-
-#endif /* PCL_PFHRGB_H_ */

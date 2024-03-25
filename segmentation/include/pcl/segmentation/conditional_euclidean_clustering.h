@@ -35,18 +35,20 @@
  *
  */
 
-#ifndef PCL_SEGMENTATION_CONDITIONAL_EUCLIDEAN_CLUSTERING_H_
-#define PCL_SEGMENTATION_CONDITIONAL_EUCLIDEAN_CLUSTERING_H_
+#pragma once
 
-#include <boost/function.hpp>
-
+#include <pcl/memory.h>
 #include <pcl/pcl_base.h>
-#include <pcl/search/pcl_search.h>
+#include <pcl/pcl_macros.h>
+#include <pcl/console/print.h> // for PCL_WARN
+#include <pcl/search/search.h> // for Search
+
+#include <functional>
 
 namespace pcl
 {
-  typedef std::vector<pcl::PointIndices> IndicesClusters;
-  typedef boost::shared_ptr<std::vector<pcl::PointIndices> > IndicesClustersPtr;
+  using IndicesClusters = std::vector<pcl::PointIndices>;
+  using IndicesClustersPtr = shared_ptr<std::vector<pcl::PointIndices> >;
 
   /** \brief @b ConditionalEuclideanClustering performs segmentation based on Euclidean distance and a user-defined clustering condition.
     * \details The condition that need to hold is currently passed using a function pointer.
@@ -55,7 +57,7 @@ namespace pcl
     * bool
     * enforceIntensitySimilarity (const pcl::PointXYZI& point_a, const pcl::PointXYZI& point_b, float squared_distance)
     * {
-    *   if (fabs (point_a.intensity - point_b.intensity) < 0.1f)
+    *   if (std::abs (point_a.intensity - point_b.intensity) < 0.1f)
     *     return (true);
     *   else
     *     return (false);
@@ -83,7 +85,7 @@ namespace pcl
   class ConditionalEuclideanClustering : public PCLBase<PointT>
   {
     protected:
-      typedef typename pcl::search::Search<PointT>::Ptr SearcherPtr;
+      using SearcherPtr = typename pcl::search::Search<PointT>::Ptr;
 
       using PCLBase<PointT>::input_;
       using PCLBase<PointT>::indices_;
@@ -97,13 +99,27 @@ namespace pcl
       ConditionalEuclideanClustering (bool extract_removed_clusters = false) :
           searcher_ (),
           condition_function_ (),
-          cluster_tolerance_ (0.0f),
-          min_cluster_size_ (1),
-          max_cluster_size_ (std::numeric_limits<int>::max ()),
           extract_removed_clusters_ (extract_removed_clusters),
           small_clusters_ (new pcl::IndicesClusters),
           large_clusters_ (new pcl::IndicesClusters)
       {
+      }
+
+      /** \brief Provide a pointer to the search object.
+        * \param[in] tree a pointer to the spatial search object.
+        */
+      inline void
+      setSearchMethod (const SearcherPtr &tree)
+      {
+        searcher_ = tree;
+      }
+
+      /** \brief Get a pointer to the search method used.
+       */
+      inline const SearcherPtr&
+      getSearchMethod () const
+      {
+        return searcher_;
       }
 
       /** \brief Set the condition that needs to hold for neighboring points to be considered part of the same cluster.
@@ -124,7 +140,7 @@ namespace pcl
         * \param[in] condition_function The condition function that needs to hold for clustering
         */
       inline void
-      setConditionFunction (bool (*condition_function) (const PointT&, const PointT&, float)) 
+      setConditionFunction (bool (*condition_function) (const PointT&, const PointT&, float))
       {
         condition_function_ = condition_function;
       }
@@ -132,7 +148,7 @@ namespace pcl
       /** \brief Set the condition that needs to hold for neighboring points to be considered part of the same cluster.
         * This is an overloaded function provided for convenience. See the documentation for setConditionFunction(). */
       inline void
-      setConditionFunction (boost::function<bool (const PointT&, const PointT&, float)> condition_function)
+      setConditionFunction (std::function<bool (const PointT&, const PointT&, float)> condition_function)
       {
         condition_function_ = condition_function;
       }
@@ -218,37 +234,34 @@ namespace pcl
 
     private:
       /** \brief A pointer to the spatial search object */
-      SearcherPtr searcher_;
+      SearcherPtr searcher_{nullptr};
 
       /** \brief The condition function that needs to hold for clustering */
-      boost::function<bool (const PointT&, const PointT&, float)> condition_function_;
+      std::function<bool (const PointT&, const PointT&, float)> condition_function_;
 
       /** \brief The distance to scan for cluster candidates (default = 0.0) */
-      float cluster_tolerance_;
+      float cluster_tolerance_{0.0f};
 
       /** \brief The minimum cluster size (default = 1) */
-      int min_cluster_size_;
+      int min_cluster_size_{1};
 
       /** \brief The maximum cluster size (default = unlimited) */
-      int max_cluster_size_;
+      int max_cluster_size_{std::numeric_limits<int>::max ()};
 
       /** \brief Set to true if you want to be able to extract the clusters that are too large or too small (default = false) */
       bool extract_removed_clusters_;
 
       /** \brief The resultant clusters that contain less than min_cluster_size points */
-      pcl::IndicesClustersPtr small_clusters_;
+      pcl::IndicesClustersPtr small_clusters_{nullptr};
 
       /** \brief The resultant clusters that contain more than max_cluster_size points */
-      pcl::IndicesClustersPtr large_clusters_;
+      pcl::IndicesClustersPtr large_clusters_{nullptr};
 
     public:
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+      PCL_MAKE_ALIGNED_OPERATOR_NEW
   };
 }
 
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/segmentation/impl/conditional_euclidean_clustering.hpp>
 #endif
-
-#endif  // PCL_SEGMENTATION_CONDITIONAL_EUCLIDEAN_CLUSTERING_H_
-

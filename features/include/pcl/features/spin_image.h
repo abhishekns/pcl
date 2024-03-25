@@ -37,8 +37,7 @@
  * $Id$
  */
 
-#ifndef PCL_SPIN_IMAGE_H_
-#define PCL_SPIN_IMAGE_H_
+#pragma once
 
 #include <pcl/point_types.h>
 #include <pcl/features/feature.h>
@@ -68,9 +67,11 @@ namespace pcl
     * different than feature estimation methods that extend \ref
     * FeatureFromNormals, which match the normals with the search surface.
     *
-    * With the default paramters, pcl::Histogram<153> is a good choice for PointOutT.
+    * With the default parameters, pcl::Histogram<153> is a good choice for PointOutT.
     * Of course the dimension of this descriptor must change to match the number
-    * of bins set by the parameters.
+    * of bins set by the parameters. If you use SpinImageEstimation with something
+    * other than pcl::Histogram<153>, you may need to put `#define PCL_NO_PRECOMPILE 1`
+    * before including `pcl/features/spin_image.h`.
     *
     * For further information please see:
     *
@@ -88,8 +89,8 @@ namespace pcl
   class SpinImageEstimation : public Feature<PointInT, PointOutT>
   {
     public:
-      typedef boost::shared_ptr<SpinImageEstimation<PointInT, PointNT, PointOutT> > Ptr;
-      typedef boost::shared_ptr<const SpinImageEstimation<PointInT, PointNT, PointOutT> > ConstPtr;
+      using Ptr = shared_ptr<SpinImageEstimation<PointInT, PointNT, PointOutT> >;
+      using ConstPtr = shared_ptr<const SpinImageEstimation<PointInT, PointNT, PointOutT> >;
       using Feature<PointInT, PointOutT>::feature_name_;
       using Feature<PointInT, PointOutT>::getClassName;
       using Feature<PointInT, PointOutT>::indices_;
@@ -99,15 +100,15 @@ namespace pcl
       using Feature<PointInT, PointOutT>::fake_surface_;
       using PCLBase<PointInT>::input_;
 
-      typedef typename Feature<PointInT, PointOutT>::PointCloudOut PointCloudOut;
+      using PointCloudOut = typename Feature<PointInT, PointOutT>::PointCloudOut;
 
-      typedef typename pcl::PointCloud<PointNT> PointCloudN;
-      typedef typename PointCloudN::Ptr PointCloudNPtr;
-      typedef typename PointCloudN::ConstPtr PointCloudNConstPtr;
+      using PointCloudN = pcl::PointCloud<PointNT>;
+      using PointCloudNPtr = typename PointCloudN::Ptr;
+      using PointCloudNConstPtr = typename PointCloudN::ConstPtr;
 
-      typedef typename pcl::PointCloud<PointInT> PointCloudIn;
-      typedef typename PointCloudIn::Ptr PointCloudInPtr;
-      typedef typename PointCloudIn::ConstPtr PointCloudInConstPtr;
+      using PointCloudIn = pcl::PointCloud<PointInT>;
+      using PointCloudInPtr = typename PointCloudIn::Ptr;
+      using PointCloudInConstPtr = typename PointCloudIn::ConstPtr;
       
       /** \brief Constructs empty spin image estimator.
         * 
@@ -123,7 +124,7 @@ namespace pcl
                            unsigned int min_pts_neighb = 0);
       
       /** \brief Empty destructor */
-      virtual ~SpinImageEstimation () {}
+      ~SpinImageEstimation () override = default;
 
       /** \brief Sets spin-image resolution.
         * 
@@ -132,7 +133,27 @@ namespace pcl
       void 
       setImageWidth (unsigned int bin_count)
       {
-        image_width_ = bin_count;
+        const unsigned int necessary_desc_size = (bin_count+1)*(2*bin_count+1);
+        if (necessary_desc_size > static_cast<unsigned int>(PointOutT::descriptorSize())) {
+          for(int i=0; ; ++i) { // Find the biggest possible image_width_
+            if(((i+1)*(2*i+1)) <= PointOutT::descriptorSize()) {
+              image_width_ = i;
+            } else {
+              break;
+            }
+          }
+          PCL_ERROR("[pcl::SpinImageEstimation] The chosen image width is too large, setting it to %u instead. "
+            "Consider using pcl::Histogram<%u> as output type of SpinImageEstimation "
+            "(possibly with `#define PCL_NO_PRECOMPILE 1`).\n", image_width_, ((bin_count+1)*(2*bin_count+1)));
+        } else if (necessary_desc_size < static_cast<unsigned int>(PointOutT::descriptorSize())) {
+          image_width_ = bin_count;
+          PCL_WARN("[pcl::SpinImageEstimation] The chosen image width is smaller than the output histogram allows. "
+            "This is not an error, but the last few histogram bins will not be set. "
+            "Consider using pcl::Histogram<%u> as output type of SpinImageEstimation "
+            "(possibly with `#define PCL_NO_PRECOMPILE 1`).\n", ((bin_count+1)*(2*bin_count+1)));
+        } else {
+          image_width_ = bin_count;
+        }
       }
 
       /** \brief Sets the maximum angle for the point normal to get to support region.
@@ -245,15 +266,15 @@ namespace pcl
         * setInputWithNormals() using the surface in setSearchSurfaceWithNormals() and the spatial locator 
         * \param[out] output the resultant point cloud that contains the Spin Image feature estimates
         */
-      virtual void 
-      computeFeature (PointCloudOut &output); 
+      void 
+      computeFeature (PointCloudOut &output) override; 
 
       /** \brief initializes computations specific to spin-image.
         * 
         * \return true iff input data and initialization are correct
         */
-      virtual bool
-      initCompute ();
+      bool
+      initCompute () override;
 
       /** \brief Computes a spin-image for the point of the scan. 
         * \param[in] index the index of the reference point in the input cloud
@@ -266,13 +287,13 @@ namespace pcl
       PointCloudNConstPtr input_normals_;
       PointCloudNConstPtr rotation_axes_cloud_;
       
-      bool is_angular_;
+      bool is_angular_{false};
 
       PointNT rotation_axis_;
-      bool use_custom_axis_;
-      bool use_custom_axes_cloud_;
+      bool use_custom_axis_{false};
+      bool use_custom_axes_cloud_{false};
 
-      bool is_radial_;
+      bool is_radial_{false};
 
       unsigned int image_width_;
       double support_angle_cos_;
@@ -283,6 +304,3 @@ namespace pcl
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/features/impl/spin_image.hpp>
 #endif
-
-#endif  //#ifndef PCL_SPIN_IMAGE_H_
-

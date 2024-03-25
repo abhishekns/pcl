@@ -11,7 +11,7 @@ the :ref:`planar_segmentation` tutorial for more information.
 
 .. raw:: html
 
-   <iframe title="Extracting indices from a PointCloud" width="480" height="390" src="http://www.youtube.com/embed/ZTK7NR1Xx4c?rel=0" frameborder="0" allowfullscreen></iframe>
+   <iframe title="Extracting indices from a PointCloud" width="480" height="390" src="https://www.youtube.com/embed/ZTK7NR1Xx4c?rel=0" frameborder="0" allowfullscreen></iframe>
 
 The code
 --------
@@ -44,7 +44,7 @@ needed to spend within the segmentation loop.
 
 
 The next block of code deals with the parametric segmentation. To keep the
-tutorial simple, its its explanation will be skipped for now. Please see the
+tutorial simple, its explanation will be skipped for now. Please see the
 **segmentation** tutorials (in particular :ref:`planar_segmentation`) for more
 information.
 

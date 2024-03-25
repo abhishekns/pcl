@@ -37,31 +37,27 @@
  *
  */
 
-#ifndef PCL_GP3_H_
-#define PCL_GP3_H_
+#pragma once
 
 // PCL includes
 #include <pcl/surface/reconstruction.h>
-#include <pcl/surface/boost.h>
 
-#include <pcl/conversions.h>
 #include <pcl/kdtree/kdtree.h>
-#include <pcl/kdtree/kdtree_flann.h>
-#include <pcl/PolygonMesh.h>
 
 #include <fstream>
-#include <iostream>
 
-
+#include <Eigen/Geometry> // for cross
 
 namespace pcl
 {
+  struct PolygonMesh;
+
   /** \brief Returns if a point X is visible from point R (or the origin)
     * when taking into account the segment between the points S1 and S2
     * \param X 2D coordinate of the point
     * \param S1 2D coordinate of the segment's first point
-    * \param S2 2D coordinate of the segment's secont point
-    * \param R 2D coorddinate of the reference point (defaults to 0,0)
+    * \param S2 2D coordinate of the segment's second point
+    * \param R 2D coordinate of the reference point (defaults to 0,0)
     * \ingroup surface
     */
   inline bool 
@@ -113,24 +109,21 @@ namespace pcl
     }
     if (intersection_outside_XR)
       return true;
-    else
-    {
-      if (S1[0] > S2[0])
-        return (x <= S2[0]) || (x >= S1[0]);
-      else if (S1[0] < S2[0])
-        return (x >= S2[0]) || (x <= S1[0]);
-      else if (S1[1] > S2[1])
-        return (y <= S2[1]) || (y >= S1[1]);
-      else if (S1[1] < S2[1])                                                                                                                     
-        return (y >= S2[1]) || (y <= S1[1]);
-      else
-        return false;
-    }
-  }  
+    if (S1[0] > S2[0])
+      return (x <= S2[0]) || (x >= S1[0]);
+    if (S1[0] < S2[0])
+      return (x >= S2[0]) || (x <= S1[0]);
+    if (S1[1] > S2[1])
+      return (y <= S2[1]) || (y >= S1[1]);
+    if (S1[1] < S2[1])                                                                                                                     
+      return (y >= S2[1]) || (y <= S1[1]);
+    return false;
+  }
 
   /** \brief GreedyProjectionTriangulation is an implementation of a greedy triangulation algorithm for 3D points
     * based on local 2D projections. It assumes locally smooth surfaces and relatively smooth transitions between
     * areas with different point densities.
+    * \tparam PointInT Point type must have XYZ and normal information, for example `pcl::PointNormal` or `pcl::PointXYZRGBNormal` or `pcl::PointXYZINormal`
     * \author Zoltan Csaba Marton
     * \ingroup surface
     */
@@ -138,19 +131,19 @@ namespace pcl
   class GreedyProjectionTriangulation : public MeshConstruction<PointInT>
   {
     public:
-      typedef boost::shared_ptr<GreedyProjectionTriangulation<PointInT> > Ptr;
-      typedef boost::shared_ptr<const GreedyProjectionTriangulation<PointInT> > ConstPtr;
+      using Ptr = shared_ptr<GreedyProjectionTriangulation<PointInT> >;
+      using ConstPtr = shared_ptr<const GreedyProjectionTriangulation<PointInT> >;
 
       using MeshConstruction<PointInT>::tree_;
       using MeshConstruction<PointInT>::input_;
       using MeshConstruction<PointInT>::indices_;
 
-      typedef typename pcl::KdTree<PointInT> KdTree;
-      typedef typename pcl::KdTree<PointInT>::Ptr KdTreePtr;
+      using KdTree = pcl::KdTree<PointInT>;
+      using KdTreePtr = typename KdTree::Ptr;
 
-      typedef pcl::PointCloud<PointInT> PointCloudIn;
-      typedef typename PointCloudIn::Ptr PointCloudInPtr;
-      typedef typename PointCloudIn::ConstPtr PointCloudInConstPtr;
+      using PointCloudIn = pcl::PointCloud<PointInT>;
+      using PointCloudInPtr = typename PointCloudIn::Ptr;
+      using PointCloudInConstPtr = typename PointCloudIn::ConstPtr;
 
       enum GP3Type
       { 
@@ -162,44 +155,7 @@ namespace pcl
       };
     
       /** \brief Empty constructor. */
-      GreedyProjectionTriangulation () : 
-        mu_ (0), 
-        search_radius_ (0), // must be set by user
-        nnn_ (100),
-        minimum_angle_ (M_PI/18), // 10 degrees
-        maximum_angle_ (2*M_PI/3), // 120 degrees
-        eps_angle_(M_PI/4), //45 degrees,
-        consistent_(false), 
-        consistent_ordering_ (false),
-        triangle_ (),
-        coords_ (),
-        angles_ (),
-        R_ (),
-        state_ (),
-        source_ (),
-        ffn_ (),
-        sfn_ (),
-        part_ (),
-        fringe_queue_ (),
-        is_current_free_ (false),
-        current_index_ (),
-        prev_is_ffn_ (false),
-        prev_is_sfn_ (false),
-        next_is_ffn_ (false),
-        next_is_sfn_ (false),
-        changed_1st_fn_ (false),
-        changed_2nd_fn_ (false),
-        new2boundary_ (),
-        already_connected_ (false),
-        proj_qp_ (),
-        u_ (),
-        v_ (),
-        uvn_ffn_ (),
-        uvn_sfn_ (),
-        uvn_next_ffn_ (),
-        uvn_next_sfn_ (),
-        tmp_ ()
-      {};
+      GreedyProjectionTriangulation () = default;
 
       /** \brief Set the multiplier of the nearest neighbor distance to obtain the final search radius for each point
        *  (this will make the algorithm adapt to different point densities in the cloud).
@@ -302,53 +258,53 @@ namespace pcl
 
 
       /** \brief Get the sfn list. */
-      inline std::vector<int>
+      inline pcl::Indices
       getSFN () const { return (sfn_); }
 
       /** \brief Get the ffn list. */
-      inline std::vector<int>
+      inline pcl::Indices
       getFFN () const { return (ffn_); }
 
     protected:
       /** \brief The nearest neighbor distance multiplier to obtain the final search radius. */
-      double mu_;
+      double mu_{0.0};
 
       /** \brief The nearest neighbors search radius for each point and the maximum edge length. */
-      double search_radius_;
+      double search_radius_{0.0};
 
       /** \brief The maximum number of nearest neighbors accepted by searching. */
-      int nnn_;
+      int nnn_{100};
 
       /** \brief The preferred minimum angle for the triangles. */
-      double minimum_angle_;
+      double minimum_angle_{M_PI/18};
 
       /** \brief The maximum angle for the triangles. */
-      double maximum_angle_;
+      double maximum_angle_{2*M_PI/3};
 
       /** \brief Maximum surface angle. */
-      double eps_angle_;
+      double eps_angle_{M_PI/4};
 
       /** \brief Set this to true if the normals of the input are consistently oriented. */
-      bool consistent_;
+      bool consistent_{false};
       
       /** \brief Set this to true if the output triangle vertices should be consistently oriented. */
-      bool consistent_ordering_;
+      bool consistent_ordering_{false};
 
      private:
       /** \brief Struct for storing the angles to nearest neighbors **/
       struct nnAngle
       {
         double angle;
-        int index;
-        int nnIndex;
+        pcl::index_t index;
+        pcl::index_t nnIndex;
         bool visible;
       };
 
       /** \brief Struct for storing the edges starting from a fringe point **/
       struct doubleEdge
       {
-        doubleEdge () : index (0), first (), second () {}
-        int index;
+        doubleEdge () = default;
+        int index{0};
         Eigen::Vector2f first;
         Eigen::Vector2f second;
       };
@@ -356,50 +312,50 @@ namespace pcl
       // Variables made global to decrease the number of parameters to helper functions
 
       /** \brief Temporary variable to store a triangle (as a set of point indices) **/
-      pcl::Vertices triangle_;
+      pcl::Vertices triangle_{};
       /** \brief Temporary variable to store point coordinates **/
-      std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > coords_;
+      std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > coords_{};
 
       /** \brief A list of angles to neighbors **/
-      std::vector<nnAngle> angles_;
+      std::vector<nnAngle> angles_{};
       /** \brief Index of the current query point **/
-      int R_;
+      pcl::index_t R_{};
       /** \brief List of point states **/
-      std::vector<int> state_;
+      std::vector<int> state_{};
       /** \brief List of sources **/
-      std::vector<int> source_;
+      pcl::Indices source_{};
       /** \brief List of fringe neighbors in one direction **/
-      std::vector<int> ffn_;
+      pcl::Indices ffn_{};
       /** \brief List of fringe neighbors in other direction **/
-      std::vector<int> sfn_;
+      pcl::Indices sfn_{};
       /** \brief Connected component labels for each point **/
-      std::vector<int> part_;
+      std::vector<int> part_{};
       /** \brief Points on the outer edge from which the mesh has to be grown **/
-      std::vector<int> fringe_queue_;
+      std::vector<int> fringe_queue_{};
 
       /** \brief Flag to set if the current point is free **/
-      bool is_current_free_;
+      bool is_current_free_{false};
       /** \brief Current point's index **/
-      int current_index_;
+      pcl::index_t current_index_{};
       /** \brief Flag to set if the previous point is the first fringe neighbor **/
-      bool prev_is_ffn_;
+      bool prev_is_ffn_{false};
       /** \brief Flag to set if the next point is the second fringe neighbor **/
-      bool prev_is_sfn_;
+      bool prev_is_sfn_{false};
       /** \brief Flag to set if the next point is the first fringe neighbor **/
-      bool next_is_ffn_;
+      bool next_is_ffn_{false};
       /** \brief Flag to set if the next point is the second fringe neighbor **/
-      bool next_is_sfn_;
+      bool next_is_sfn_{false};
       /** \brief Flag to set if the first fringe neighbor was changed **/
-      bool changed_1st_fn_;
+      bool changed_1st_fn_{false};
       /** \brief Flag to set if the second fringe neighbor was changed **/
-      bool changed_2nd_fn_;
+      bool changed_2nd_fn_{false};
       /** \brief New boundary point **/
-      int new2boundary_;
+      pcl::index_t new2boundary_{};
       
       /** \brief Flag to set if the next neighbor was already connected in the previous step.
         * To avoid inconsistency it should not be connected again.
         */
-      bool already_connected_; 
+      bool already_connected_{false}; 
 
       /** \brief Point coordinates projected onto the plane defined by the point normal **/
       Eigen::Vector3f proj_qp_;
@@ -416,20 +372,20 @@ namespace pcl
       /** \brief 2D coordinates of the second fringe neighbor of the next point **/
       Eigen::Vector2f uvn_next_sfn_;
 
-      /** \brief Temporary variable to store 3 coordiantes **/
+      /** \brief Temporary variable to store 3 coordinates **/
       Eigen::Vector3f tmp_;
 
       /** \brief The actual surface reconstruction method.
         * \param[out] output the resultant polygonal mesh
         */
       void 
-      performReconstruction (pcl::PolygonMesh &output);
+      performReconstruction (pcl::PolygonMesh &output) override;
 
       /** \brief The actual surface reconstruction method.
         * \param[out] polygons the resultant polygons, as a set of vertices. The Vertices structure contains an array of point indices.
         */
       void 
-      performReconstruction (std::vector<pcl::Vertices> &polygons);
+      performReconstruction (std::vector<pcl::Vertices> &polygons) override;
 
       /** \brief The actual surface reconstruction method.
         * \param[out] polygons the resultant polygons, as a set of vertices. The Vertices structure contains an array of point indices.
@@ -439,7 +395,7 @@ namespace pcl
 
       /** \brief Class get name method. */
       std::string 
-      getClassName () const { return ("GreedyProjectionTriangulation"); }
+      getClassName () const override { return ("GreedyProjectionTriangulation"); }
 
       /** \brief Forms a new triangle by connecting the current neighbor to the query point 
         * and the previous neighbor
@@ -453,9 +409,9 @@ namespace pcl
         */
       void 
       connectPoint (std::vector<pcl::Vertices> &polygons, 
-                    const int prev_index, 
-                    const int next_index, 
-                    const int next_next_index, 
+                    const pcl::index_t prev_index, 
+                    const pcl::index_t next_index, 
+                    const pcl::index_t next_next_index, 
                     const Eigen::Vector2f &uvn_current, 
                     const Eigen::Vector2f &uvn_prev, 
                     const Eigen::Vector2f &uvn_next);
@@ -470,7 +426,7 @@ namespace pcl
       /** \brief Get the list of containing triangles for each vertex in a PolygonMesh
         * \param[in] polygonMesh the input polygon mesh
         */
-      std::vector<std::vector<size_t> >
+      std::vector<std::vector<std::size_t> >
       getTriangleList (const pcl::PolygonMesh &input);
 
       /** \brief Add a new triangle to the current polygon mesh
@@ -480,7 +436,7 @@ namespace pcl
         * \param[out] polygons the polygon mesh to be updated
         */
       inline void
-      addTriangle (int a, int b, int c, std::vector<pcl::Vertices> &polygons)
+      addTriangle (pcl::index_t a, pcl::index_t b, pcl::index_t c, std::vector<pcl::Vertices> &polygons)
       {
         triangle_.vertices.resize (3);
         if (consistent_ordering_)
@@ -533,8 +489,7 @@ namespace pcl
       {
         if (a1.visible == a2.visible)
           return (a1.angle < a2.angle);
-        else
-          return a1.visible;
+        return a1.visible;
       }
   };
 
@@ -543,6 +498,3 @@ namespace pcl
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/surface/impl/gp3.hpp>
 #endif
-
-#endif  //#ifndef PCL_GP3_H_
-

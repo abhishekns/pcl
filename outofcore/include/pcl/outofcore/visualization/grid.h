@@ -1,5 +1,4 @@
-#ifndef PCL_OUTOFCORE_GRID_H_
-#define PCL_OUTOFCORE_GRID_H_
+#pragma once
 
 // C++
 #include <iostream>
@@ -25,7 +24,7 @@ public:
   // Operators
   // -----------------------------------------------------------------------------
   Grid (std::string name, int size = 10, double spacing = 1.0);
-  ~Grid () { }
+  ~Grid () override = default;
 
   // Accessors
   // -----------------------------------------------------------------------------
@@ -50,5 +49,3 @@ private:
   vtkSmartPointer<vtkActor> grid_actor_;
 
 };
-
-#endif

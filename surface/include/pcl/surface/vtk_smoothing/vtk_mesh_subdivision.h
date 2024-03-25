@@ -36,8 +36,7 @@
  *
  */
 
-#ifndef VTK_MESH_SUBDIVISION_H_
-#define VTK_MESH_SUBDIVISION_H_
+#pragma once
 
 #include <pcl/surface/processing.h>
 #include <pcl/surface/vtk_smoothing/vtk.h>
@@ -77,12 +76,11 @@ namespace pcl
 
     protected:
       void
-      performProcessing (pcl::PolygonMesh &output);
+      performProcessing (pcl::PolygonMesh &output) override;
 
     private:
-      MeshSubdivisionVTKFilterType filter_type_;
+      MeshSubdivisionVTKFilterType filter_type_{LINEAR};
 
       vtkSmartPointer<vtkPolyData> vtk_polygons_;
   };
 }
-#endif /* VTK_MESH_SUBDIVISION_H_ */

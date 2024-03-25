@@ -38,16 +38,10 @@
  *
  */
 
-// STL
 #include <iostream>
 
-// PCL
 #include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
-#include <pcl/common/io.h>
 #include <pcl/keypoints/sift_keypoint.h>
-#include <pcl/features/normal_3d.h>
-// #include <pcl/visualization/pcl_visualizer.h>
 
 /* This examples shows how to estimate the SIFT points based on the 
  * z gradient of the 3D points than using the Intensity gradient as
@@ -75,16 +69,16 @@ main(int, char** argv)
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_xyz (new pcl::PointCloud<pcl::PointXYZ>);
   if(pcl::io::loadPCDFile<pcl::PointXYZ> (filename, *cloud_xyz) == -1) // load the file
   {
-    PCL_ERROR ("Couldn't read file");
+    PCL_ERROR("Couldn't read file\n");
     return -1;
   }
-  std::cout << "points: " << cloud_xyz->points.size () <<std::endl;
+  std::cout << "points: " << cloud_xyz->size () <<std::endl;
   
   // Parameters for sift computation
-  const float min_scale = 0.005f;
-  const int n_octaves = 6;
-  const int n_scales_per_octave = 4;
-  const float min_contrast = 0.005f;
+  constexpr float min_scale = 0.005f;
+  constexpr int n_octaves = 6;
+  constexpr int n_scales_per_octave = 4;
+  constexpr float min_contrast = 0.005f;
   
   // Estimate the sift interest points using z values from xyz as the Intensity variants
   pcl::SIFTKeypoint<pcl::PointXYZ, pcl::PointWithScale> sift;
@@ -96,13 +90,13 @@ main(int, char** argv)
   sift.setInputCloud(cloud_xyz);
   sift.compute(result);
 
-  std::cout << "No of SIFT points in the result are " << result.points.size () << std::endl;
+  std::cout << "No of SIFT points in the result are " << result.size () << std::endl;
 
 /*
   // Copying the pointwithscale to pointxyz so as visualize the cloud
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_temp (new pcl::PointCloud<pcl::PointXYZ>);
   copyPointCloud(result, *cloud_temp);
-  std::cout << "SIFT points in the result are " << cloud_temp->points.size () << std::endl;
+  std::cout << "SIFT points in the result are " << cloud_temp->size () << std::endl;
   // Visualization of keypoints along with the original cloud
   pcl::visualization::PCLVisualizer viewer("PCL Viewer");
   pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> keypoints_color_handler (cloud_temp, 0, 255, 0);

@@ -35,8 +35,7 @@
  *
  */
 
-#ifndef PCL_IO_LZF_H
-#define PCL_IO_LZF_H
+#pragma once
 
 #include <pcl/pcl_macros.h>
 
@@ -58,7 +57,7 @@ namespace pcl
     * \param[in] in_data the input uncompressed buffer
     * \param[in] in_len the length of the input buffer
     * \param[out] out_data the output buffer where the compressed result will be stored
-    * \param[out] out_len the length of the output buffer
+    * \param[in] out_len the length of the output buffer
     *
     */
   PCL_EXPORTS unsigned int 
@@ -81,12 +80,9 @@ namespace pcl
     * \param[in] in_data the input compressed buffer 
     * \param[in] in_len the length of the input buffer
     * \param[out] out_data the output buffer (must be resized to \a out_len)
-    * \param[out] out_len the length of the output buffer
+    * \param[in] out_len the length of the output buffer
     */
   PCL_EXPORTS unsigned int 
   lzfDecompress (const void *const in_data,  unsigned int in_len,
                  void             *out_data, unsigned int out_len);
 }
-
-#endif  /* PCL_IO_LZF */
-

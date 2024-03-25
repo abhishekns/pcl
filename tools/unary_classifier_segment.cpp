@@ -39,9 +39,11 @@
 
 
 #include <pcl/io/pcd_io.h>
+#include <pcl/common/pcl_filesystem.h>
 #include <pcl/console/print.h>
 #include <pcl/console/parse.h>
 #include <pcl/console/time.h>
+#include <pcl/filters/filter.h> // for removeNaNFromPointCloud
 
 #include <pcl/segmentation/unary_classifier.h>
 
@@ -53,10 +55,10 @@ double default_feature_threshold = 5.0;
 double default_normal_radius_search = 0.01;
 double default_fpfh_radius_search = 0.05;
 
-typedef PointXYZRGBA PointT;
-typedef PointCloud<PointT> CloudT;
-typedef PointCloud<PointXYZRGBL> CloudLT;
-typedef PointCloud<FPFHSignature33> FeatureT;
+using PointT = PointXYZRGBA;
+using CloudT = PointCloud<PointT>;
+using CloudLT = PointCloud<PointXYZRGBL>;
+using FeatureT = PointCloud<FPFHSignature33>;
 
 void
 printHelp (int, char **argv)
@@ -74,23 +76,22 @@ printHelp (int, char **argv)
 
 bool
 loadTrainedFeatures (std::vector<FeatureT::Ptr> &out,
-                     const boost::filesystem::path &base_dir)
+                     const pcl_fs::path &base_dir)
 {
-  if (!boost::filesystem::exists (base_dir) && !boost::filesystem::is_directory (base_dir))
+  if (!pcl_fs::exists (base_dir) && !pcl_fs::is_directory (base_dir))
     return false;
 
-  for (boost::filesystem::directory_iterator it (base_dir); it != boost::filesystem::directory_iterator (); ++it)
+  for (pcl_fs::directory_iterator it (base_dir); it != pcl_fs::directory_iterator (); ++it)
   {    
-    if (!boost::filesystem::is_directory (it->status ()) &&
-        boost::filesystem::extension (it->path ()) == ".pcd")
+    if (!pcl_fs::is_directory (it->status ()) &&
+        it->path ().extension ().string () == ".pcd")
     {   
-      std::stringstream ss;
-      ss << it->path ().string ();
+      const std::string path = it->path ().string ();
 
-      print_highlight ("Loading %s \n", ss.str ().c_str ());
+      print_highlight ("Loading %s \n", path.c_str ());
       
       FeatureT::Ptr features (new FeatureT);
-      if (loadPCDFile (ss.str ().c_str (), *features) < 0)
+      if (loadPCDFile (path, *features) < 0)
         return false;
 
       out.push_back (features);
@@ -184,7 +185,7 @@ main (int argc, char** argv)
     return (-1);
 
   // TODO:: make this as an optional argument ??
-  std::vector<int> tmp_indices;
+  pcl::Indices tmp_indices;
   pcl::removeNaNFromPointCloud (*cloud, *cloud, tmp_indices);
   
   // parse optional input arguments from the command line

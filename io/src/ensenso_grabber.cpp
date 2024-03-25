@@ -49,8 +49,8 @@
 // Handle Ensenso SDK exceptions
 // This function is called whenever an exception is raised to provide details about the error
 void
-ensensoExceptionHandling (const NxLibException &ex,
-                          std::string func_nam)
+ensensoExceptionHandling (const NxLibException& ex,
+                          const std::string& func_nam)
 {
   PCL_ERROR ("%s: NxLib error %s (%d) occurred while accessing item %s.\n", func_nam.c_str (), ex.getErrorText ().c_str (), ex.getErrorCode (),
             ex.getItemPath ().c_str ());
@@ -62,10 +62,7 @@ ensensoExceptionHandling (const NxLibException &ex,
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-pcl::EnsensoGrabber::EnsensoGrabber () :
-    device_open_ (false),
-    tcp_open_ (false),
-    running_ (false)
+pcl::EnsensoGrabber::EnsensoGrabber ()
 {
   point_cloud_signal_ = createSignal<sig_cb_ensenso_point_cloud> ();
   images_signal_ = createSignal<sig_cb_ensenso_images> ();
@@ -85,7 +82,7 @@ pcl::EnsensoGrabber::EnsensoGrabber () :
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-pcl::EnsensoGrabber::~EnsensoGrabber () throw ()
+pcl::EnsensoGrabber::~EnsensoGrabber () noexcept
 {
   try
   {
@@ -123,9 +120,17 @@ pcl::EnsensoGrabber::enumDevices () const
 
     for (int n = 0; n < cams.count (); ++n)
     {
+#if NXLIB_VERSION_MAJOR > 2 
       PCL_INFO ("%s   %s   %s\n", cams[n][itmSerialNumber].asString ().c_str (),
                                   cams[n][itmModelName].asString ().c_str (),
-                                  cams[n][itmStatus].asString ().c_str ());
+                                  cams[n][itmStatus][itmOpen].asBool()
+                                  ? "Open"
+                                  : (cams[n][itmStatus][itmAvailable].asBool() ? "Available" : "In Use"));
+#else
+      PCL_INFO ("%s   %s   %s\n", cams[n][itmSerialNumber].asString().c_str(),
+                                  cams[n][itmModelName].asString().c_str(),
+                                  cams[n][itmStatus].asString().c_str());
+#endif
     }
     PCL_INFO ("\n");
   }
@@ -205,7 +210,7 @@ pcl::EnsensoGrabber::start ()
 
   frequency_.reset ();
   running_ = true;
-  grabber_thread_ = boost::thread (&pcl::EnsensoGrabber::processGrabbing, this);
+  grabber_thread_ = std::thread (&pcl::EnsensoGrabber::processGrabbing, this);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -290,7 +295,7 @@ pcl::EnsensoGrabber::configureCapture (const bool auto_exposure,
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool
-pcl::EnsensoGrabber::grabSingleCloud (pcl::PointCloud<pcl::PointXYZ> &cloud)
+pcl::EnsensoGrabber::grabSingleCloud (pcl::PointCloud<pcl::PointXYZ> &cloud) const
 {
   if (!device_open_)
     return (false);
@@ -312,9 +317,9 @@ pcl::EnsensoGrabber::grabSingleCloud (pcl::PointCloud<pcl::PointXYZ> &cloud)
     double timestamp;
     std::vector<float> pointMap;
     int width, height;
-    camera_[itmImages][itmRaw][itmLeft].getBinaryDataInfo (0, 0, 0, 0, 0, &timestamp);  // Get raw image timestamp
-    camera_[itmImages][itmPointMap].getBinaryDataInfo (&width, &height, 0, 0, 0, 0);
-    camera_[itmImages][itmPointMap].getBinaryData (pointMap, 0);
+    camera_[itmImages][itmRaw][itmLeft].getBinaryDataInfo (nullptr, nullptr, nullptr, nullptr, nullptr, &timestamp);  // Get raw image timestamp
+    camera_[itmImages][itmPointMap].getBinaryDataInfo (&width, &height, nullptr, nullptr, nullptr, nullptr);
+    camera_[itmImages][itmPointMap].getBinaryData (pointMap, nullptr);
 
     // Copy point cloud and convert in meters
     cloud.header.stamp = getPCLStamp (timestamp);
@@ -323,12 +328,12 @@ pcl::EnsensoGrabber::grabSingleCloud (pcl::PointCloud<pcl::PointXYZ> &cloud)
     cloud.height = height;
     cloud.is_dense = false;
 
-    // Copy data in point cloud (and convert milimeters in meters)
-    for (size_t i = 0; i < pointMap.size (); i += 3)
+    // Copy data in point cloud (and convert millimeters in meters)
+    for (std::size_t i = 0; i < pointMap.size (); i += 3)
     {
-      cloud.points[i / 3].x = pointMap[i] / 1000.0;
-      cloud.points[i / 3].y = pointMap[i + 1] / 1000.0;
-      cloud.points[i / 3].z = pointMap[i + 2] / 1000.0;
+      cloud[i / 3].x = pointMap[i] / 1000.0;
+      cloud[i / 3].y = pointMap[i + 1] / 1000.0;
+      cloud[i / 3].z = pointMap[i + 2] / 1000.0;
     }
 
     return (true);
@@ -433,7 +438,7 @@ pcl::EnsensoGrabber::estimateCalibrationPatternPose (Eigen::Affine3d &pattern_po
     // Convert tf into a matrix
     if (!jsonTransformationToMatrix (tf.asJson (), pattern_pose))
       return (false);
-    pattern_pose.translation () /= 1000.0;  // Convert translation in meters (Ensenso API returns milimeters)
+    pattern_pose.translation () /= 1000.0;  // Convert translation in meters (Ensenso API returns millimeters)
     return (true);
   }
   catch (NxLibException &ex)
@@ -461,7 +466,7 @@ pcl::EnsensoGrabber::computeCalibrationMatrix (const std::vector<Eigen::Affine3d
     std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d> > robot_poses_mm (robot_poses);
     std::vector<std::string> robot_poses_json;
     robot_poses_json.resize (robot_poses.size ());
-    for (uint i = 0; i < robot_poses_json.size (); ++i)
+    for (std::size_t i = 0; i < robot_poses_json.size (); ++i)
     {
       robot_poses_mm[i].translation () *= 1000.0; // Convert meters in millimeters
       if (!matrixTransformationToJson (robot_poses_mm[i], robot_poses_json[i]))
@@ -506,7 +511,7 @@ pcl::EnsensoGrabber::computeCalibrationMatrix (const std::vector<Eigen::Affine3d
     }
 
     // Feed all robot poses into the calibration command
-    for (uint i = 0; i < robot_poses_json.size (); ++i)
+    for (std::size_t i = 0; i < robot_poses_json.size (); ++i)
     {
       // Very weird behavior here:
       // If you modify this loop, check that all the transformations are still here in the [itmExecute][itmParameters] node
@@ -575,7 +580,7 @@ bool
 pcl::EnsensoGrabber::setExtrinsicCalibration (const double euler_angle,
                                               Eigen::Vector3d &rotation_axis,
                                               const Eigen::Vector3d &translation,
-                                              const std::string target)
+                                              const std::string target) const
 {
   if (!device_open_)
     return (false);
@@ -638,7 +643,7 @@ pcl::EnsensoGrabber::setExtrinsicCalibration (const Eigen::Affine3d &transformat
 float
 pcl::EnsensoGrabber::getFramesPerSecond () const
 {
-  boost::mutex::scoped_lock lock (fps_mutex_);
+  std::lock_guard<std::mutex> lock (fps_mutex_);
   return (frequency_.getFrequency ());
 }
 
@@ -929,7 +934,7 @@ pcl::EnsensoGrabber::matrixTransformationToJson (const Eigen::Affine3d &matrix,
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-pcl::uint64_t
+std::uint64_t
 pcl::EnsensoGrabber::getPCLStamp (const double ensenso_stamp)
 {
 #if defined _WIN32 || defined _WIN64
@@ -963,7 +968,7 @@ pcl::EnsensoGrabber::processGrabbing ()
       if (num_slots<sig_cb_ensenso_point_cloud> () > 0 || num_slots<sig_cb_ensenso_images> () > 0 || num_slots<sig_cb_ensenso_point_cloud_images> () > 0)
       {
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZ>);
-        boost::shared_ptr<PairOfImages> images (new PairOfImages);
+        shared_ptr<PairOfImages> images (new PairOfImages);
 
         fps_mutex_.lock ();
         frequency_.event ();
@@ -971,7 +976,7 @@ pcl::EnsensoGrabber::processGrabbing ()
 
         NxLibCommand (cmdCapture).execute ();
         double timestamp;
-        camera_[itmImages][itmRaw][itmLeft].getBinaryDataInfo (0, 0, 0, 0, 0, &timestamp);
+        camera_[itmImages][itmRaw][itmLeft].getBinaryDataInfo (nullptr, nullptr, nullptr, nullptr, nullptr, &timestamp);
 
         // Gather images
         if (num_slots<sig_cb_ensenso_images> () > 0 || num_slots<sig_cb_ensenso_point_cloud_images> () > 0)
@@ -995,7 +1000,7 @@ pcl::EnsensoGrabber::processGrabbing ()
 
           if (collected_pattern)
           {
-            camera_[itmImages][itmWithOverlay][itmLeft].getBinaryDataInfo (&width, &height, &channels, &bpe, &isFlt, 0);
+            camera_[itmImages][itmWithOverlay][itmLeft].getBinaryDataInfo (&width, &height, &channels, &bpe, &isFlt, nullptr);
             images->first.header.stamp = images->second.header.stamp = getPCLStamp (timestamp);
             images->first.width = images->second.width = width;
             images->first.height = images->second.height = height;
@@ -1003,12 +1008,12 @@ pcl::EnsensoGrabber::processGrabbing ()
             images->second.data.resize (width * height * sizeof(float));
             images->first.encoding = images->second.encoding = getOpenCVType (channels, bpe, isFlt);
 
-            camera_[itmImages][itmWithOverlay][itmLeft].getBinaryData (images->first.data.data (), images->first.data.size (), 0, 0);
-            camera_[itmImages][itmWithOverlay][itmRight].getBinaryData (images->second.data.data (), images->second.data.size (), 0, 0);
+            camera_[itmImages][itmWithOverlay][itmLeft].getBinaryData (images->first.data.data (), images->first.data.size (), nullptr, nullptr);
+            camera_[itmImages][itmWithOverlay][itmRight].getBinaryData (images->second.data.data (), images->second.data.size (), nullptr, nullptr);
           }
           else
           {
-            camera_[itmImages][itmRaw][itmLeft].getBinaryDataInfo (&width, &height, &channels, &bpe, &isFlt, 0);
+            camera_[itmImages][itmRaw][itmLeft].getBinaryDataInfo (&width, &height, &channels, &bpe, &isFlt, nullptr);
             images->first.header.stamp = images->second.header.stamp = getPCLStamp (timestamp);
             images->first.width = images->second.width = width;
             images->first.height = images->second.height = height;
@@ -1016,8 +1021,8 @@ pcl::EnsensoGrabber::processGrabbing ()
             images->second.data.resize (width * height * sizeof(float));
             images->first.encoding = images->second.encoding = getOpenCVType (channels, bpe, isFlt);
 
-            camera_[itmImages][itmRaw][itmLeft].getBinaryData (images->first.data.data (), images->first.data.size (), 0, 0);
-            camera_[itmImages][itmRaw][itmRight].getBinaryData (images->second.data.data (), images->second.data.size (), 0, 0);
+            camera_[itmImages][itmRaw][itmLeft].getBinaryData (images->first.data.data (), images->first.data.size (), nullptr, nullptr);
+            camera_[itmImages][itmRaw][itmRight].getBinaryData (images->second.data.data (), images->second.data.size (), nullptr, nullptr);
           }
         }
 
@@ -1033,8 +1038,8 @@ pcl::EnsensoGrabber::processGrabbing ()
           // Get info about the computed point map and copy it into a std::vector
           std::vector<float> pointMap;
           int width, height;
-          camera_[itmImages][itmPointMap].getBinaryDataInfo (&width, &height, 0, 0, 0, 0);
-          camera_[itmImages][itmPointMap].getBinaryData (pointMap, 0);
+          camera_[itmImages][itmPointMap].getBinaryDataInfo (&width, &height, nullptr, nullptr, nullptr, nullptr);
+          camera_[itmImages][itmPointMap].getBinaryData (pointMap, nullptr);
 
           // Copy point cloud and convert in meters
           cloud->header.stamp = getPCLStamp (timestamp);
@@ -1043,12 +1048,12 @@ pcl::EnsensoGrabber::processGrabbing ()
           cloud->height = height;
           cloud->is_dense = false;
 
-          // Copy data in point cloud (and convert milimeters in meters)
-          for (size_t i = 0; i < pointMap.size (); i += 3)
+          // Copy data in point cloud (and convert millimeters in meters)
+          for (std::size_t i = 0; i < pointMap.size (); i += 3)
           {
-            cloud->points[i / 3].x = pointMap[i] / 1000.0;
-            cloud->points[i / 3].y = pointMap[i + 1] / 1000.0;
-            cloud->points[i / 3].z = pointMap[i + 2] / 1000.0;
+            (*cloud)[i / 3].x = pointMap[i] / 1000.0;
+            (*cloud)[i / 3].y = pointMap[i + 1] / 1000.0;
+            (*cloud)[i / 3].z = pointMap[i + 2] / 1000.0;
           }
         }
 

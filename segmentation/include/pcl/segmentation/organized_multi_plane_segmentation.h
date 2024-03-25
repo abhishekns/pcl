@@ -37,12 +37,13 @@
  *
  */
 
-#ifndef PCL_SEGMENTATION_ORGANIZED_MULTI_PLANE_SEGMENTATION_H_
-#define PCL_SEGMENTATION_ORGANIZED_MULTI_PLANE_SEGMENTATION_H_
+#pragma once
 
 #include <pcl/segmentation/planar_region.h>
 #include <pcl/pcl_base.h>
+#include <pcl/pcl_macros.h>
 #include <pcl/common/angles.h>
+#include <pcl/common/utils.h>
 #include <pcl/PointIndices.h>
 #include <pcl/ModelCoefficients.h>
 #include <pcl/segmentation/plane_coefficient_comparator.h>
@@ -67,43 +68,32 @@ namespace pcl
     using PCLBase<PointT>::deinitCompute;
 
     public:
-      typedef pcl::PointCloud<PointT> PointCloud;
-      typedef typename PointCloud::Ptr PointCloudPtr;
-      typedef typename PointCloud::ConstPtr PointCloudConstPtr;
+      using PointCloud = pcl::PointCloud<PointT>;
+      using PointCloudPtr = typename PointCloud::Ptr;
+      using PointCloudConstPtr = typename PointCloud::ConstPtr;
 
-      typedef typename pcl::PointCloud<PointNT> PointCloudN;
-      typedef typename PointCloudN::Ptr PointCloudNPtr;
-      typedef typename PointCloudN::ConstPtr PointCloudNConstPtr;
+      using PointCloudN = pcl::PointCloud<PointNT>;
+      using PointCloudNPtr = typename PointCloudN::Ptr;
+      using PointCloudNConstPtr = typename PointCloudN::ConstPtr;
 
-      typedef typename pcl::PointCloud<PointLT> PointCloudL;
-      typedef typename PointCloudL::Ptr PointCloudLPtr;
-      typedef typename PointCloudL::ConstPtr PointCloudLConstPtr;
+      using PointCloudL = pcl::PointCloud<PointLT>;
+      using PointCloudLPtr = typename PointCloudL::Ptr;
+      using PointCloudLConstPtr = typename PointCloudL::ConstPtr;
 
-      typedef typename pcl::PlaneCoefficientComparator<PointT, PointNT> PlaneComparator;
-      typedef typename PlaneComparator::Ptr PlaneComparatorPtr;
-      typedef typename PlaneComparator::ConstPtr PlaneComparatorConstPtr;
+      using PlaneComparator = pcl::PlaneCoefficientComparator<PointT, PointNT>;
+      using PlaneComparatorPtr = typename PlaneComparator::Ptr;
+      using PlaneComparatorConstPtr = typename PlaneComparator::ConstPtr;
 
-      typedef typename pcl::PlaneRefinementComparator<PointT, PointNT, PointLT> PlaneRefinementComparator;
-      typedef typename PlaneRefinementComparator::Ptr PlaneRefinementComparatorPtr;
-      typedef typename PlaneRefinementComparator::ConstPtr PlaneRefinementComparatorConstPtr;
+      using PlaneRefinementComparator = pcl::PlaneRefinementComparator<PointT, PointNT, PointLT>;
+      using PlaneRefinementComparatorPtr = typename PlaneRefinementComparator::Ptr;
+      using PlaneRefinementComparatorConstPtr = typename PlaneRefinementComparator::ConstPtr;
 
       /** \brief Constructor for OrganizedMultiPlaneSegmentation. */
-      OrganizedMultiPlaneSegmentation () :
-        normals_ (), 
-        min_inliers_ (1000), 
-        angular_threshold_ (pcl::deg2rad (3.0)), 
-        distance_threshold_ (0.02),
-        maximum_curvature_ (0.001),
-        project_points_ (false), 
-        compare_ (new PlaneComparator ()), refinement_compare_ (new PlaneRefinementComparator ())
-      {
-      }
+      OrganizedMultiPlaneSegmentation() = default;
 
       /** \brief Destructor for OrganizedMultiPlaneSegmentation. */
-      virtual
-      ~OrganizedMultiPlaneSegmentation ()
-      {
-      }
+      
+      ~OrganizedMultiPlaneSegmentation () override = default;
 
       /** \brief Provide a pointer to the input normals.
         * \param[in] normals the input normal cloud
@@ -216,7 +206,7 @@ namespace pcl
         * \param[out] model_coefficients a vector of model_coefficients for each plane found in the input cloud
         * \param[out] inlier_indices a vector of inliers for each detected plane
         * \param[out] centroids a vector of centroids for each plane
-        * \param[out] covariances a vector of covariance matricies for the inliers of each plane
+        * \param[out] covariances a vector of covariance matrices for the inliers of each plane
         * \param[out] labels a point cloud for the connected component labels of each pixel
         * \param[out] label_indices a vector of PointIndices for each labeled component
         */
@@ -264,48 +254,44 @@ namespace pcl
                         PointCloudLPtr& labels,
                         std::vector<pcl::PointIndices>& label_indices,
                         std::vector<pcl::PointIndices>& boundary_indices);
-      
+
       /** \brief Perform a refinement of an initial segmentation, by comparing points to adjacent regions detected by the initial segmentation.
         * \param [in] model_coefficients The list of segmented model coefficients
         * \param [in] inlier_indices The list of segmented inlier indices, corresponding to each model
-        * \param [in] centroids The list of centroids corresponding to each segmented plane
-        * \param [in] covariances The list of covariances corresponding to each segemented plane
         * \param [in] labels The labels produced by the initial segmentation
         * \param [in] label_indices The list of indices corresponding to each label
         */
       void
-      refine (std::vector<ModelCoefficients>& model_coefficients, 
+      refine (std::vector<ModelCoefficients>& model_coefficients,
               std::vector<PointIndices>& inlier_indices,
-              std::vector<Eigen::Vector4f, Eigen::aligned_allocator<Eigen::Vector4f> >& centroids,
-              std::vector <Eigen::Matrix3f, Eigen::aligned_allocator<Eigen::Matrix3f> >& covariances,
               PointCloudLPtr& labels,
               std::vector<pcl::PointIndices>& label_indices);
 
     protected:
 
       /** \brief A pointer to the input normals */
-      PointCloudNConstPtr normals_;
+      PointCloudNConstPtr normals_{nullptr};
 
       /** \brief The minimum number of inliers required for each plane. */
-      unsigned min_inliers_;
+      unsigned min_inliers_{1000};
 
       /** \brief The tolerance in radians for difference in normal direction between neighboring points, to be considered part of the same plane. */
-      double angular_threshold_;
+      double angular_threshold_{pcl::deg2rad (3.0)};
 
       /** \brief The tolerance in meters for difference in perpendicular distance (d component of plane equation) to the plane between neighboring points, to be considered part of the same plane. */
-      double distance_threshold_;
+      double distance_threshold_{0.02};
 
       /** \brief The tolerance for maximum curvature after fitting a plane.  Used to remove smooth, but non-planar regions. */
-      double maximum_curvature_;
+      double maximum_curvature_{0.001};
 
       /** \brief Whether or not points should be projected to the plane, or left in the original 3D space. */
-      bool project_points_;
+      bool project_points_{false};
 
       /** \brief A comparator for comparing neighboring pixels' plane equations. */
-      PlaneComparatorPtr compare_;
+      PlaneComparatorPtr compare_{new PlaneComparator};
 
       /** \brief A comparator for use on the refinement step.  Compares points to regions segmented in the first pass. */
-      PlaneRefinementComparatorPtr refinement_compare_;
+      PlaneRefinementComparatorPtr refinement_compare_{new PlaneRefinementComparator};
 
       /** \brief Class getName method. */
       virtual std::string
@@ -320,5 +306,3 @@ namespace pcl
 #ifdef PCL_NO_PRECOMPILE
 #include <pcl/segmentation/impl/organized_multi_plane_segmentation.hpp>
 #endif
-
-#endif //#ifndef PCL_SEGMENTATION_ORGANIZED_MULTI_PLANE_SEGMENTATION_H_
